@@ -1,5 +1,0 @@
-# This file may be used to create an environment using:
-# $ conda create --name <env> --file <this file>
-# platform: osx-64
-flask=0.12=py35_0
-python=3.5.3=1
