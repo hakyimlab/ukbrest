@@ -29,6 +29,6 @@ if __name__ == '__main__':
     if not isdir(args.repository_path):
         raise Exception('Repository path does not exist: {}'.format(args.repository_path))
 
-    app.config.update({'ukbquery': UKBQuery(args.repository_path)})
+    app.config.update({'ukbquery': UKBQuery(args.repository_path, debug=False)})
 
-    app.run(host=str(args.host), port=args.port, debug=True)
+    app.run(host=str(args.host), port=args.port, debug=False)
