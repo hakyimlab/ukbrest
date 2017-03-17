@@ -1,6 +1,15 @@
-import random
+import tempfile
 import numpy as np
 import pandas as pd
+
+
+def get_temp_file_name(file_extension=''):
+    if not file_extension.startswith('.'):
+        file_extension = '.' + file_extension
+
+    with tempfile.NamedTemporaryFile(suffix=file_extension, delete=False) as tmpfile:
+        temp_file_name = tmpfile.name
+    return temp_file_name
 
 
 def generate_random_gen(n_variants, n_samples, chromosome=1, initial_position=100):
