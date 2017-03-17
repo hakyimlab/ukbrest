@@ -2,7 +2,6 @@ name: ukbrest
 channels:
 - defaults
 dependencies:
-- appnope=0.1.0=py35_0
 - click=6.7=py35_0
 - decorator=4.0.11=py35_0
 - flask=0.12=py35_0
