@@ -1,42 +1,14 @@
-from os.path import join, dirname, abspath, isfile
-from subprocess import call
 import unittest
-import pandas as pd
+from os.path import join, dirname, abspath, isfile
 
 from common.ukbquery import UKBQuery
-from utils.datagen import get_temp_file_name
+from utils.external import qctool
 
 
 def get_repository_path(data_filename):
     directory = dirname(abspath(__file__))
     directory = join(directory, 'data/')
     return join(directory, data_filename)
-
-
-def qctool(bgen_file):
-    random_gen_file = get_temp_file_name('.gen')
-    call(['qctool', '-g', bgen_file, '-og', random_gen_file])
-
-    # read how many columns the file has
-    with open(random_gen_file, 'r') as f:
-        first_line = f.readline()
-
-    initial_cols = ['chr', 'snpid', 'rsid', 'pos', 'allele1', 'allele2']
-
-    n_columns = len(first_line.split(' '))
-    n_columns_without_initial_cols = n_columns - len(initial_cols)
-
-    if n_columns_without_initial_cols % 3 == 0:
-        n_samples = int(n_columns_without_initial_cols / 3)
-    else:
-        raise Exception('malformed .gen file')
-
-    samples_cols = [['{:d}.aa'.format(i), '{:d}.ab'.format(i), '{:d}.bb'.format(i)] for i in range(1, n_samples + 1)]
-    samples_cols = [item for sublist in samples_cols for item in sublist] # flatten
-
-    new_cols = initial_cols + samples_cols
-
-    return pd.read_table(random_gen_file, sep=' ', header=None, names=new_cols)
 
 
 class UKBQueryTest(unittest.TestCase):
@@ -77,6 +49,3 @@ class UKBQueryTest(unittest.TestCase):
         assert 100 in pos_values
         assert 191 in pos_values
         assert 290 in pos_values
-
-    def test_getbgen_incl_range_lower_and_upper_limits(self):
-        super(UKBQueryTest, self).fail('Not implemented')
