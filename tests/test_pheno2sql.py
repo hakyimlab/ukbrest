@@ -1,3 +1,4 @@
+import os
 import unittest
 import pandas as pd
 from sqlalchemy import create_engine
@@ -95,3 +96,31 @@ class Pheno2SQLTest(unittest.TestCase):
         assert tmp.loc[2, '46-0.0'] == -2
         assert tmp.loc[2, '47-0.0'].round(5) == -0.55461
         assert tmp.loc[2, '48-0.0'].strftime('%Y-%m-%d') == '2010-03-29'
+
+    def test_exit(self):
+        # Prepare
+        csv_file = get_repository_path('pheno2sql/example01.csv')
+        db_engine = 'postgresql://test:test@localhost:5432/ukb'
+
+        # Run
+        with Pheno2SQL(csv_file, db_engine) as p2sql:
+            p2sql.load_data()
+
+        # Validate
+        ## Check table exists
+        tmp = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_00'), create_engine(db_engine))
+        assert not tmp.empty
+
+        ## Check columns are correct
+        tmp = pd.read_sql('select * from ukb_pheno_00', create_engine(db_engine))
+        expected_columns = ["eid","21-0.0","21-1.0","21-2.0","31-0.0","34-0.0","46-0.0","47-0.0","48-0.0"]
+        assert len(tmp.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in tmp.columns)
+
+        ## Check data is correct
+        tmp = pd.read_sql('select * from ukb_pheno_00', create_engine(db_engine), index_col='eid')
+        assert not tmp.empty
+        assert tmp.shape[0] == 2
+
+        ## Check that temporary files were deleted
+        assert len(os.listdir('/tmp/ukbrest')) == 0
