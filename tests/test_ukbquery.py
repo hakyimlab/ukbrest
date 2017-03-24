@@ -1,14 +1,9 @@
 import unittest
-from os.path import join, dirname, abspath, isfile
+from os.path import isfile
 
 from common.ukbquery import UKBQuery
+from tests.utils import get_repository_path
 from utils.external import qctool
-
-
-def get_repository_path(data_filename):
-    directory = dirname(abspath(__file__))
-    directory = join(directory, 'data/')
-    return join(directory, data_filename)
 
 
 class UKBQueryTest(unittest.TestCase):
