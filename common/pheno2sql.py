@@ -96,19 +96,28 @@ class Pheno2SQL:
 
         return column_types, column_date_types
 
+    def _rename_columns(self, column_name):
+        if column_name == 'eid':
+            return column_name
+
+        return 'c{}'.format(column_name.replace('.', '_').replace('-', '_'))
+
     def _create_tables_schema(self):
         """
         Reads the data types of each data field and create the necessary database tables.
         :return:
         """
         tmp = pd.read_csv(self.ukb_csv, index_col=0, header=0, nrows=10, low_memory=False)
-        columns = tmp.columns.tolist()
+        old_columns = tmp.columns.tolist()
+        new_columns = [self._rename_columns(x) for x in old_columns]
+        all_columns = tuple(zip(old_columns, new_columns))
         # FIXME: check if self.n_columns_per_table is greater than the real number of columns
-        self.chunked_column_names = list(enumerate(self._chunker(columns, self.n_columns_per_table)))
+        self.chunked_column_names = tuple(enumerate(self._chunker(all_columns, self.n_columns_per_table)))
 
         self.column_data_types, date_columns = self._get_field_types(self.ukb_csv)
 
         data_sample = pd.read_csv(self.ukb_csv, index_col=0, header=0, nrows=1, dtype=self.column_data_types, parse_dates=date_columns)
+        data_sample = data_sample.rename(columns=self._rename_columns)
 
         engine = create_engine(self.db_engine)
 
@@ -116,26 +125,30 @@ class Pheno2SQL:
 
         current_stop = 0
         for column_names_idx, column_names in self.chunked_column_names:
+            new_columns_names = [x[1] for x in column_names]
+
             # Create main table structure
             table_name = self._get_table_name(column_names_idx)
             # print('  Creating table {} ({} columns)'.format(table_name, len(column_names)), flush=True)
-            data_sample.loc[[], column_names].to_sql(table_name, engine, if_exists='replace')
+            data_sample.loc[[], new_columns_names].to_sql(table_name, engine, if_exists='replace')
 
             # Create auxiliary table
-            n_column_names = len(column_names)
+            n_column_names = len(new_columns_names)
             current_start = current_stop
             current_stop = current_start + n_column_names
 
-            aux_table = pd.DataFrame({'field': column_names, 'table': table_name})
+            aux_table = pd.DataFrame({'field': new_columns_names, 'table_name': table_name})
             aux_table = aux_table.set_index('field')
             aux_table.to_sql('fields', engine, if_exists=fields_table_if_exist[column_names_idx])
 
     def _save_column_range(self, column_names_idx, column_names):
         table_name = self._get_table_name(column_names_idx)
         output_csv_filename = os.path.join(self._get_tmpdir(self.tmpdir), table_name + '.csv')
-        full_column_names = ['eid'] + column_names
+        full_column_names = ['eid'] + [x[0] for x in column_names]
         data_reader = pd.read_csv(self.ukb_csv, index_col=0, header=0, usecols=full_column_names,
                                   chunksize=self.chunksize, dtype=self.column_data_types)
+
+        new_columns = [x[1] for x in column_names]
 
         print('  Writing {}'.format(output_csv_filename), flush=True)
 
@@ -144,10 +157,12 @@ class Pheno2SQL:
             write_headers = False
 
         for chunk_idx, chunk in enumerate(data_reader):
+            chunk = chunk.rename(columns=self._rename_columns)
+
             if chunk_idx == 0:
-                chunk.loc[:, column_names].to_csv(output_csv_filename, quoting=csv.QUOTE_ALL, header=write_headers, mode='w')
+                chunk.loc[:, new_columns].to_csv(output_csv_filename, quoting=csv.QUOTE_ALL, header=write_headers, mode='w')
             else:
-                chunk.loc[:, column_names].to_csv(output_csv_filename, quoting=csv.QUOTE_ALL, header=False, mode='a')
+                chunk.loc[:, new_columns].to_csv(output_csv_filename, quoting=csv.QUOTE_ALL, header=False, mode='a')
 
         return table_name, output_csv_filename
 
@@ -207,6 +222,31 @@ class Pheno2SQL:
         self._create_tables_schema()
         self._create_temporary_csvs()
         self._load_csv()
+
+    def _create_inner_joins(self, tables):
+        if len(tables) == 1:
+            return tables[0]
+
+        return tables[0] + ' ' + ' '.join(['inner join {} using (eid) '.format(t) for t in tables[1:]])
+
+
+    def query(self, columns):
+        engine = create_engine(self.db_engine)
+
+        # select needed tables to join
+        all_columns = ['eid'] + columns
+        all_columns_quoted = ["'{}'".format(x) for x in (all_columns)]
+
+        tables_needed_df = pd.read_sql(
+            'select distinct table_name '
+            'from fields '
+            'where field in (' + ','.join(all_columns_quoted) + ')',
+        engine).loc[:, 'table_name'].tolist()
+
+        return pd.read_sql(
+            'select ' + ','.join(all_columns) +
+            ' from ' + self._create_inner_joins(tables_needed_df),
+            engine, index_col='eid')
 
 
 if __name__ == '__main__':
