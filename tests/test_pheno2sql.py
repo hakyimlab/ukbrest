@@ -1,11 +1,11 @@
 import os
 import unittest
+
 import pandas as pd
 from sqlalchemy import create_engine
 
+from common.pheno2sql import Pheno2SQL
 from tests.utils import get_repository_path
-from utils.init.pheno2sql import Pheno2SQL
-from utils.datagen import get_temp_file_name
 
 
 class Pheno2SQLTest(unittest.TestCase):
