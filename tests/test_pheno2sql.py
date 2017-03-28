@@ -1,5 +1,6 @@
 import os
 import unittest
+from nose.tools import nottest
 
 import pandas as pd
 from sqlalchemy import create_engine
@@ -575,4 +576,193 @@ class Pheno2SQLTest(unittest.TestCase):
         assert query_result.loc[2, 'c48_0_0'].strftime('%Y-%m-%d') == '2016-11-30'
         assert query_result.loc[3, 'c48_0_0'].strftime('%Y-%m-%d') == '2010-01-01'
         assert query_result.loc[4, 'c48_0_0'].strftime('%Y-%m-%d') == '2011-02-15'
-        
+
+    @nottest
+    def test_sqlite_query_custom_columns(self):
+        # SQLite is very limited when selecting variables, renaming, doing math operations, etc
+        pass
+
+    def test_postgresql_query_custom_columns(self):
+        # Prepare
+        csv_file = get_repository_path('pheno2sql/example02.csv')
+        db_engine = 'postgresql://test:test@localhost:5432/ukb'
+
+        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=2)
+        p2sql.load_data()
+
+        # Run
+        columns = ['c21_0_0', 'c21_2_0', 'c47_0_0', '(c47_0_0 ^ 2.0) as c47_squared']
+
+        query_result = p2sql.query(columns)
+
+        # Validate
+        assert query_result is not None
+
+        assert query_result.index.name == 'eid'
+        assert len(query_result.index) == 4
+        assert all(x in query_result.index for x in range(1, 4 + 1))
+
+        assert len(query_result.columns) == len(columns)
+        assert all(x in ['c21_0_0', 'c21_2_0', 'c47_0_0', 'c47_squared'] for x in query_result.columns)
+
+        assert not query_result.empty
+        assert query_result.shape[0] == 4
+        assert query_result.loc[1, 'c21_0_0'] == 'Option number 1'
+        assert query_result.loc[2, 'c21_0_0'] == 'Option number 2'
+        assert query_result.loc[3, 'c21_0_0'] == 'Option number 3'
+        assert query_result.loc[4, 'c21_0_0'] == 'Option number 4'
+
+        assert query_result.loc[1, 'c21_2_0'] == 'Yes'
+        assert query_result.loc[2, 'c21_2_0'] == 'No'
+        assert query_result.loc[3, 'c21_2_0'] == 'Maybe'
+        assert query_result.loc[4, 'c21_2_0'] == ''
+
+        assert query_result.loc[1, 'c47_0_0'].round(5) == 45.55412
+        assert query_result.loc[2, 'c47_0_0'].round(5) == -0.55461
+        assert query_result.loc[3, 'c47_0_0'].round(5) == -5.32471
+        assert query_result.loc[4, 'c47_0_0'].round(5) == 55.19832
+
+        assert query_result.loc[1, 'c47_squared'].round(5) == round(45.55412 ** 2, 5)
+        assert query_result.loc[2, 'c47_squared'].round(5) == round((-0.55461) ** 2, 5)
+        assert query_result.loc[3, 'c47_squared'].round(5) == round((-5.32471) ** 2, 5)
+        assert query_result.loc[4, 'c47_squared'].round(5) == round(55.19832 ** 2, 5)
+
+    def test_sqlite_query_single_filter(self):
+        # Prepare
+        csv_file = get_repository_path('pheno2sql/example02.csv')
+        db_engine = 'sqlite:///tmp.db'
+
+        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=2)
+        p2sql.load_data()
+
+        # Run
+        columns = ['c21_0_0', 'c21_2_0', 'c47_0_0']
+        filter = ['c47_0_0 > 0']
+
+        query_result = p2sql.query(columns, filter)
+
+        # Validate
+        assert query_result is not None
+
+        assert query_result.index.name == 'eid'
+        assert len(query_result.index) == 2
+        assert all(x in query_result.index for x in (1, 4))
+
+        assert len(query_result.columns) == len(columns)
+        assert all(x in columns for x in query_result.columns)
+
+        assert not query_result.empty
+        assert query_result.shape[0] == 2
+        assert query_result.loc[1, 'c21_0_0'] == 'Option number 1'
+        assert query_result.loc[4, 'c21_0_0'] == 'Option number 4'
+
+        assert query_result.loc[1, 'c21_2_0'] == 'Yes'
+        assert query_result.loc[4, 'c21_2_0'] == ''
+
+        assert query_result.loc[1, 'c47_0_0'].round(5) == 45.55412
+        assert query_result.loc[4, 'c47_0_0'].round(5) == 55.19832
+
+    def test_postgresql_query_single_filter(self):
+        # Prepare
+        csv_file = get_repository_path('pheno2sql/example02.csv')
+        db_engine = 'postgresql://test:test@localhost:5432/ukb'
+
+        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=2)
+        p2sql.load_data()
+
+        # Run
+        columns = ['c21_0_0', 'c21_2_0', 'c47_0_0']
+        filter = ['c47_0_0 > 0']
+
+        query_result = p2sql.query(columns, filter)
+
+        # Validate
+        assert query_result is not None
+
+        assert query_result.index.name == 'eid'
+        assert len(query_result.index) == 2
+        assert all(x in query_result.index for x in (1, 4))
+
+        assert len(query_result.columns) == len(columns)
+        assert all(x in columns for x in query_result.columns)
+
+        assert not query_result.empty
+        assert query_result.shape[0] == 2
+        assert query_result.loc[1, 'c21_0_0'] == 'Option number 1'
+        assert query_result.loc[4, 'c21_0_0'] == 'Option number 4'
+
+        assert query_result.loc[1, 'c21_2_0'] == 'Yes'
+        assert query_result.loc[4, 'c21_2_0'] == ''
+
+        assert query_result.loc[1, 'c47_0_0'].round(5) == 45.55412
+        assert query_result.loc[4, 'c47_0_0'].round(5) == 55.19832
+
+    def test_sqlite_query_multiple_and_filter(self):
+        # Prepare
+        csv_file = get_repository_path('pheno2sql/example02.csv')
+        db_engine = 'sqlite:///tmp.db'
+
+        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=2)
+        p2sql.load_data()
+
+        # Run
+        columns = ['c21_0_0', 'c21_2_0', 'c47_0_0', 'c48_0_0']
+        filter = ["c48_0_0 > '2011-01-01'", "c21_2_0 <> ''"]
+
+        query_result = p2sql.query(columns, filter)
+
+        # Validate
+        assert query_result is not None
+
+        assert query_result.index.name == 'eid'
+        assert len(query_result.index) == 2
+        assert all(x in query_result.index for x in (1, 2))
+
+        assert len(query_result.columns) == len(columns)
+        assert all(x in columns for x in query_result.columns)
+
+        assert not query_result.empty
+        assert query_result.shape[0] == 2
+        assert query_result.loc[1, 'c21_0_0'] == 'Option number 1'
+        assert query_result.loc[2, 'c21_0_0'] == 'Option number 2'
+
+        assert query_result.loc[1, 'c21_2_0'] == 'Yes'
+        assert query_result.loc[2, 'c21_2_0'] == 'No'
+
+        assert query_result.loc[1, 'c47_0_0'].round(5) == 45.55412
+        assert query_result.loc[2, 'c47_0_0'].round(5) == -0.55461
+
+    def test_postgresql_query_multiple_and_filter(self):
+        # Prepare
+        csv_file = get_repository_path('pheno2sql/example02.csv')
+        db_engine = 'postgresql://test:test@localhost:5432/ukb'
+
+        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=2)
+        p2sql.load_data()
+
+        # Run
+        columns = ['c21_0_0', 'c21_2_0', 'c47_0_0', 'c48_0_0']
+        filter = ["c48_0_0 > '2011-01-01'", "c21_2_0 <> ''"]
+
+        query_result = p2sql.query(columns, filter)
+
+        # Validate
+        assert query_result is not None
+
+        assert query_result.index.name == 'eid'
+        assert len(query_result.index) == 2
+        assert all(x in query_result.index for x in (1, 2))
+
+        assert len(query_result.columns) == len(columns)
+        assert all(x in columns for x in query_result.columns)
+
+        assert not query_result.empty
+        assert query_result.shape[0] == 2
+        assert query_result.loc[1, 'c21_0_0'] == 'Option number 1'
+        assert query_result.loc[2, 'c21_0_0'] == 'Option number 2'
+
+        assert query_result.loc[1, 'c21_2_0'] == 'Yes'
+        assert query_result.loc[2, 'c21_2_0'] == 'No'
+
+        assert query_result.loc[1, 'c47_0_0'].round(5) == 45.55412
+        assert query_result.loc[2, 'c47_0_0'].round(5) == -0.55461

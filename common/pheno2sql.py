@@ -229,8 +229,7 @@ class Pheno2SQL:
 
         return tables[0] + ' ' + ' '.join(['inner join {} using (eid) '.format(t) for t in tables[1:]])
 
-
-    def query(self, columns):
+    def query(self, columns, filterings=None):
         engine = create_engine(self.db_engine)
 
         # select needed tables to join
@@ -245,7 +244,8 @@ class Pheno2SQL:
 
         return pd.read_sql(
             'select ' + ','.join(all_columns) +
-            ' from ' + self._create_inner_joins(tables_needed_df),
+            ' from ' + self._create_inner_joins(tables_needed_df) +
+            ((' where ' + ' and '.join(filterings)) if filterings is not None else ''),
             engine, index_col='eid')
 
 
