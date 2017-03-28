@@ -110,6 +110,9 @@ class Pheno2SQL:
         tmp = pd.read_csv(self.ukb_csv, index_col=0, header=0, nrows=10, low_memory=False)
         old_columns = tmp.columns.tolist()
         new_columns = [self._rename_columns(x) for x in old_columns]
+
+        self.fields = new_columns
+
         all_columns = tuple(zip(old_columns, new_columns))
         # FIXME: check if self.n_columns_per_table is greater than the real number of columns
         self.chunked_column_names = tuple(enumerate(self._chunker(all_columns, self.n_columns_per_table)))
