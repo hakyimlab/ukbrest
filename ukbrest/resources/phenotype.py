@@ -9,6 +9,7 @@ class PhenotypeAPI(Resource):
     def __init__(self, **kwargs):
         self.parser = reqparse.RequestParser()
         self.parser.add_argument('columns', type=str, action='append', required=True, help='Columns to include')
+        self.parser.add_argument('filters', type=str, action='append', required=False, help='Filters to include (AND)')
         self.parser.add_argument('Accept', location='headers', choices=PHENOTYPES_FORMATS.keys(),
                                  help='Only {} are supported'.format(' and '.join(PHENOTYPES_FORMATS.keys())))
 
@@ -19,7 +20,7 @@ class PhenotypeAPI(Resource):
     def get(self):
         args = self.parser.parse_args()
 
-        return self.pheno2sql.query(args.columns)
+        return self.pheno2sql.query(args.columns, args.filters)
 
 
 class PhenotypeFieldsAPI(Resource):

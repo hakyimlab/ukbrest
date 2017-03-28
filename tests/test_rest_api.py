@@ -221,3 +221,50 @@ class TestFlaskApi(unittest.TestCase):
 
         # Validate
         assert response.status_code == 400, response.status_code
+
+    def test_phenotype_query_with_filtering(self):
+        # Prepare
+        columns = ['c21_0_0', 'c21_2_0', 'c47_0_0', 'c48_0_0']
+        filtering = ["c48_0_0 > '2011-01-01'", "c21_2_0 <> ''"]
+
+        parameters = {
+            'columns': columns,
+            'filters': filtering,
+        }
+
+        # Run
+        response = self.app.get('/ukbrest/api/v1.0/phenotype', query_string=parameters)
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', index_col='FID')
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape[0] == 2
+        assert pheno_file.shape[1] == 4 + 1 # plus IID
+
+        assert pheno_file.index.name == 'FID'
+        assert len(pheno_file.index) == 2
+        assert all(x in pheno_file.index for x in (1, 2))
+
+        expected_columns = ['IID'] + columns
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+        # column order
+        assert pheno_file.columns.tolist()[0] == 'IID'
+
+        assert pheno_file.loc[1, 'IID'] == 1
+        assert pheno_file.loc[2, 'IID'] == 2
+
+        assert pheno_file.loc[1, 'c21_0_0'] == 'Option number 1'
+        assert pheno_file.loc[2, 'c21_0_0'] == 'Option number 2'
+
+        assert pheno_file.loc[1, 'c21_2_0'] == 'Yes'
+        assert pheno_file.loc[2, 'c21_2_0'] == 'No'
+
+        assert pheno_file.loc[1, 'c47_0_0'].round(5) == 45.55412
+        assert pheno_file.loc[2, 'c47_0_0'].round(5) == -0.55461
+
+        assert pheno_file.loc[1, 'c48_0_0'] == '2011-08-14'
+        assert pheno_file.loc[2, 'c48_0_0'] == '2016-11-30'

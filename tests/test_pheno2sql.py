@@ -766,3 +766,6 @@ class Pheno2SQLTest(unittest.TestCase):
 
         assert query_result.loc[1, 'c47_0_0'].round(5) == 45.55412
         assert query_result.loc[2, 'c47_0_0'].round(5) == -0.55461
+
+        assert query_result.loc[1, 'c48_0_0'].strftime('%Y-%m-%d') == '2011-08-14'
+        assert query_result.loc[2, 'c48_0_0'].strftime('%Y-%m-%d') == '2016-11-30'
