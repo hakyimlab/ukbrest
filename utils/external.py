@@ -36,4 +36,4 @@ def qctool(bgen_file, debug=False):
 
     new_cols = initial_cols + samples_cols
 
-    return pd.read_table(random_gen_file, sep=' ', header=None, names=new_cols)
+    return pd.read_table(random_gen_file, sep=' ', header=None, names=new_cols).round(4)
