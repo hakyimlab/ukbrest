@@ -47,6 +47,8 @@ def generate_random_gen(n_variants, n_samples, chromosome=1, initial_position=10
             list(np.random.dirichlet(np.ones(3) + np.random.choice([0, 0, 10], size=3, replace=False), size=1)[0])
             for i in range(n_samples)
         ]
+        # BGEN v1.1: accurate to four decimal places; here I round to 5 places, but when read back only 4 should
+        # be considered.
         samples = ['{:.5f}'.format(item) for sublist in samples for item in sublist] # flatten
 
         genotype.append(header + samples)
@@ -75,6 +77,6 @@ if __name__ == '__main__':
     gen_data.to_csv(args.output_file, sep=' ', header=None, index=False)
 
     if args.sample:
-        samples_ids = list(range(1, args.n_samples + 1))
-        samples_data = pd.DataFrame({'ID_1': samples_ids, 'ID_2': samples_ids, 'missing': np.zeros(args.n_samples, dtype=int)})
+        samples_ids = list(range(0, args.n_samples + 1))
+        samples_data = pd.DataFrame({'ID_1': samples_ids, 'ID_2': samples_ids, 'missing': np.zeros(len(samples_ids), dtype=int)})
         samples_data.to_csv(filename + '.sample', sep=' ', header=True, index=False)
