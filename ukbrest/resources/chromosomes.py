@@ -7,7 +7,7 @@ class ChromosomeAPI(Resource):
         # self.parser = reqparse.RequestParser()
         # self.parser.add_argument('info', type=int, help='Rate to charge for this resource')
 
-        self.ukbquery = app.config['ukbquery']
+        self.ukbquery = app.config['genoquery']
 
         super(ChromosomeAPI, self).__init__()
 

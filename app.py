@@ -4,7 +4,7 @@ from flask_restful import Api
 
 from common.apis import PhenotypeApiObject
 from common.pheno2sql import Pheno2SQL
-from common.ukbquery import UKBQuery
+from common.genoquery import GenoQuery
 from ukbrest.resources.chromosomes import ChromosomeAPI
 from ukbrest.resources.phenotype import PhenotypeFieldsAPI, PhenotypeAPI
 
@@ -51,7 +51,7 @@ if __name__ == '__main__':
     if not isdir(args.genotype_path):
         raise Exception('Repository path does not exist: {}'.format(args.genotype_path))
 
-    app.config.update({'ukbquery': UKBQuery(args.genotype_path, debug=args.debug)})
+    app.config.update({'genoquery': GenoQuery(args.genotype_path, debug=args.debug)})
 
     csv_file = 'tests/data/pheno2sql/example02.csv'
     db_engine = 'postgresql://test:test@localhost:5432/ukb'
