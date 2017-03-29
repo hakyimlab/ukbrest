@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Change directory to 'utils/'
+
+# Generate data
+python datagen.py chr1impv1.gen 1 250 300 --sample
+mv chr1impv1.sample impv1.sample
+python datagen.py chr2impv1.gen 2 150 300
+python datagen.py chr3impv1.gen 3 350 300
+
+# Then convert .gen files to .bgen:
+qctool -g chr1impv1.gen -og chr1impv1.bgen
+qctool -g chr2impv1.gen -og chr2impv1.bgen
+qctool -g chr3impv1.gen -og chr3impv1.bgen
+
+# Generate index files:
+bgenix -g chr1impv1.bgen -index
+bgenix -g chr2impv1.bgen -index
+bgenix -g chr3impv1.bgen -index
+
