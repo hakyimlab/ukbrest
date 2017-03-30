@@ -154,7 +154,7 @@ class Pheno2SQL:
 
         new_columns = [x[1] for x in column_names]
 
-        print('  Writing {}'.format(output_csv_filename), flush=True)
+        print('    {}'.format(output_csv_filename), flush=True)
 
         write_headers = True
         if self.db_type == 'sqlite':
@@ -171,14 +171,15 @@ class Pheno2SQL:
         return table_name, output_csv_filename
 
     def _create_temporary_csvs(self):
-        # print('Saving temporary CSV files')
+        print('  Writing temporary CSV files')
+
         self.table_csvs = Parallel(n_jobs=self.n_jobs)(
             delayed(self._save_column_range)(column_names_idx, column_names)
             for column_names_idx, column_names in self.chunked_column_names
         )
 
     def _load_single_csv(self, table_name, file_path):
-        print('  Loading into table {}'.format(table_name))
+        print('    {} -> {}'.format(file_path, table_name))
 
         if self.db_type == 'sqlite':
             statement = (
@@ -210,6 +211,8 @@ class Pheno2SQL:
                 raise Exception(stdout_data + b'\n' + stderr_data)
 
     def _load_csv(self):
+        print('  Loading CSV files into database', flush=True)
+
         if self.db_type != 'sqlite':
             # parallel csv loading is only supported in databases different than sqlite
             Parallel(n_jobs=self.n_jobs)(
@@ -226,6 +229,7 @@ class Pheno2SQL:
         :return:
         """
         print('Loading phenotype data into database', flush=True)
+
         self._create_tables_schema()
         self._create_temporary_csvs()
         self._load_csv()
