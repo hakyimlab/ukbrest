@@ -67,7 +67,7 @@ if __name__ == '__main__':
 
     csv_file = args.phenotype_csv
     db_engine = args.db_uri
-    p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=2, tmpdir=args.tmp_dir)
+    p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=1500, tmpdir=args.tmp_dir)
     p2sql.load_data()
 
     app.config.update({'pheno2sql': p2sql})
