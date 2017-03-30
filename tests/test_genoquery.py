@@ -250,3 +250,77 @@ class UKBQueryTest(unittest.TestCase):
         assert results.loc[0, 'pos'] == 100
         assert results.loc[1, 'pos'] == 181
         assert results.loc[2, 'pos'] == 276
+
+    def test_query_incl_range_using_file(self):
+        # prepare
+        genoq = GenoQuery(get_repository_path('example01'))
+        # positions are not ordered in the file, but they should be returned ordered
+        positions_file = get_repository_path('example01/positions01.txt')
+
+        # run
+        bgen_file = genoq.get_incl_range_from_file(2, positions_file)
+
+        # validate
+        assert bgen_file is not None
+        assert isfile(bgen_file)
+
+        results = qctool(bgen_file)
+
+        assert results is not None
+        assert hasattr(results, 'shape')
+        assert hasattr(results, 'columns')
+        assert results.shape[1] == 6 + 300 * 3
+        assert results.shape[0] == 5
+
+        rsid_values = results['rsid'].unique()
+        assert len(rsid_values) == 5
+        assert results.loc[0, 'rsid'] == 'rs2000003'
+        assert results.loc[1, 'rsid'] == 'rs2000008'
+        assert results.loc[2, 'rsid'] == 'rs2000094'
+        assert results.loc[3, 'rsid'] == 'rs2000118'
+        assert results.loc[4, 'rsid'] == 'rs2000149'
+
+        assert results.loc[0, 'allele1'] == 'C'
+        assert results.loc[0, 'allele2'] == 'G'
+
+        assert results.loc[1, 'allele1'] == 'T'
+        assert results.loc[1, 'allele2'] == 'A'
+
+        assert results.loc[2, 'allele1'] == 'C'
+        assert results.loc[2, 'allele2'] == 'G'
+
+        assert results.loc[3, 'allele1'] == 'T'
+        assert results.loc[3, 'allele2'] == 'C'
+
+        assert results.loc[4, 'allele1'] == 'G'
+        assert results.loc[4, 'allele2'] == 'T'
+
+        assert results.loc[0, '1.aa'] == 0.7888
+        assert results.loc[0, '1.ab'] == 0.1538
+        assert results.loc[0, '1.bb'] == 0.0573
+
+        assert results.loc[1, '2.aa'] == 0.8776
+        assert results.loc[1, '2.ab'] == 0.0670
+        assert results.loc[1, '2.bb'] == 0.0554
+
+        assert results.loc[2, '3.aa'] == 0.0553
+        assert results.loc[2, '3.ab'] == 0.0939
+        assert results.loc[2, '3.bb'] == 0.8509
+
+        assert results.loc[3, '1.aa'] == 0.1219
+        assert results.loc[3, '1.ab'] == 0.8459
+        assert results.loc[3, '1.bb'] == 0.0323
+
+        assert results.loc[4, '2.aa'] == 0.0137
+        assert results.loc[4, '2.ab'] == 0.0953
+        assert results.loc[4, '2.bb'] == 0.8909
+
+        pos_values = results['pos'].unique()
+        assert len(pos_values) == 5
+        assert results.loc[0, 'pos'] == 300
+        assert results.loc[1, 'pos'] == 661
+        assert results.loc[2, 'pos'] == 7181
+        assert results.loc[3, 'pos'] == 8949
+        assert results.loc[4, 'pos'] == 11226
+
+# position in file that does not exist?
