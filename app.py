@@ -1,22 +1,31 @@
 from os.path import isdir
+
 from flask import Flask
 from flask_restful import Api
 
-from common.apis import PhenotypeApiObject
-from common.pheno2sql import Pheno2SQL
 from common.genoquery import GenoQuery
-from ukbrest.resources.chromosomes import ChromosomeAPI
+from common.pheno2sql import Pheno2SQL
+from ukbrest.resources.genotype_apis import GenotypeApiObject
+from ukbrest.resources.phenotype_apis import PhenotypeApiObject
+from ukbrest.resources.genotype import GenotypePositionsAPI, GenotypeRsidsAPI
 from ukbrest.resources.phenotype import PhenotypeFieldsAPI, PhenotypeAPI
 
 app = Flask(__name__)
 
 
 # Genotype API
-genotype_api = Api(app, default_mediatype='application/octet-stream')
+genotype_api = GenotypeApiObject(app)
 
 genotype_api.add_resource(
-    ChromosomeAPI,
-    '/ukbrest/api/v1.0/chromosomes/<int:chr>/variants/<int:start>/<int:stop>'
+    GenotypePositionsAPI,
+    '/ukbrest/api/v1.0/genotype/<int:chr>/positions',
+    '/ukbrest/api/v1.0/genotype/<int:chr>/positions/<int:start>',
+    '/ukbrest/api/v1.0/genotype/<int:chr>/positions/<int:start>/<int:stop>',
+)
+
+genotype_api.add_resource(
+    GenotypeRsidsAPI,
+    '/ukbrest/api/v1.0/genotype/<int:chr>/rsids',
 )
 
 # Phenotype API
@@ -24,7 +33,7 @@ phenotype_api = PhenotypeApiObject(app)
 
 phenotype_api.add_resource(
     PhenotypeAPI,
-    '/ukbrest/api/v1.0/phenotype'
+    '/ukbrest/api/v1.0/phenotype',
 )
 
 # Phenotype Info API
@@ -32,7 +41,7 @@ phenotype_info_api = Api(app, default_mediatype='application/json')
 
 phenotype_api.add_resource(
     PhenotypeFieldsAPI,
-    '/ukbrest/api/v1.0/phenotype/fields'
+    '/ukbrest/api/v1.0/phenotype/fields',
 )
 
 if __name__ == '__main__':
