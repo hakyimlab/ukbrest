@@ -8,7 +8,7 @@ from tests.utils import get_repository_path
 from common.pheno2sql import Pheno2SQL
 
 
-class TestFlaskApi(unittest.TestCase):
+class TestRestApiPhenotype(unittest.TestCase):
     def setUp(self):
         # Load data
         csv_file = get_repository_path('pheno2sql/example02.csv')

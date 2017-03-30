@@ -47,7 +47,7 @@ def output_json(data, code, headers=None):
     return resp
 
 
-PHENOTYPES_FORMATS = {
+PHENOTYPE_FORMATS = {
     'text/phenotype': output_phenotype,
     'text/csv': output_csv,
 }
@@ -57,6 +57,6 @@ class PhenotypeApiObject(Api):
     def __init__(self, app):
         super(PhenotypeApiObject, self).__init__(app, default_mediatype='text/phenotype')
 
-        reps = PHENOTYPES_FORMATS.copy()
+        reps = PHENOTYPE_FORMATS.copy()
         reps.update({'application/json': output_json})
         self.representations = reps
