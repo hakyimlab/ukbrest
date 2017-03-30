@@ -87,7 +87,7 @@ class Pheno2SQL:
         columns = csv_df.columns.tolist()
         del csv_df
 
-        print('    Reading columns', end='', flush=True)
+        print('    Reading columns', flush=True)
         for col in columns:
             col_type = df[col]
             final_col_type = 'str'
@@ -99,10 +99,6 @@ class Pheno2SQL:
 
             if col_type in ('Date', 'Time'):
                 column_date_types.append(col)
-
-            print('.', end='', flush=True)
-
-        print('', flush=True)
 
         return column_types, column_date_types
 
