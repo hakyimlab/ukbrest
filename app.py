@@ -1,4 +1,5 @@
 from os.path import isdir
+import tempfile
 
 from flask import Flask
 from flask_restful import Api
@@ -51,6 +52,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('genotype_path', type=str, help='UK Biobank genotype (imputed) path')
     parser.add_argument('phenotype_csv', type=str, help='UK Biobank phenotype data in CSV format')
+    parser.add_argument('--tmp_dir', dest='tmp_dir', type=str, required=False, help='Directory where write temporal files', default=tempfile.gettempdir())
     parser.add_argument('--db_uri', dest='db_uri', type=str, required=False, help='Database engine URI', default='sqlite:///ukbrest_tmp.db')
     parser.add_argument('--host', dest='host', type=ip_address, required=False, help='Host', default=ip_address('127.0.0.1'))
     parser.add_argument('--port', dest='port', type=int, required=False, help='Port', default=5000)
@@ -65,7 +67,7 @@ if __name__ == '__main__':
 
     csv_file = args.phenotype_csv
     db_engine = args.db_uri
-    p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=2)
+    p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=2, tmpdir=args.tmp_dir)
     p2sql.load_data()
 
     app.config.update({'pheno2sql': p2sql})
