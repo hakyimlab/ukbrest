@@ -68,11 +68,11 @@ class Pheno2SQL:
 
         print('  Getting field data types', flush=True)
 
-        filename = os.path.splitext(ukbcsv_file)[0]
-        print('    Reading file {}'.format(filename), flush=True)
+        filename = os.path.splitext(ukbcsv_file)[0] + '.html'
 
-        with open(filename + '.html', 'r', encoding='latin1') as f:
-            tmp = pd.read_html(f, match='UDI', header=0, index_col=1)
+        print('    Reading file {}'.format(filename), flush=True)
+        with open(filename, 'r', encoding='latin1') as f:
+            tmp = pd.read_html(f, match='UDI', header=0, index_col=1, flavor='html5lib')
 
         print('    Filling NaN values', flush=True)
         df = tmp[0].loc[:, 'Type']
