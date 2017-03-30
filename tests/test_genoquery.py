@@ -28,9 +28,9 @@ class UKBQueryTest(unittest.TestCase):
 
         rsid_values = results['rsid'].unique()
         assert len(rsid_values) == 3
-        assert 'rs1' in rsid_values
-        assert 'rs2' in rsid_values
-        assert 'rs3' in rsid_values
+        assert results.loc[0, 'rsid'] == 'rs1'
+        assert results.loc[1, 'rsid'] == 'rs2'
+        assert results.loc[2, 'rsid'] == 'rs3'
 
         assert results.loc[0, 'allele1'] == 'G'
         assert results.loc[0, 'allele2'] == 'A'
@@ -80,11 +80,11 @@ class UKBQueryTest(unittest.TestCase):
 
         rsid_values = results['rsid'].unique()
         assert len(rsid_values) == 5
-        assert 'rs246' in rsid_values
-        assert 'rs247' in rsid_values
-        assert 'rs248' in rsid_values
-        assert 'rs249' in rsid_values
-        assert 'rs250' in rsid_values
+        assert results.loc[0, 'rsid'] == 'rs246'
+        assert results.loc[1, 'rsid'] == 'rs247'
+        assert results.loc[2, 'rsid'] == 'rs248'
+        assert results.loc[3, 'rsid'] == 'rs249'
+        assert results.loc[4, 'rsid'] == 'rs250'
 
         assert results.loc[0, 'allele1'] == 'C'
         assert results.loc[0, 'allele2'] == 'A'
@@ -150,11 +150,11 @@ class UKBQueryTest(unittest.TestCase):
 
         rsid_values = results['rsid'].unique()
         assert len(rsid_values) == 5
-        assert 'rs246' in rsid_values
-        assert 'rs247' in rsid_values
-        assert 'rs248' in rsid_values
-        assert 'rs249' in rsid_values
-        assert 'rs250' in rsid_values
+        assert results.loc[0, 'rsid'] == 'rs246'
+        assert results.loc[1, 'rsid'] == 'rs247'
+        assert results.loc[2, 'rsid'] == 'rs248'
+        assert results.loc[3, 'rsid'] == 'rs249'
+        assert results.loc[4, 'rsid'] == 'rs250'
 
         assert results.loc[0, 'allele1'] == 'C'
         assert results.loc[0, 'allele2'] == 'A'
@@ -220,9 +220,9 @@ class UKBQueryTest(unittest.TestCase):
 
         rsid_values = results['rsid'].unique()
         assert len(rsid_values) == 3
-        assert 'rs1' in rsid_values
-        assert 'rs2' in rsid_values
-        assert 'rs3' in rsid_values
+        assert results.loc[0, 'rsid'] == 'rs1'
+        assert results.loc[1, 'rsid'] == 'rs2'
+        assert results.loc[2, 'rsid'] == 'rs3'
 
         assert results.loc[0, 'allele1'] == 'G'
         assert results.loc[0, 'allele2'] == 'A'
