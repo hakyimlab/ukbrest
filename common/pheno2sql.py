@@ -107,6 +107,7 @@ class Pheno2SQL:
         Reads the data types of each data field and create the necessary database tables.
         :return:
         """
+        print('  Creating database tables', flush=True)
         tmp = pd.read_csv(self.ukb_csv, index_col=0, header=0, nrows=10, low_memory=False)
         old_columns = tmp.columns.tolist()
         new_columns = [self._rename_columns(x) for x in old_columns]
@@ -132,7 +133,7 @@ class Pheno2SQL:
 
             # Create main table structure
             table_name = self._get_table_name(column_names_idx)
-            # print('  Creating table {} ({} columns)'.format(table_name, len(column_names)), flush=True)
+            print('    Table {} ({} columns)'.format(table_name, len(new_columns_names)), flush=True)
             data_sample.loc[[], new_columns_names].to_sql(table_name, engine, if_exists='replace')
 
             # Create auxiliary table
@@ -177,6 +178,8 @@ class Pheno2SQL:
         )
 
     def _load_single_csv(self, table_name, file_path):
+        print('  Loading into table {}'.format(table_name))
+
         if self.db_type == 'sqlite':
             statement = (
                 '.mode csv\n' +
@@ -222,6 +225,7 @@ class Pheno2SQL:
         Load self.ukb_csv into the database configured.
         :return:
         """
+        print('Loading phenotype data into database', flush=True)
         self._create_tables_schema()
         self._create_temporary_csvs()
         self._load_csv()
