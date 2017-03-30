@@ -32,3 +32,14 @@ class GenoQuery:
             run(['bgenix', '-g', chr_file, '-incl-range', '{}'.format(filepath)], stdout=bgen_file, stderr=stderr_file)
 
         return random_bgen_file
+
+    def get_incl_rsids(self, chr, rsids):
+        chr_file = self._get_chr_file(chr)
+
+        random_bgen_file = get_temp_file_name('.bgen')
+        with open(random_bgen_file, 'br+') as bgen_file, open(devnull, 'w') as devnull_file:
+            stderr_file = None if self.debug else devnull_file
+            bgen_command = ['bgenix', '-g', chr_file, '-incl-rsids'] + rsids
+            run(bgen_command, stdout=bgen_file, stderr=stderr_file)
+
+        return random_bgen_file
