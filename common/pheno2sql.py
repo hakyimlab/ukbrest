@@ -66,10 +66,15 @@ class Pheno2SQL:
         :return:
         """
 
+        print('  Getting field data types', flush=True)
+
         filename = os.path.splitext(ukbcsv_file)[0]
+        print('    Reading file {}'.format(filename), flush=True)
+
         with open(filename + '.html', 'r', encoding='latin1') as f:
             tmp = pd.read_html(f, match='UDI', header=0, index_col=1)
 
+        print('    Filling NaN values', flush=True)
         df = tmp[0].loc[:, 'Type']
         df = df.fillna(method='ffill')
         del tmp
@@ -82,6 +87,7 @@ class Pheno2SQL:
         columns = csv_df.columns.tolist()
         del csv_df
 
+        print('    Reading columns', end='', flush=True)
         for col in columns:
             col_type = df[col]
             final_col_type = 'str'
@@ -93,6 +99,10 @@ class Pheno2SQL:
 
             if col_type in ('Date', 'Time'):
                 column_date_types.append(col)
+
+            print('.', end='', flush=True)
+
+        print('', flush=True)
 
         return column_types, column_date_types
 
@@ -108,6 +118,7 @@ class Pheno2SQL:
         :return:
         """
         print('  Creating database tables', flush=True)
+
         tmp = pd.read_csv(self.ukb_csv, index_col=0, header=0, nrows=10, low_memory=False)
         old_columns = tmp.columns.tolist()
         new_columns = [self._rename_columns(x) for x in old_columns]
