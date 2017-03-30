@@ -51,6 +51,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('genotype_path', type=str, help='UK Biobank genotype (imputed) path')
     parser.add_argument('phenotype_csv', type=str, help='UK Biobank phenotype data in CSV format')
+    parser.add_argument('--db_uri', dest='db_uri', type=str, required=False, help='Database engine URI', default='sqlite:///ukbrest_tmp.db')
     parser.add_argument('--host', dest='host', type=ip_address, required=False, help='Host', default=ip_address('127.0.0.1'))
     parser.add_argument('--port', dest='port', type=int, required=False, help='Port', default=5000)
     parser.add_argument('--debug', dest='debug', action='store_true')
@@ -62,8 +63,8 @@ if __name__ == '__main__':
 
     app.config.update({'genoquery': GenoQuery(args.genotype_path, debug=args.debug)})
 
-    csv_file = 'tests/data/pheno2sql/example02.csv'
-    db_engine = 'postgresql://test:test@localhost:5432/ukb'
+    csv_file = args.phenotype_csv
+    db_engine = args.db_uri
     p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=2)
     p2sql.load_data()
 
