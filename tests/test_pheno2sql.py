@@ -1,3 +1,4 @@
+import numpy as np
 import os
 import unittest
 from nose.tools import nottest
@@ -769,3 +770,109 @@ class Pheno2SQLTest(unittest.TestCase):
 
         assert query_result.loc[1, 'c48_0_0'].strftime('%Y-%m-%d') == '2011-08-14'
         assert query_result.loc[2, 'c48_0_0'].strftime('%Y-%m-%d') == '2016-11-30'
+
+    def test_sqlite_float_is_empty(self):
+        # Prepare
+        csv_file = get_repository_path('pheno2sql/example03.csv')
+        db_engine = 'sqlite:///tmp.db'
+
+        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, n_jobs=1)
+
+        # Run
+        p2sql.load_data()
+
+        # Validate
+        assert p2sql.db_type == 'sqlite'
+
+        ## Check data is correct
+        tmp = pd.read_sql('select * from ukb_pheno_00', create_engine(db_engine), index_col='eid')
+        assert not tmp.empty
+        assert tmp.shape[0] == 4
+        assert tmp.loc[1, 'c21_0_0'] == 'Option number 1'
+        assert tmp.loc[1, 'c21_1_0'] == 'No response'
+        assert tmp.loc[1, 'c21_2_0'] == 'Yes'
+        assert tmp.loc[2, 'c21_0_0'] == 'Option number 2'
+        assert tmp.loc[2, 'c21_1_0'] == ''
+        assert tmp.loc[2, 'c21_2_0'] == 'No'
+        assert tmp.loc[3, 'c21_0_0'] == 'Option number 3'
+        assert tmp.loc[3, 'c21_1_0'] == 'Of course'
+        assert tmp.loc[3, 'c21_2_0'] == 'Maybe'
+        assert tmp.loc[4, 'c21_2_0'] == ''
+
+
+        tmp = pd.read_sql('select * from ukb_pheno_01', create_engine(db_engine), index_col='eid')
+        assert not tmp.empty
+        assert tmp.shape[0] == 4
+        assert tmp.loc[1, 'c31_0_0'] == '2012-01-05'
+        assert tmp.loc[1, 'c34_0_0'] == 21
+        assert tmp.loc[1, 'c46_0_0'] == -9
+        assert tmp.loc[2, 'c31_0_0'] == '2015-12-30'
+        assert tmp.loc[2, 'c34_0_0'] == 12
+        assert tmp.loc[2, 'c46_0_0'] == -2
+        assert tmp.loc[3, 'c31_0_0'] == '2007-03-19'
+        assert tmp.loc[3, 'c34_0_0'] == 1
+        assert tmp.loc[3, 'c46_0_0'] == -7
+
+        tmp = pd.read_sql('select * from ukb_pheno_02', create_engine(db_engine), index_col='eid')
+        assert not tmp.empty
+        assert tmp.shape[0] == 4
+        # FIXME: this is strange, data type in this particular case needs np.round
+        assert np.round(tmp.loc[1, 'c47_0_0'], 5) == 45.55412
+        assert tmp.loc[1, 'c48_0_0'] == '2011-08-14'
+        assert tmp.loc[2, 'c47_0_0'] == -0.55461
+        assert tmp.loc[2, 'c48_0_0'] == '2016-11-30'
+        # FIXME: support for NULL values in SQLite is limited
+        assert tmp.loc[3, 'c47_0_0'] == 'nan'
+        assert tmp.loc[3, 'c48_0_0'] == '2010-01-01'
+
+    def test_postgresql_float_is_empty(self):
+        # Prepare
+        csv_file = get_repository_path('pheno2sql/example03.csv')
+        db_engine = 'postgresql://test:test@localhost:5432/ukb'
+
+        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, n_jobs=1)
+
+        # Run
+        p2sql.load_data()
+
+        # Validate
+        assert p2sql.db_type == 'postgresql'
+
+        ## Check data is correct
+        tmp = pd.read_sql('select * from ukb_pheno_00', create_engine(db_engine), index_col='eid')
+        assert not tmp.empty
+        assert tmp.shape[0] == 4
+        assert tmp.loc[1, 'c21_0_0'] == 'Option number 1'
+        assert tmp.loc[1, 'c21_1_0'] == 'No response'
+        assert tmp.loc[1, 'c21_2_0'] == 'Yes'
+        assert tmp.loc[2, 'c21_0_0'] == 'Option number 2'
+        assert tmp.loc[2, 'c21_1_0'] == ''
+        assert tmp.loc[2, 'c21_2_0'] == 'No'
+        assert tmp.loc[3, 'c21_0_0'] == 'Option number 3'
+        assert tmp.loc[3, 'c21_1_0'] == 'Of course'
+        assert tmp.loc[3, 'c21_2_0'] == 'Maybe'
+        assert tmp.loc[4, 'c21_2_0'] == ''
+
+
+        tmp = pd.read_sql('select * from ukb_pheno_01', create_engine(db_engine), index_col='eid')
+        assert not tmp.empty
+        assert tmp.shape[0] == 4
+        assert tmp.loc[1, 'c31_0_0'].strftime('%Y-%m-%d') == '2012-01-05'
+        assert tmp.loc[1, 'c34_0_0'] == 21
+        assert tmp.loc[1, 'c46_0_0'] == -9
+        assert tmp.loc[2, 'c31_0_0'].strftime('%Y-%m-%d') == '2015-12-30'
+        assert tmp.loc[2, 'c34_0_0'] == 12
+        assert tmp.loc[2, 'c46_0_0'] == -2
+        assert tmp.loc[3, 'c31_0_0'].strftime('%Y-%m-%d') == '2007-03-19'
+        assert tmp.loc[3, 'c34_0_0'] == 1
+        assert tmp.loc[3, 'c46_0_0'] == -7
+
+        tmp = pd.read_sql('select * from ukb_pheno_02', create_engine(db_engine), index_col='eid')
+        assert not tmp.empty
+        assert tmp.shape[0] == 4
+        assert tmp.loc[1, 'c47_0_0'].round(5) == 45.55412
+        assert tmp.loc[1, 'c48_0_0'].strftime('%Y-%m-%d') == '2011-08-14'
+        assert tmp.loc[2, 'c47_0_0'].round(5) == -0.55461
+        assert tmp.loc[2, 'c48_0_0'].strftime('%Y-%m-%d') == '2016-11-30'
+        assert pd.isnull(tmp.loc[3, 'c47_0_0'])
+        assert tmp.loc[3, 'c48_0_0'].strftime('%Y-%m-%d') == '2010-01-01'

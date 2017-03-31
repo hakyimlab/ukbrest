@@ -1,5 +1,6 @@
 import os, sys
 import csv
+import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 from sqlalchemy import create_engine
@@ -58,7 +59,7 @@ class Pheno2SQL:
         """
         return (seq[pos:pos + size] for pos in range(0, len(seq), size))
 
-    def _get_field_types(self, ukbcsv_file):
+    def _get_columns_dtypes(self, ukbcsv_file):
         """
         Returns a tuple with Pandas-compatible type list and parse date columns.
 
@@ -93,7 +94,7 @@ class Pheno2SQL:
             final_col_type = 'str'
 
             if col_type in ('Continuous', 'Integer'):
-                final_col_type = 'float'
+                final_col_type = 'float64'
 
             column_types[col] = final_col_type
 
@@ -119,15 +120,14 @@ class Pheno2SQL:
         old_columns = tmp.columns.tolist()
         new_columns = [self._rename_columns(x) for x in old_columns]
 
-        self.fields = new_columns
-
         all_columns = tuple(zip(old_columns, new_columns))
         # FIXME: check if self.n_columns_per_table is greater than the real number of columns
         self.chunked_column_names = tuple(enumerate(self._chunker(all_columns, self.n_columns_per_table)))
 
-        self.column_data_types, date_columns = self._get_field_types(self.ukb_csv)
+        self._original_column_and_dtypes, date_columns = self._get_columns_dtypes(self.ukb_csv)
+        self.columns_and_dtypes = {self._rename_columns(k): v for k, v in self._original_column_and_dtypes.items()}
 
-        data_sample = pd.read_csv(self.ukb_csv, index_col=0, header=0, nrows=1, dtype=self.column_data_types, parse_dates=date_columns)
+        data_sample = pd.read_csv(self.ukb_csv, index_col=0, header=0, nrows=1, dtype=self._original_column_and_dtypes, parse_dates=date_columns)
         data_sample = data_sample.rename(columns=self._rename_columns)
 
         engine = create_engine(self.db_engine)
@@ -152,12 +152,16 @@ class Pheno2SQL:
             aux_table = aux_table.set_index('field')
             aux_table.to_sql('fields', engine, if_exists=fields_table_if_exist[column_names_idx])
 
+    def _replace_null_str(self, chunk):
+        col_spec = {self._rename_columns(col_name): {np.nan: ''} for col_name, col_type in self._original_column_and_dtypes.items() if col_type == 'str'}
+        return chunk.replace(col_spec)
+
     def _save_column_range(self, column_names_idx, column_names):
         table_name = self._get_table_name(column_names_idx)
         output_csv_filename = os.path.join(self._get_tmpdir(self.tmpdir), table_name + '.csv')
         full_column_names = ['eid'] + [x[0] for x in column_names]
         data_reader = pd.read_csv(self.ukb_csv, index_col=0, header=0, usecols=full_column_names,
-                                  chunksize=self.chunksize, dtype=self.column_data_types)
+                                  chunksize=self.chunksize, dtype=self._original_column_and_dtypes)
 
         new_columns = [x[1] for x in column_names]
 
@@ -169,11 +173,12 @@ class Pheno2SQL:
 
         for chunk_idx, chunk in enumerate(data_reader):
             chunk = chunk.rename(columns=self._rename_columns)
+            chunk = self._replace_null_str(chunk)
 
             if chunk_idx == 0:
-                chunk.loc[:, new_columns].to_csv(output_csv_filename, quoting=csv.QUOTE_ALL, header=write_headers, mode='w')
+                chunk.loc[:, new_columns].to_csv(output_csv_filename, quoting=csv.QUOTE_ALL, na_rep=np.nan, header=write_headers, mode='w')
             else:
-                chunk.loc[:, new_columns].to_csv(output_csv_filename, quoting=csv.QUOTE_ALL, header=False, mode='a')
+                chunk.loc[:, new_columns].to_csv(output_csv_filename, quoting=csv.QUOTE_ALL, na_rep=np.nan, header=False, mode='a')
 
         return table_name, output_csv_filename
 
@@ -204,7 +209,7 @@ class Pheno2SQL:
 
         elif self.db_type == 'postgresql':
             statement = (
-                "\copy {table_name} from '{file_path}' (format csv, header)"
+                "\copy {table_name} from '{file_path}' (format csv, header, null ('nan'))"
             ).format(**locals())
 
             current_env = os.environ.copy()

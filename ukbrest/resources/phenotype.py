@@ -35,4 +35,4 @@ class PhenotypeFieldsAPI(Resource):
 
     def get(self):
         # FIXME: should not return Response nor json, just raw data
-        return Response(json.dumps(self.pheno2sql.fields), mimetype='text/plain')
+        return [k for k, v in self.pheno2sql.columns_and_dtypes.items()]

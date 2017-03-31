@@ -40,7 +40,7 @@ phenotype_api.add_resource(
 # Phenotype Info API
 phenotype_info_api = Api(app, default_mediatype='application/json')
 
-phenotype_api.add_resource(
+phenotype_info_api.add_resource(
     PhenotypeFieldsAPI,
     '/ukbrest/api/v1.0/phenotype/fields',
 )
