@@ -6,13 +6,14 @@ import pandas as pd
 import app
 from tests.utils import get_repository_path
 from common.pheno2sql import Pheno2SQL
+from tests.settings import POSTGRESQL_ENGINE
 
 
 class TestRestApiPhenotype(unittest.TestCase):
     def setUp(self):
         # Load data
         csv_file = get_repository_path('pheno2sql/example02.csv')
-        db_engine = 'postgresql://test:test@localhost:5432/ukb'
+        db_engine = POSTGRESQL_ENGINE
 
         p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=2)
         p2sql.load_data()

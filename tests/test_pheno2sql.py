@@ -8,13 +8,14 @@ from sqlalchemy import create_engine
 
 from common.pheno2sql import Pheno2SQL
 from tests.utils import get_repository_path
+from tests.settings import POSTGRESQL_ENGINE, SQLITE_ENGINE
 
 
 class Pheno2SQLTest(unittest.TestCase):
     def test_sqlite_default_values(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example01.csv')
-        db_engine = 'sqlite:///tmp.db'
+        db_engine = SQLITE_ENGINE
 
         p2sql = Pheno2SQL(csv_file, db_engine)
 
@@ -58,7 +59,7 @@ class Pheno2SQLTest(unittest.TestCase):
     def test_postgresql_default_values(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example01.csv')
-        db_engine = 'postgresql://test:test@localhost:5432/ukb'
+        db_engine = POSTGRESQL_ENGINE
 
         p2sql = Pheno2SQL(csv_file, db_engine)
 
@@ -102,7 +103,7 @@ class Pheno2SQLTest(unittest.TestCase):
     def test_exit(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example01.csv')
-        db_engine = 'postgresql://test:test@localhost:5432/ukb'
+        db_engine = POSTGRESQL_ENGINE
 
         # Run
         with Pheno2SQL(csv_file, db_engine) as p2sql:
@@ -130,7 +131,7 @@ class Pheno2SQLTest(unittest.TestCase):
     def test_sqlite_less_columns_per_table(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example01.csv')
-        db_engine = 'sqlite:///tmp.db'
+        db_engine = SQLITE_ENGINE
 
         p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3)
 
@@ -198,7 +199,7 @@ class Pheno2SQLTest(unittest.TestCase):
     def test_postgresql_less_columns_per_table(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example01.csv')
-        db_engine = 'postgresql://test:test@localhost:5432/ukb'
+        db_engine = POSTGRESQL_ENGINE
 
         p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3)
 
@@ -266,7 +267,7 @@ class Pheno2SQLTest(unittest.TestCase):
     def test_custom_tmpdir(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example01.csv')
-        db_engine = 'postgresql://test:test@localhost:5432/ukb'
+        db_engine = POSTGRESQL_ENGINE
 
         with Pheno2SQL(csv_file, db_engine, tmpdir='/tmp/custom/directory/here') as p2sql:
             # Run
@@ -297,7 +298,7 @@ class Pheno2SQLTest(unittest.TestCase):
     def test_sqlite_auxiliary_table_is_created(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example01.csv')
-        db_engine = 'sqlite:///tmp.db'
+        db_engine = SQLITE_ENGINE
 
         p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3)
 
@@ -359,7 +360,7 @@ class Pheno2SQLTest(unittest.TestCase):
     def test_postgresql_auxiliary_table_is_created(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example01.csv')
-        db_engine = 'postgresql://test:test@localhost:5432/ukb'
+        db_engine = POSTGRESQL_ENGINE
 
         p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3)
 
@@ -421,7 +422,7 @@ class Pheno2SQLTest(unittest.TestCase):
     def test_sqlite_query_single_table(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example02.csv')
-        db_engine = 'sqlite:///tmp.db'
+        db_engine = SQLITE_ENGINE
 
         p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=999999)
         p2sql.load_data()
@@ -461,7 +462,7 @@ class Pheno2SQLTest(unittest.TestCase):
     def test_postgresql_query_single_table(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example02.csv')
-        db_engine = 'postgresql://test:test@localhost:5432/ukb'
+        db_engine = POSTGRESQL_ENGINE
 
         p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=999999)
         p2sql.load_data()
@@ -501,7 +502,7 @@ class Pheno2SQLTest(unittest.TestCase):
     def test_sqlite_query_multiple_tables(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example02.csv')
-        db_engine = 'sqlite:///tmp.db'
+        db_engine = SQLITE_ENGINE
 
         p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=2)
         p2sql.load_data()
@@ -541,7 +542,7 @@ class Pheno2SQLTest(unittest.TestCase):
     def test_postgresql_query_multiple_tables(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example02.csv')
-        db_engine = 'postgresql://test:test@localhost:5432/ukb'
+        db_engine = POSTGRESQL_ENGINE
 
         p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=2)
         p2sql.load_data()
@@ -586,7 +587,7 @@ class Pheno2SQLTest(unittest.TestCase):
     def test_postgresql_query_custom_columns(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example02.csv')
-        db_engine = 'postgresql://test:test@localhost:5432/ukb'
+        db_engine = POSTGRESQL_ENGINE
 
         p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=2)
         p2sql.load_data()
@@ -631,7 +632,7 @@ class Pheno2SQLTest(unittest.TestCase):
     def test_sqlite_query_single_filter(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example02.csv')
-        db_engine = 'sqlite:///tmp.db'
+        db_engine = SQLITE_ENGINE
 
         p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=2)
         p2sql.load_data()
@@ -666,7 +667,7 @@ class Pheno2SQLTest(unittest.TestCase):
     def test_postgresql_query_single_filter(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example02.csv')
-        db_engine = 'postgresql://test:test@localhost:5432/ukb'
+        db_engine = POSTGRESQL_ENGINE
 
         p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=2)
         p2sql.load_data()
@@ -701,7 +702,7 @@ class Pheno2SQLTest(unittest.TestCase):
     def test_sqlite_query_multiple_and_filter(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example02.csv')
-        db_engine = 'sqlite:///tmp.db'
+        db_engine = SQLITE_ENGINE
 
         p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=2)
         p2sql.load_data()
@@ -736,7 +737,7 @@ class Pheno2SQLTest(unittest.TestCase):
     def test_postgresql_query_multiple_and_filter(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example02.csv')
-        db_engine = 'postgresql://test:test@localhost:5432/ukb'
+        db_engine = POSTGRESQL_ENGINE
 
         p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=2)
         p2sql.load_data()
@@ -774,7 +775,7 @@ class Pheno2SQLTest(unittest.TestCase):
     def test_sqlite_float_is_empty(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example03.csv')
-        db_engine = 'sqlite:///tmp.db'
+        db_engine = SQLITE_ENGINE
 
         p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, n_jobs=1)
 
@@ -828,7 +829,7 @@ class Pheno2SQLTest(unittest.TestCase):
     def test_postgresql_float_is_empty(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example03.csv')
-        db_engine = 'postgresql://test:test@localhost:5432/ukb'
+        db_engine = POSTGRESQL_ENGINE
 
         p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, n_jobs=1)
 
