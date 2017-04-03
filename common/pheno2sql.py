@@ -124,10 +124,13 @@ class Pheno2SQL:
         # FIXME: check if self.n_columns_per_table is greater than the real number of columns
         self.chunked_column_names = tuple(enumerate(self._chunker(all_columns, self.n_columns_per_table)))
 
-        self._original_column_and_dtypes, date_columns = self._get_columns_dtypes(self.ukb_csv)
+        self._original_column_and_dtypes, self._original_date_columns = self._get_columns_dtypes(self.ukb_csv)
         self.columns_and_dtypes = {self._rename_columns(k): v for k, v in self._original_column_and_dtypes.items()}
+        # FIXME: this is kind of duplicating code before
+        self._date_columns = [self._rename_columns(col) for col in self._original_date_columns]
 
-        data_sample = pd.read_csv(self.ukb_csv, index_col=0, header=0, nrows=1, dtype=self._original_column_and_dtypes, parse_dates=date_columns)
+        data_sample = pd.read_csv(self.ukb_csv, index_col=0, header=0, nrows=1, dtype=self._original_column_and_dtypes,
+                                  parse_dates=self._original_date_columns)
         data_sample = data_sample.rename(columns=self._rename_columns)
 
         engine = create_engine(self.db_engine)
@@ -153,15 +156,21 @@ class Pheno2SQL:
             aux_table.to_sql('fields', engine, if_exists=fields_table_if_exist[column_names_idx])
 
     def _replace_null_str(self, chunk):
-        col_spec = {self._rename_columns(col_name): {np.nan: ''} for col_name, col_type in self._original_column_and_dtypes.items() if col_type == 'str'}
-        return chunk.replace(col_spec)
+        col_spec_str = {self._rename_columns(col_name): {np.nan: ''}
+                        for col_name, col_type in self._original_column_and_dtypes.items()
+                        if col_type == 'str' and not col_name in self._original_date_columns}
+        # col_spec_date = {col_name: {'': np.nan} for col_name in self._date_columns}
+        # col_spec_str.update(col_spec_date)
+
+        return chunk.replace(col_spec_str)
 
     def _save_column_range(self, column_names_idx, column_names):
         table_name = self._get_table_name(column_names_idx)
         output_csv_filename = os.path.join(self._get_tmpdir(self.tmpdir), table_name + '.csv')
         full_column_names = ['eid'] + [x[0] for x in column_names]
         data_reader = pd.read_csv(self.ukb_csv, index_col=0, header=0, usecols=full_column_names,
-                                  chunksize=self.chunksize, dtype=self._original_column_and_dtypes)
+                                  chunksize=self.chunksize, dtype=self._original_column_and_dtypes,
+                                  parse_dates=[col for col in self._original_date_columns if col in full_column_names])
 
         new_columns = [x[1] for x in column_names]
 
@@ -176,9 +185,9 @@ class Pheno2SQL:
             chunk = self._replace_null_str(chunk)
 
             if chunk_idx == 0:
-                chunk.loc[:, new_columns].to_csv(output_csv_filename, quoting=csv.QUOTE_ALL, na_rep=np.nan, header=write_headers, mode='w')
+                chunk.loc[:, new_columns].to_csv(output_csv_filename, quoting=csv.QUOTE_NONNUMERIC, na_rep=np.nan, header=write_headers, mode='w')
             else:
-                chunk.loc[:, new_columns].to_csv(output_csv_filename, quoting=csv.QUOTE_ALL, na_rep=np.nan, header=False, mode='a')
+                chunk.loc[:, new_columns].to_csv(output_csv_filename, quoting=csv.QUOTE_NONNUMERIC, na_rep=np.nan, header=False, mode='a')
 
         return table_name, output_csv_filename
 
