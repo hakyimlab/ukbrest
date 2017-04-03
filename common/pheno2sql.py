@@ -67,15 +67,15 @@ class Pheno2SQL:
         :return:
         """
 
-        print('  Getting field data types', flush=True)
+        print('    Getting field data types', flush=True)
 
         filename = os.path.splitext(ukbcsv_file)[0] + '.html'
 
-        print('    Reading file {}'.format(filename), flush=True)
+        print('      Reading data types from {}'.format(filename), flush=True)
         with open(filename, 'r', encoding='latin1') as f:
             tmp = pd.read_html(f, match='UDI', header=0, index_col=1, flavor='html5lib')
 
-        print('    Filling NaN values', flush=True)
+        print('      Filling NaN values', flush=True)
         df = tmp[0].loc[:, 'Type']
         df = df.fillna(method='ffill')
         del tmp
@@ -88,7 +88,7 @@ class Pheno2SQL:
         columns = csv_df.columns.tolist()
         del csv_df
 
-        print('    Reading columns', flush=True)
+        print('      Reading columns', flush=True)
         for col in columns:
             col_type = df[col]
             final_col_type = 'str'
