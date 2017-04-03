@@ -57,6 +57,7 @@ if __name__ == '__main__':
     parser.add_argument('--host', dest='host', type=ip_address, required=False, help='Host', default=ip_address('127.0.0.1'))
     parser.add_argument('--port', dest='port', type=int, required=False, help='Port', default=5000)
     parser.add_argument('--debug', dest='debug', action='store_true')
+    parser.add_argument('--load_db', dest='load_db', action='store_true')
 
     args = parser.parse_args()
 
@@ -68,7 +69,8 @@ if __name__ == '__main__':
     csv_file = args.phenotype_csv
     db_engine = args.db_uri
     p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=1500, tmpdir=args.tmp_dir)
-    p2sql.load_data()
+    if args.load_db:
+        p2sql.load_data()
 
     app.config.update({'pheno2sql': p2sql})
 
