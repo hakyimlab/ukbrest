@@ -23,7 +23,7 @@ def output_phenotype(data, code, headers=None):
     data = data.loc[:, columns_reordered]
 
     f = tempfile.TemporaryFile(mode='r+')
-    data.to_csv(f, sep='\t')
+    data.to_csv(f, sep='\t', na_rep='NA')
     f.seek(0)
 
     resp = Response(generate(f), code)

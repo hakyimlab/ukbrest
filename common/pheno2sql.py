@@ -182,7 +182,7 @@ class Pheno2SQL:
 
         for chunk_idx, chunk in enumerate(data_reader):
             chunk = chunk.rename(columns=self._rename_columns)
-            chunk = self._replace_null_str(chunk)
+            # chunk = self._replace_null_str(chunk)
 
             if chunk_idx == 0:
                 chunk.loc[:, new_columns].to_csv(output_csv_filename, quoting=csv.QUOTE_NONNUMERIC, na_rep=np.nan, header=write_headers, mode='w')
@@ -215,6 +215,19 @@ class Pheno2SQL:
 
             if p.returncode != 0:
                 raise Exception(stdout_data + b'\n' + stderr_data)
+
+            # For each column, set NULL rows with empty strings
+            # FIXME: this codes needs refactoring
+            for col_name in self.columns_and_dtypes.keys():
+                statement = (
+                    'update {table_name} set {col_name} = null where {col_name} == "nan"'
+                ).format(**locals())
+
+                p = Popen(['sqlite3', self.db_file], stdout=PIPE, stdin=PIPE, stderr=PIPE)
+                stdout_data, stderr_data = p.communicate(input=str.encode(statement))
+
+                if p.returncode != 0:
+                    raise Exception(stdout_data + b'\n' + stderr_data)
 
         elif self.db_type == 'postgresql':
             statement = (

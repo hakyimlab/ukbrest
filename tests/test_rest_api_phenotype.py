@@ -10,9 +10,13 @@ from tests.settings import POSTGRESQL_ENGINE
 
 
 class TestRestApiPhenotype(unittest.TestCase):
-    def setUp(self):
+    def setUp(self, filename=None):
         # Load data
-        csv_file = get_repository_path('pheno2sql/example02.csv')
+        if filename is None:
+            csv_file = get_repository_path('pheno2sql/example02.csv')
+        else:
+            csv_file = get_repository_path(filename)
+
         db_engine = POSTGRESQL_ENGINE
 
         p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=2)
@@ -148,6 +152,98 @@ class TestRestApiPhenotype(unittest.TestCase):
         assert pheno_file.loc[1, 'c48_0_0'] == '2011-08-14'
         assert pheno_file.loc[2, 'c48_0_0'] == '2016-11-30'
         assert pheno_file.loc[3, 'c48_0_0'] == '2010-01-01'
+        assert pheno_file.loc[4, 'c48_0_0'] == '2011-02-15'
+
+    def test_phenotype_query_format_pheno_missing_data(self):
+        # Prepare
+        columns = ['c21_0_0', 'c21_1_0', 'c48_0_0']
+
+        parameters = {
+            'columns': columns,
+        }
+
+        # Run
+        response = self.app.get('/ukbrest/api/v1.0/phenotype',
+                                query_string=parameters, headers={'accept': 'text/phenotype'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        # na_values='' is necessary to not overwrite NA strings here
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t',
+                                 na_values='', keep_default_na=False, index_col='FID')
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (4, 3 + 1) # plus IID
+
+        assert pheno_file.index.name == 'FID'
+        assert len(pheno_file.index) == 4
+        assert all(x in pheno_file.index for x in range(1, 4 + 1))
+
+        expected_columns = ['IID'] + columns
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[1, 'IID'] == 1
+        assert pheno_file.loc[2, 'IID'] == 2
+        assert pheno_file.loc[3, 'IID'] == 3
+        assert pheno_file.loc[4, 'IID'] == 4
+
+        assert pheno_file.loc[1, 'c21_0_0'] == 'Option number 1'
+        assert pheno_file.loc[2, 'c21_0_0'] == 'Option number 2'
+        assert pheno_file.loc[3, 'c21_0_0'] == 'Option number 3'
+        assert pheno_file.loc[4, 'c21_0_0'] == 'Option number 4'
+
+        assert pheno_file.loc[1, 'c21_1_0'] == 'No response'
+        assert pheno_file.loc[2, 'c21_1_0'] == 'NA'
+        assert pheno_file.loc[3, 'c21_1_0'] == 'Of course'
+        assert pheno_file.loc[4, 'c21_1_0'] == 'I don\'t know'
+
+        assert pheno_file.loc[1, 'c48_0_0'] == '2011-08-14'
+        assert pheno_file.loc[2, 'c48_0_0'] == '2016-11-30'
+        assert pheno_file.loc[3, 'c48_0_0'] == '2010-01-01'
+        assert pheno_file.loc[4, 'c48_0_0'] == '2011-02-15'
+
+    def test_phenotype_query_format_pheno_missing_date(self):
+        # Prepare
+        self.setUp('pheno2sql/example05_missing_date.csv')
+
+        columns = ['c21_0_0', 'c21_1_0', 'c48_0_0']
+
+        parameters = {
+            'columns': columns,
+        }
+
+        # Run
+        response = self.app.get('/ukbrest/api/v1.0/phenotype',
+                                query_string=parameters, headers={'accept': 'text/phenotype'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        # na_values='' is necessary to not overwrite NA strings here
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t',
+                                 na_values='', keep_default_na=False, index_col='FID')
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (4, 3 + 1) # plus IID
+
+        assert pheno_file.index.name == 'FID'
+        assert len(pheno_file.index) == 4
+        assert all(x in pheno_file.index for x in range(1, 4 + 1))
+
+        expected_columns = ['IID'] + columns
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[1, 'IID'] == 1
+        assert pheno_file.loc[2, 'IID'] == 2
+        assert pheno_file.loc[3, 'IID'] == 3
+        assert pheno_file.loc[4, 'IID'] == 4
+
+        assert pheno_file.loc[1, 'c48_0_0'] == '2011-08-14'
+        assert pheno_file.loc[2, 'c48_0_0'] == '2016-11-30'
+        assert pheno_file.loc[3, 'c48_0_0'] == 'NA'
         assert pheno_file.loc[4, 'c48_0_0'] == '2011-02-15'
 
     def test_phenotype_query_multiple_column_no_format(self):

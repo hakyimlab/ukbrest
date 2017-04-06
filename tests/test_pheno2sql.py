@@ -48,7 +48,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert tmp.loc[1, 'c47_0_0'].round(5) == 45.55412
         assert tmp.loc[1, 'c48_0_0'] == '2011-08-14'
         assert tmp.loc[2, 'c21_0_0'] == 'Option number 2'
-        assert tmp.loc[2, 'c21_1_0'] == ''
+        assert pd.isnull(tmp.loc[2, 'c21_1_0'])
         assert tmp.loc[2, 'c21_2_0'] == 'No'
         assert tmp.loc[2, 'c31_0_0'] == '2015-12-30'
         assert tmp.loc[2, 'c34_0_0'] == 12
@@ -92,7 +92,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert tmp.loc[1, 'c47_0_0'].round(5) == 45.55412
         assert tmp.loc[1, 'c48_0_0'].strftime('%Y-%m-%d') == '2011-08-14'
         assert tmp.loc[2, 'c21_0_0'] == 'Option number 2'
-        assert tmp.loc[2, 'c21_1_0'] == ''
+        assert pd.isnull(tmp.loc[2, 'c21_1_0'])
         assert tmp.loc[2, 'c21_2_0'] == 'No'
         assert tmp.loc[2, 'c31_0_0'].strftime('%Y-%m-%d') == '2015-12-30'
         assert tmp.loc[2, 'c34_0_0'] == 12
@@ -175,7 +175,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert tmp.loc[1, 'c21_1_0'] == 'No response'
         assert tmp.loc[1, 'c21_2_0'] == 'Yes'
         assert tmp.loc[2, 'c21_0_0'] == 'Option number 2'
-        assert tmp.loc[2, 'c21_1_0'] == ''
+        assert pd.isnull(tmp.loc[2, 'c21_1_0'])
         assert tmp.loc[2, 'c21_2_0'] == 'No'
 
         tmp = pd.read_sql('select * from ukb_pheno_01', create_engine(db_engine), index_col='eid')
@@ -243,7 +243,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert tmp.loc[1, 'c21_1_0'] == 'No response'
         assert tmp.loc[1, 'c21_2_0'] == 'Yes'
         assert tmp.loc[2, 'c21_0_0'] == 'Option number 2'
-        assert tmp.loc[2, 'c21_1_0'] == ''
+        assert pd.isnull(tmp.loc[2, 'c21_1_0'])
         assert tmp.loc[2, 'c21_2_0'] == 'No'
 
         tmp = pd.read_sql('select * from ukb_pheno_01', create_engine(db_engine), index_col='eid')
@@ -452,7 +452,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert query_result.loc[1, 'c21_2_0'] == 'Yes'
         assert query_result.loc[2, 'c21_2_0'] == 'No'
         assert query_result.loc[3, 'c21_2_0'] == 'Maybe'
-        assert query_result.loc[4, 'c21_2_0'] == ''
+        assert pd.isnull(query_result.loc[4, 'c21_2_0'])
 
         assert query_result.loc[1, 'c48_0_0'] == '2011-08-14'
         assert query_result.loc[2, 'c48_0_0'] == '2016-11-30'
@@ -492,7 +492,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert query_result.loc[1, 'c21_2_0'] == 'Yes'
         assert query_result.loc[2, 'c21_2_0'] == 'No'
         assert query_result.loc[3, 'c21_2_0'] == 'Maybe'
-        assert query_result.loc[4, 'c21_2_0'] == ''
+        assert pd.isnull(query_result.loc[4, 'c21_2_0'])
 
         assert query_result.loc[1, 'c48_0_0'].strftime('%Y-%m-%d') == '2011-08-14'
         assert query_result.loc[2, 'c48_0_0'].strftime('%Y-%m-%d') == '2016-11-30'
@@ -532,7 +532,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert query_result.loc[1, 'c21_2_0'] == 'Yes'
         assert query_result.loc[2, 'c21_2_0'] == 'No'
         assert query_result.loc[3, 'c21_2_0'] == 'Maybe'
-        assert query_result.loc[4, 'c21_2_0'] == ''
+        assert pd.isnull(query_result.loc[4, 'c21_2_0'])
 
         assert query_result.loc[1, 'c48_0_0'] == '2011-08-14'
         assert query_result.loc[2, 'c48_0_0'] == '2016-11-30'
@@ -572,7 +572,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert query_result.loc[1, 'c21_2_0'] == 'Yes'
         assert query_result.loc[2, 'c21_2_0'] == 'No'
         assert query_result.loc[3, 'c21_2_0'] == 'Maybe'
-        assert query_result.loc[4, 'c21_2_0'] == ''
+        assert pd.isnull(query_result.loc[4, 'c21_2_0'])
 
         assert query_result.loc[1, 'c48_0_0'].strftime('%Y-%m-%d') == '2011-08-14'
         assert query_result.loc[2, 'c48_0_0'].strftime('%Y-%m-%d') == '2016-11-30'
@@ -617,7 +617,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert query_result.loc[1, 'c21_2_0'] == 'Yes'
         assert query_result.loc[2, 'c21_2_0'] == 'No'
         assert query_result.loc[3, 'c21_2_0'] == 'Maybe'
-        assert query_result.loc[4, 'c21_2_0'] == ''
+        assert pd.isnull(query_result.loc[4, 'c21_2_0'])
 
         assert query_result.loc[1, 'c47_0_0'].round(5) == 45.55412
         assert query_result.loc[2, 'c47_0_0'].round(5) == -0.55461
@@ -659,7 +659,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert query_result.loc[4, 'c21_0_0'] == 'Option number 4'
 
         assert query_result.loc[1, 'c21_2_0'] == 'Yes'
-        assert query_result.loc[4, 'c21_2_0'] == ''
+        assert pd.isnull(query_result.loc[4, 'c21_2_0'])
 
         assert query_result.loc[1, 'c47_0_0'].round(5) == 45.55412
         assert query_result.loc[4, 'c47_0_0'].round(5) == 55.19832
@@ -694,7 +694,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert query_result.loc[4, 'c21_0_0'] == 'Option number 4'
 
         assert query_result.loc[1, 'c21_2_0'] == 'Yes'
-        assert query_result.loc[4, 'c21_2_0'] == ''
+        assert pd.isnull(query_result.loc[4, 'c21_2_0'])
 
         assert query_result.loc[1, 'c47_0_0'].round(5) == 45.55412
         assert query_result.loc[4, 'c47_0_0'].round(5) == 55.19832
@@ -793,13 +793,12 @@ class Pheno2SQLTest(unittest.TestCase):
         assert tmp.loc[1, 'c21_1_0'] == 'No response'
         assert tmp.loc[1, 'c21_2_0'] == 'Yes'
         assert tmp.loc[2, 'c21_0_0'] == 'Option number 2'
-        assert tmp.loc[2, 'c21_1_0'] == ''
+        assert pd.isnull(tmp.loc[2, 'c21_1_0'])
         assert tmp.loc[2, 'c21_2_0'] == 'No'
         assert tmp.loc[3, 'c21_0_0'] == 'Option number 3'
         assert tmp.loc[3, 'c21_1_0'] == 'Of course'
         assert tmp.loc[3, 'c21_2_0'] == 'Maybe'
-        assert tmp.loc[4, 'c21_2_0'] == ''
-
+        assert pd.isnull(tmp.loc[4, 'c21_2_0'])
 
         tmp = pd.read_sql('select * from ukb_pheno_01', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
@@ -822,8 +821,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert tmp.loc[1, 'c48_0_0'] == '2011-08-14'
         assert tmp.loc[2, 'c47_0_0'] == -0.55461
         assert tmp.loc[2, 'c48_0_0'] == '2016-11-30'
-        # FIXME: support for NULL values in SQLite is limited
-        assert tmp.loc[3, 'c47_0_0'] == 'nan'
+        assert pd.isnull(tmp.loc[3, 'c47_0_0'])
         assert tmp.loc[3, 'c48_0_0'] == '2010-01-01'
 
     def test_postgresql_float_is_empty(self):
@@ -847,12 +845,12 @@ class Pheno2SQLTest(unittest.TestCase):
         assert tmp.loc[1, 'c21_1_0'] == 'No response'
         assert tmp.loc[1, 'c21_2_0'] == 'Yes'
         assert tmp.loc[2, 'c21_0_0'] == 'Option number 2'
-        assert tmp.loc[2, 'c21_1_0'] == ''
+        assert pd.isnull(tmp.loc[2, 'c21_1_0'])
         assert tmp.loc[2, 'c21_2_0'] == 'No'
         assert tmp.loc[3, 'c21_0_0'] == 'Option number 3'
         assert tmp.loc[3, 'c21_1_0'] == 'Of course'
         assert tmp.loc[3, 'c21_2_0'] == 'Maybe'
-        assert tmp.loc[4, 'c21_2_0'] == ''
+        assert pd.isnull(tmp.loc[4, 'c21_2_0'])
 
 
         tmp = pd.read_sql('select * from ukb_pheno_01', create_engine(db_engine), index_col='eid')
@@ -899,13 +897,12 @@ class Pheno2SQLTest(unittest.TestCase):
         assert tmp.loc[1, 'c21_1_0'] == 'No response'
         assert tmp.loc[1, 'c21_2_0'] == 'Yes'
         assert tmp.loc[2, 'c21_0_0'] == 'Option number 2'
-        assert tmp.loc[2, 'c21_1_0'] == ''
+        assert pd.isnull(tmp.loc[2, 'c21_1_0'])
         assert tmp.loc[2, 'c21_2_0'] == 'No'
         assert tmp.loc[3, 'c21_0_0'] == 'Option number 3'
         assert tmp.loc[3, 'c21_1_0'] == 'Of course'
         assert tmp.loc[3, 'c21_2_0'] == 'Maybe'
-        assert tmp.loc[4, 'c21_2_0'] == ''
-
+        assert pd.isnull(tmp.loc[4, 'c21_2_0'])
 
         tmp = pd.read_sql('select * from ukb_pheno_01', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
