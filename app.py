@@ -1,15 +1,14 @@
-from os.path import isdir
 import tempfile
+from os.path import isdir
 
 from flask import Flask
 from flask_restful import Api
+from resources.genotype import GenotypeApiObject
+from resources.phenotype import PhenotypeFieldsAPI, PhenotypeAPI, PhenotypeApiObject
 
 from common.genoquery import GenoQuery
 from common.pheno2sql import Pheno2SQL
-from ukbrest.resources.genotype_apis import GenotypeApiObject
-from ukbrest.resources.phenotype_apis import PhenotypeApiObject
-from ukbrest.resources.genotype import GenotypePositionsAPI, GenotypeRsidsAPI
-from ukbrest.resources.phenotype import PhenotypeFieldsAPI, PhenotypeAPI
+from resources.genotype import GenotypePositionsAPI, GenotypeRsidsAPI
 
 app = Flask(__name__)
 

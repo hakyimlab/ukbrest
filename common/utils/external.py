@@ -3,7 +3,7 @@ from subprocess import call
 
 import pandas as pd
 
-from utils.datagen import get_temp_file_name
+from common.utils.datagen import get_temp_file_name
 
 
 def qctool(bgen_file, debug=False):

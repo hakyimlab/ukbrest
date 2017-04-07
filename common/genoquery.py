@@ -1,8 +1,8 @@
-from os.path import join
 from os import devnull
+from os.path import join
 from subprocess import run
 
-from utils.datagen import get_temp_file_name
+from common.utils.datagen import get_temp_file_name
 
 
 class GenoQuery:

@@ -1,13 +1,13 @@
 import io
 import shutil
-import tempfile
 import unittest
+
+from common.utils.external import qctool
 
 import app
 from common.genoquery import GenoQuery
+from common.utils.datagen import get_temp_file_name
 from tests.utils import get_repository_path
-from utils.datagen import get_temp_file_name
-from utils.external import qctool
 
 
 class TestRestApiGenotype(unittest.TestCase):
