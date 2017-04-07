@@ -2,12 +2,12 @@ import io
 import shutil
 import unittest
 
-from common.utils.external import qctool
+from ukbrest import app
+from ukbrest.common.genoquery import GenoQuery
+from ukbrest.common.utils.external import qctool
 
-import app
-from common.genoquery import GenoQuery
-from common.utils.datagen import get_temp_file_name
 from tests.utils import get_repository_path
+from ukbrest.common.utils.datagen import get_temp_file_name
 
 
 class TestRestApiGenotype(unittest.TestCase):

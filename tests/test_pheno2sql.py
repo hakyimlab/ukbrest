@@ -1,14 +1,14 @@
-import numpy as np
 import os
 import unittest
-from nose.tools import nottest
 
+import numpy as np
 import pandas as pd
+from nose.tools import nottest
 from sqlalchemy import create_engine
 
-from common.pheno2sql import Pheno2SQL
-from tests.utils import get_repository_path
 from tests.settings import POSTGRESQL_ENGINE, SQLITE_ENGINE
+from tests.utils import get_repository_path
+from ukbrest.common.pheno2sql import Pheno2SQL
 
 
 class Pheno2SQLTest(unittest.TestCase):

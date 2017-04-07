@@ -1,9 +1,10 @@
 import unittest
 from os.path import isfile
 
-from common.genoquery import GenoQuery
-from common.utils.external import qctool
+from ukbrest.common.utils.external import qctool
+
 from tests.utils import get_repository_path
+from ukbrest.common.genoquery import GenoQuery
 
 
 class UKBQueryTest(unittest.TestCase):

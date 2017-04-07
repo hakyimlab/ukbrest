@@ -1,12 +1,13 @@
 import io
 import json
 import unittest
+
+from ukbrest import app
 import pandas as pd
 
-import app
-from tests.utils import get_repository_path
-from common.pheno2sql import Pheno2SQL
 from tests.settings import POSTGRESQL_ENGINE
+from tests.utils import get_repository_path
+from ukbrest.common.pheno2sql import Pheno2SQL
 
 
 class TestRestApiPhenotype(unittest.TestCase):

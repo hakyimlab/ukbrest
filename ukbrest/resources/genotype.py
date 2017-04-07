@@ -4,7 +4,7 @@ import werkzeug
 from flask import current_app as app, Response
 from flask_restful import Resource, reqparse, Api
 
-from common.utils.datagen import get_temp_file_name
+from ukbrest.common.utils.datagen import get_temp_file_name
 
 
 class GenotypePositionsAPI(Resource):
