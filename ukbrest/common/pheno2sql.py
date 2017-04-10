@@ -7,6 +7,8 @@ from sqlalchemy import create_engine
 from subprocess import Popen, PIPE
 from urllib.parse import urlparse
 
+from ukbrest.common.utils.datagen import get_tmpdir
+
 
 class Pheno2SQL:
     def __init__(self, ukb_csv, db_engine, table_prefix='ukb_pheno_', n_columns_per_table=sys.maxsize,
@@ -43,12 +45,6 @@ class Pheno2SQL:
 
     def _get_table_name(self, column_range_index):
         return '{}{:02d}'.format(self.table_prefix, column_range_index)
-
-    def _get_tmpdir(self, tmpdir):
-        if not os.path.isdir(tmpdir):
-            os.makedirs(tmpdir)
-
-        return tmpdir
 
     def _chunker(self, seq, size):
         """
@@ -166,7 +162,7 @@ class Pheno2SQL:
 
     def _save_column_range(self, column_names_idx, column_names):
         table_name = self._get_table_name(column_names_idx)
-        output_csv_filename = os.path.join(self._get_tmpdir(self.tmpdir), table_name + '.csv')
+        output_csv_filename = os.path.join(get_tmpdir(self.tmpdir), table_name + '.csv')
         full_column_names = ['eid'] + [x[0] for x in column_names]
         data_reader = pd.read_csv(self.ukb_csv, index_col=0, header=0, usecols=full_column_names,
                                   chunksize=self.chunksize, dtype=self._original_column_and_dtypes,
@@ -303,7 +299,6 @@ if __name__ == '__main__':
     parser.add_argument('--tmpdir', required=False, type=str, dest='tmpdir', default='/tmp/ukbrest')
     parser.add_argument('--chunksize', required=False, type=int, dest='chunksize', default=20000)
     parser.add_argument('--n_jobs', required=False, type=int, dest='n_jobs', default=-1)
-    # parser.add_argument('--skipdb', dest='skipdb', action='store_true')
 
     args = parser.parse_args()
 

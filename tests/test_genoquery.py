@@ -1,5 +1,7 @@
+import os
 import unittest
-from os.path import isfile
+import shutil
+from os.path import isfile, isdir
 
 from ukbrest.common.utils.external import qctool
 
@@ -484,6 +486,29 @@ class UKBQueryTest(unittest.TestCase):
         assert results.loc[2, 'pos'] == 5925
         assert results.loc[3, 'pos'] == 10447
         assert results.loc[4, 'pos'] == 11226
+
+    def test_query_incl_range_temp_directory(self):
+        # prepare
+        shutil.rmtree('/tmp/ukbrest_different/', ignore_errors=True)
+        genoq = GenoQuery(get_repository_path('example01'), tmpdir='/tmp/ukbrest_different/')
+
+        # run
+        bgen_file = genoq.get_incl_range(chr=1, start=100, stop=276)
+
+        # validate
+        assert bgen_file is not None
+        assert isfile(bgen_file)
+
+        results = qctool(bgen_file)
+
+        assert results is not None
+        assert hasattr(results, 'shape')
+        assert hasattr(results, 'columns')
+        assert results.shape[1] == 6 + 300 * 3
+        assert results.shape[0] == 3
+
+        assert isdir('/tmp/ukbrest_different/')
+        assert len(os.listdir('/tmp/ukbrest_different/')) == 1
 
 # position that does not exist?
 # rsids does not exist?

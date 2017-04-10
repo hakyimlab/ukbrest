@@ -1,15 +1,30 @@
 import tempfile
+from os import makedirs
+from os.path import isdir
 import numpy as np
 import pandas as pd
 
 
-def get_temp_file_name(file_extension=''):
+def get_temp_file_name(file_extension='', tmpdir=None):
     if not file_extension.startswith('.'):
         file_extension = '.' + file_extension
 
-    with tempfile.NamedTemporaryFile(suffix=file_extension, delete=False) as tmpfile:
+    with tempfile.NamedTemporaryFile(suffix=file_extension, delete=False, dir=tmpdir) as tmpfile:
         temp_file_name = tmpfile.name
     return temp_file_name
+
+
+def get_tmpdir(tmpdir):
+    """
+    Ensure that the directory tmpdir exists.
+    :param self: 
+    :param tmpdir: 
+    :return: 
+    """
+    if not isdir(tmpdir):
+        makedirs(tmpdir)
+
+    return tmpdir
 
 
 def generate_random_gen(n_variants, n_samples, chromosome=1, initial_position=100):
