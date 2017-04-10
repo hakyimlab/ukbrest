@@ -1,3 +1,5 @@
+from os import listdir
+from os.path import isdir
 import io
 import shutil
 import unittest
@@ -339,3 +341,32 @@ class TestRestApiGenotype(unittest.TestCase):
         assert results.loc[2, 'pos'] == 5925
         assert results.loc[3, 'pos'] == 10447
         assert results.loc[4, 'pos'] == 11226
+
+    def test_genotype_temp_files_removed_in_server_side(self):
+        # Prepare
+        shutil.rmtree('/tmp/ukbrest2tmp/', ignore_errors=True)
+        genoq = GenoQuery(get_repository_path('example01'), tmpdir='/tmp/ukbrest2tmp/')
+
+        # Configure
+        app.app.config['TESTING'] = True
+        app.app.config['genoquery'] = genoq
+        test_client = app.app.test_client()
+
+        # Run
+        response = test_client.get('/ukbrest/api/v1.0/genotype/1/positions/100/276')
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        bgen_file = self._save_file(response)
+
+        results = qctool(bgen_file)
+
+        assert results is not None
+        assert hasattr(results, 'shape')
+        assert hasattr(results, 'columns')
+        assert results.shape[1] == 6 + 300 * 3
+        assert results.shape[0] == 3
+
+        assert isdir('/tmp/ukbrest2tmp/')
+        assert len(listdir('/tmp/ukbrest2tmp/')) == 0

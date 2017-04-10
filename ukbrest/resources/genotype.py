@@ -1,3 +1,4 @@
+import os
 import json
 
 import werkzeug
@@ -46,20 +47,21 @@ class GenotypeRsidsAPI(Resource):
         return self.genoq.get_incl_rsids(chr, [file])
 
 
-def generate(file_handle):
-    while True:
-        # FIXME: buffer size hardcoded
-        chunk = file_handle.read(8192)
-        if chunk:
-            yield chunk
-        else:
-            break
+def generate(file_path, file_mode='rb', delete=False):
+    with open(file_path, mode=file_mode) as file_handle:
+        chunk = True
+        while chunk:
+            # FIXME: buffer size hardcoded
+            chunk = file_handle.read(8192)
+            if chunk:
+                yield chunk
+
+    if delete:
+        os.remove(file_path)
 
 
 def output_bgen(bgen_filepath, code, headers=None):
-    bgen_file_handle = open(bgen_filepath, mode='rb')
-
-    resp = Response(generate(bgen_file_handle), code)
+    resp = Response(generate(bgen_filepath, delete=True), code)
     resp.headers.extend(headers or {})
     return resp
 
