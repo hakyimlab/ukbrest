@@ -7,7 +7,6 @@ phenotype_csv = environ.get('UKBREST_PHENOTYPE_CSV', None)
 db_uri = environ.get('UKBREST_DB_URI', None)
 n_columns_per_table = environ.get('UKBREST_N_COLUMNS_PER_TABLE', 1500)
 tmp_dir = environ.get('UKBREST_TEMP_DIR', gettempdir())
-load_db = bool(environ.get('UKBREST_LOAD_DB', False))
 debug = bool(environ.get('UKBREST_DEBUG', False))
 
 # Validate parameters
