@@ -1,5 +1,5 @@
 from os.path import devnull
-from subprocess import call
+from subprocess import Popen, PIPE
 
 import pandas as pd
 
@@ -15,7 +15,11 @@ def qctool(bgen_file, debug=False):
         else:
             stderr_file = None
 
-        call(['qctool', '-g', bgen_file, '-og', random_gen_file], stdout=devnull_file, stderr=stderr_file)
+        p = Popen(['qctool', '-g', bgen_file, '-og', random_gen_file], stdout=PIPE, stdin=PIPE, stderr=PIPE)
+        stdout_data, stderr_data = p.communicate()
+
+        if p.returncode != 0:
+            raise Exception(stdout_data + b'\n' + stderr_data)
 
     # read how many columns the file has
     with open(random_gen_file, 'r') as f:
