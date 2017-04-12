@@ -119,6 +119,10 @@ class Pheno2SQL:
         all_columns = tuple(zip(old_columns, new_columns))
         # FIXME: check if self.n_columns_per_table is greater than the real number of columns
         self.chunked_column_names = tuple(enumerate(self._chunker(all_columns, self.n_columns_per_table)))
+        self.chunked_table_column_names = {self._get_table_name(col_idx): [col[1] for col in col_names]
+                                           for col_idx, col_names in self.chunked_column_names}
+        # for col_idx, col_names in self.chunked_column_names:
+        #     self.chunked_table_column_names[self._get_table_name(col_idx)] = [col[1] for col in col_names]
 
         self._original_column_and_dtypes, self._original_date_columns = self._get_columns_dtypes(self.ukb_csv)
         self.columns_and_dtypes = {self._rename_columns(k): v for k, v in self._original_column_and_dtypes.items()}
@@ -214,7 +218,7 @@ class Pheno2SQL:
 
             # For each column, set NULL rows with empty strings
             # FIXME: this codes needs refactoring
-            for col_name in self.columns_and_dtypes.keys():
+            for col_name in self.chunked_table_column_names[table_name]:
                 statement = (
                     'update {table_name} set {col_name} = null where {col_name} == "nan";'
                 ).format(**locals())
