@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/miltondp/ukbrest.svg?branch=master)](https://travis-ci.org/miltondp/ukbrest)
+
 # ukbrest
 
 ## Downloading and running
