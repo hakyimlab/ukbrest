@@ -8,7 +8,8 @@ COPY ukbrest /opt/ukbrest
 ENV PYTHONPATH="/opt"
 
 COPY environment.yml /opt/
-RUN conda env update -n root -f /opt/environment.yml
+RUN conda env update -n root -f /opt/environment.yml \
+  && conda clean --all
 
 # Docker repository for PostgreSQL
 RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
@@ -19,6 +20,26 @@ RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
       postgresql-client-9.6 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
+
+# Compile and install bgenix
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update && apt-get install -y --no-install-recommends \
+    build-essential zlib1g-dev libbz2-dev mercurial \
+  && cd /tmp \
+  && hg clone https://gavinband@bitbucket.org/gavinband/bgen -u master \
+  && cd /tmp/bgen \
+  && export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+  && ./waf-1.8.13 configure \
+  && ./waf-1.8.13 \
+  && ./build/test/test_bgen \
+  && mv build/apps/bgenix /usr/local/bin/ \
+  && mv build/apps/cat-bgen /usr/local/bin/ \
+  && mv build/apps/edit-bgen /usr/local/bin/ \
+  && apt-get remove -y build-essential zlib1g-dev libbz2-dev mercurial \
+  && apt-get autoremove -y \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
+
 
 WORKDIR /opt
 
