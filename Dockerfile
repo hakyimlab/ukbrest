@@ -1,17 +1,12 @@
 FROM continuumio/miniconda3
 MAINTAINER Milton Pividori <miltondp@gmail.com>
 
-ENV UKBREST_GENOTYPE_PATH="/var/lib/genotype"
-ENV UKBREST_PHENOTYPE_PATH="/var/lib/phenotype"
-
-COPY ukbrest /opt/ukbrest
-ENV PYTHONPATH="/opt"
-
+# Setup conda environment
 COPY environment.yml /opt/
 RUN conda env update -n root -f /opt/environment.yml \
   && conda clean --all
 
-# Docker repository for PostgreSQL
+# Docker repository for PostgreSQL, install client programs
 RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
     apt-key add - \
   && echo deb http://apt.postgresql.org/pub/repos/apt/ jessie-pgdg main > /etc/apt/sources.list.d/postgresql.list \
@@ -40,6 +35,12 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
+# Copy ukbrest code
+ENV UKBREST_GENOTYPE_PATH="/var/lib/genotype"
+ENV UKBREST_PHENOTYPE_PATH="/var/lib/phenotype"
+
+COPY ukbrest /opt/ukbrest
+ENV PYTHONPATH="/opt"
 
 WORKDIR /opt
 
