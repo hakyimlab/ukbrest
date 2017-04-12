@@ -216,7 +216,7 @@ class Pheno2SQL:
             # FIXME: this codes needs refactoring
             for col_name in self.columns_and_dtypes.keys():
                 statement = (
-                    'update {table_name} set {col_name} = null where {col_name} == "nan"'
+                    'update {table_name} set {col_name} = null where {col_name} == "nan";'
                 ).format(**locals())
 
                 p = Popen(['sqlite3', self.db_file], stdout=PIPE, stdin=PIPE, stderr=PIPE)
