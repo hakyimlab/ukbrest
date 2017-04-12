@@ -1,4 +1,5 @@
 import tempfile
+import logging
 from os.path import isdir
 
 from ukbrest.common.genoquery import GenoQuery
@@ -44,6 +45,14 @@ phenotype_info_api.add_resource(
     '/ukbrest/api/v1.0/phenotype/fields',
 )
 
+@app.before_first_request
+def setup_logging():
+    if not app.debug:
+        # In production mode, add log handler to sys.stderr.
+        app.logger.addHandler(logging.StreamHandler())
+        app.logger.setLevel(logging.INFO)
+
+
 if __name__ == '__main__':
     from ipaddress import ip_address
     import argparse
@@ -56,7 +65,7 @@ if __name__ == '__main__':
     parser.add_argument('--host', dest='host', type=ip_address, required=False, help='Host', default=ip_address('127.0.0.1'))
     parser.add_argument('--port', dest='port', type=int, required=False, help='Port', default=5000)
     parser.add_argument('--debug', dest='debug', action='store_true')
-    parser.add_argument('--load_db', dest='load_db', action='store_true')
+    parser.add_argument('--load', dest='load_db', action='store_true')
 
     args = parser.parse_args()
 
