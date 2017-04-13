@@ -89,8 +89,10 @@ class Pheno2SQL:
             col_type = df[col]
             final_col_type = 'str'
 
-            if col_type in ('Continuous', 'Integer'):
+            if col_type in ('Continuous'):
                 final_col_type = 'float64'
+            elif col_type in ('Integer'):
+                final_col_type = 'object'
 
             column_types[col] = final_col_type
 
@@ -281,12 +283,14 @@ class Pheno2SQL:
         all_columns = ['eid'] + columns
         all_columns_quoted = ["'{}'".format(x) for x in (all_columns)]
 
+        # FIXME: are parameters correctly escaped by the arg parser?
         tables_needed_df = pd.read_sql(
             'select distinct table_name '
             'from fields '
             'where field in (' + ','.join(all_columns_quoted) + ')',
         engine).loc[:, 'table_name'].tolist()
 
+        # FIXME: are parameters correctly escaped by the arg parser?
         return pd.read_sql(
             'select ' + ','.join(all_columns) +
             ' from ' + self._create_inner_joins(tables_needed_df) +

@@ -43,16 +43,16 @@ class Pheno2SQLTest(unittest.TestCase):
         assert tmp.loc[1, 'c21_1_0'] == 'No response'
         assert tmp.loc[1, 'c21_2_0'] == 'Yes'
         assert tmp.loc[1, 'c31_0_0'] == '2012-01-05'
-        assert tmp.loc[1, 'c34_0_0'] == 21
-        assert tmp.loc[1, 'c46_0_0'] == -9
+        assert int(tmp.loc[1, 'c34_0_0']) == 21
+        assert int(tmp.loc[1, 'c46_0_0']) == -9
         assert tmp.loc[1, 'c47_0_0'].round(5) == 45.55412
         assert tmp.loc[1, 'c48_0_0'] == '2011-08-14'
         assert tmp.loc[2, 'c21_0_0'] == 'Option number 2'
         assert pd.isnull(tmp.loc[2, 'c21_1_0'])
         assert tmp.loc[2, 'c21_2_0'] == 'No'
         assert tmp.loc[2, 'c31_0_0'] == '2015-12-30'
-        assert tmp.loc[2, 'c34_0_0'] == 12
-        assert tmp.loc[2, 'c46_0_0'] == -2
+        assert int(tmp.loc[2, 'c34_0_0']) == 12
+        assert int(tmp.loc[2, 'c46_0_0']) == -2
         assert tmp.loc[2, 'c47_0_0'].round(5) == -0.55461
         assert tmp.loc[2, 'c48_0_0'] == '2010-03-29'
 
@@ -87,16 +87,16 @@ class Pheno2SQLTest(unittest.TestCase):
         assert tmp.loc[1, 'c21_1_0'] == 'No response'
         assert tmp.loc[1, 'c21_2_0'] == 'Yes'
         assert tmp.loc[1, 'c31_0_0'].strftime('%Y-%m-%d') == '2012-01-05'
-        assert tmp.loc[1, 'c34_0_0'] == 21
-        assert tmp.loc[1, 'c46_0_0'] == -9
+        assert int(tmp.loc[1, 'c34_0_0']) == 21
+        assert int(tmp.loc[1, 'c46_0_0']) == -9
         assert tmp.loc[1, 'c47_0_0'].round(5) == 45.55412
         assert tmp.loc[1, 'c48_0_0'].strftime('%Y-%m-%d') == '2011-08-14'
         assert tmp.loc[2, 'c21_0_0'] == 'Option number 2'
         assert pd.isnull(tmp.loc[2, 'c21_1_0'])
         assert tmp.loc[2, 'c21_2_0'] == 'No'
         assert tmp.loc[2, 'c31_0_0'].strftime('%Y-%m-%d') == '2015-12-30'
-        assert tmp.loc[2, 'c34_0_0'] == 12
-        assert tmp.loc[2, 'c46_0_0'] == -2
+        assert int(tmp.loc[2, 'c34_0_0']) == 12
+        assert int(tmp.loc[2, 'c46_0_0']) == -2
         assert tmp.loc[2, 'c47_0_0'].round(5) == -0.55461
         assert tmp.loc[2, 'c48_0_0'].strftime('%Y-%m-%d') == '2010-03-29'
 
@@ -182,11 +182,11 @@ class Pheno2SQLTest(unittest.TestCase):
         assert not tmp.empty
         assert tmp.shape[0] == 2
         assert tmp.loc[1, 'c31_0_0'] == '2012-01-05'
-        assert tmp.loc[1, 'c34_0_0'] == 21
-        assert tmp.loc[1, 'c46_0_0'] == -9
+        assert int(tmp.loc[1, 'c34_0_0']) == 21
+        assert int(tmp.loc[1, 'c46_0_0']) == -9
         assert tmp.loc[2, 'c31_0_0'] == '2015-12-30'
-        assert tmp.loc[2, 'c34_0_0'] == 12
-        assert tmp.loc[2, 'c46_0_0'] == -2
+        assert int(tmp.loc[2, 'c34_0_0']) == 12
+        assert int(tmp.loc[2, 'c46_0_0']) == -2
 
         tmp = pd.read_sql('select * from ukb_pheno_02', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
@@ -250,11 +250,11 @@ class Pheno2SQLTest(unittest.TestCase):
         assert not tmp.empty
         assert tmp.shape[0] == 2
         assert tmp.loc[1, 'c31_0_0'].strftime('%Y-%m-%d') == '2012-01-05'
-        assert tmp.loc[1, 'c34_0_0'] == 21
-        assert tmp.loc[1, 'c46_0_0'] == -9
+        assert int(tmp.loc[1, 'c34_0_0']) == 21
+        assert int(tmp.loc[1, 'c46_0_0']) == -9
         assert tmp.loc[2, 'c31_0_0'].strftime('%Y-%m-%d') == '2015-12-30'
-        assert tmp.loc[2, 'c34_0_0'] == 12
-        assert tmp.loc[2, 'c46_0_0'] == -2
+        assert int(tmp.loc[2, 'c34_0_0']) == 12
+        assert int(tmp.loc[2, 'c46_0_0']) == -2
 
         tmp = pd.read_sql('select * from ukb_pheno_02', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
@@ -804,14 +804,14 @@ class Pheno2SQLTest(unittest.TestCase):
         assert not tmp.empty
         assert tmp.shape[0] == 4
         assert tmp.loc[1, 'c31_0_0'] == '2012-01-05'
-        assert tmp.loc[1, 'c34_0_0'] == 21
-        assert tmp.loc[1, 'c46_0_0'] == -9
+        assert int(tmp.loc[1, 'c34_0_0']) == 21
+        assert int(tmp.loc[1, 'c46_0_0']) == -9
         assert tmp.loc[2, 'c31_0_0'] == '2015-12-30'
-        assert tmp.loc[2, 'c34_0_0'] == 12
-        assert tmp.loc[2, 'c46_0_0'] == -2
+        assert int(tmp.loc[2, 'c34_0_0']) == 12
+        assert int(tmp.loc[2, 'c46_0_0']) == -2
         assert tmp.loc[3, 'c31_0_0'] == '2007-03-19'
-        assert tmp.loc[3, 'c34_0_0'] == 1
-        assert tmp.loc[3, 'c46_0_0'] == -7
+        assert int(tmp.loc[3, 'c34_0_0']) == 1
+        assert int(tmp.loc[3, 'c46_0_0']) == -7
 
         tmp = pd.read_sql('select * from ukb_pheno_02', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
@@ -857,14 +857,14 @@ class Pheno2SQLTest(unittest.TestCase):
         assert not tmp.empty
         assert tmp.shape[0] == 4
         assert tmp.loc[1, 'c31_0_0'].strftime('%Y-%m-%d') == '2012-01-05'
-        assert tmp.loc[1, 'c34_0_0'] == 21
-        assert tmp.loc[1, 'c46_0_0'] == -9
+        assert int(tmp.loc[1, 'c34_0_0']) == 21
+        assert int(tmp.loc[1, 'c46_0_0']) == -9
         assert tmp.loc[2, 'c31_0_0'].strftime('%Y-%m-%d') == '2015-12-30'
-        assert tmp.loc[2, 'c34_0_0'] == 12
-        assert tmp.loc[2, 'c46_0_0'] == -2
+        assert int(tmp.loc[2, 'c34_0_0']) == 12
+        assert int(tmp.loc[2, 'c46_0_0']) == -2
         assert tmp.loc[3, 'c31_0_0'].strftime('%Y-%m-%d') == '2007-03-19'
-        assert tmp.loc[3, 'c34_0_0'] == 1
-        assert tmp.loc[3, 'c46_0_0'] == -7
+        assert int(tmp.loc[3, 'c34_0_0']) == 1
+        assert int(tmp.loc[3, 'c46_0_0']) == -7
 
         tmp = pd.read_sql('select * from ukb_pheno_02', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
@@ -908,14 +908,14 @@ class Pheno2SQLTest(unittest.TestCase):
         assert not tmp.empty
         assert tmp.shape[0] == 4
         assert tmp.loc[1, 'c31_0_0'].strftime('%Y-%m-%d') == '2012-01-05'
-        assert tmp.loc[1, 'c34_0_0'] == 21
-        assert tmp.loc[1, 'c46_0_0'] == -9
+        assert int(tmp.loc[1, 'c34_0_0']) == 21
+        assert int(tmp.loc[1, 'c46_0_0']) == -9
         assert tmp.loc[2, 'c31_0_0'].strftime('%Y-%m-%d') == '2015-12-30'
-        assert tmp.loc[2, 'c34_0_0'] == 12
-        assert tmp.loc[2, 'c46_0_0'] == -2
+        assert int(tmp.loc[2, 'c34_0_0']) == 12
+        assert int(tmp.loc[2, 'c46_0_0']) == -2
         assert tmp.loc[3, 'c31_0_0'].strftime('%Y-%m-%d') == '2007-03-19'
-        assert tmp.loc[3, 'c34_0_0'] == 1
-        assert tmp.loc[3, 'c46_0_0'] == -7
+        assert int(tmp.loc[3, 'c34_0_0']) == 1
+        assert int(tmp.loc[3, 'c46_0_0']) == -7
         assert pd.isnull(tmp.loc[4, 'c31_0_0'])
 
         tmp = pd.read_sql('select * from ukb_pheno_02', create_engine(db_engine), index_col='eid')

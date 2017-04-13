@@ -58,7 +58,7 @@ class TestRestApiPhenotype(unittest.TestCase):
         # Validate
         assert response.status_code == 200, response.status_code
 
-        csv_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), index_col='eid')
+        csv_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), index_col='eid', dtype=str)
         assert csv_file is not None
         assert not csv_file.empty
         assert csv_file.shape == (4, 1)
@@ -90,7 +90,7 @@ class TestRestApiPhenotype(unittest.TestCase):
         # Validate
         assert response.status_code == 200, response.status_code
 
-        csv_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), index_col='eid')
+        csv_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), index_col='eid', dtype=str)
         assert csv_file is not None
         assert not csv_file.empty
         assert csv_file.shape == (4, 2)
@@ -127,7 +127,7 @@ class TestRestApiPhenotype(unittest.TestCase):
         # Validate
         assert response.status_code == 200, response.status_code
 
-        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', index_col='FID')
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', index_col='FID', dtype=str)
         assert pheno_file is not None
         assert not pheno_file.empty
         assert pheno_file.shape == (4, 2 + 1) # plus IID
@@ -140,10 +140,10 @@ class TestRestApiPhenotype(unittest.TestCase):
         assert len(pheno_file.columns) == len(expected_columns)
         assert all(x in expected_columns for x in pheno_file.columns)
 
-        assert pheno_file.loc[1, 'IID'] == 1
-        assert pheno_file.loc[2, 'IID'] == 2
-        assert pheno_file.loc[3, 'IID'] == 3
-        assert pheno_file.loc[4, 'IID'] == 4
+        assert pheno_file.loc[1, 'IID'] == '1'
+        assert pheno_file.loc[2, 'IID'] == '2'
+        assert pheno_file.loc[3, 'IID'] == '3'
+        assert pheno_file.loc[4, 'IID'] == '4'
 
         assert pheno_file.loc[1, 'c21_0_0'] == 'Option number 1'
         assert pheno_file.loc[2, 'c21_0_0'] == 'Option number 2'
@@ -154,6 +154,54 @@ class TestRestApiPhenotype(unittest.TestCase):
         assert pheno_file.loc[2, 'c48_0_0'] == '2016-11-30'
         assert pheno_file.loc[3, 'c48_0_0'] == '2010-01-01'
         assert pheno_file.loc[4, 'c48_0_0'] == '2011-02-15'
+
+    def test_phenotype_query_multiple_column_integer_values(self):
+        # Prepare
+        columns = ['c34_0_0', 'c46_0_0', 'c47_0_0']
+
+        parameters = {
+            'columns': columns,
+        }
+
+        # Run
+        response = self.app.get('/ukbrest/api/v1.0/phenotype',
+                                query_string=parameters, headers={'accept': 'text/phenotype'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', index_col='FID', dtype=str)
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (4, 3 + 1) # plus IID
+
+        assert pheno_file.index.name == 'FID'
+        assert len(pheno_file.index) == 4
+        assert all(x in pheno_file.index for x in range(1, 4 + 1))
+
+        expected_columns = ['IID'] + columns
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[1, 'IID'] == '1'
+        assert pheno_file.loc[2, 'IID'] == '2'
+        assert pheno_file.loc[3, 'IID'] == '3'
+        assert pheno_file.loc[4, 'IID'] == '4'
+
+        assert pheno_file.loc[1, 'c34_0_0'] == '21'
+        assert pheno_file.loc[2, 'c34_0_0'] == '12'
+        assert pheno_file.loc[3, 'c34_0_0'] == '1'
+        assert pheno_file.loc[4, 'c34_0_0'] == '17'
+
+        assert pheno_file.loc[1, 'c46_0_0'] == '-9'
+        assert pheno_file.loc[2, 'c46_0_0'] == '-2'
+        assert pheno_file.loc[3, 'c46_0_0'] == '-7'
+        assert pheno_file.loc[4, 'c46_0_0'] == '4'
+
+        assert pheno_file.loc[1, 'c47_0_0'] == '45.55412'
+        assert pheno_file.loc[2, 'c47_0_0'] == '-0.55461'
+        assert pheno_file.loc[3, 'c47_0_0'] == '-5.32471'
+        assert pheno_file.loc[4, 'c47_0_0'] == '55.19832'
 
     def test_phenotype_query_format_pheno_missing_data(self):
         # Prepare
@@ -172,7 +220,7 @@ class TestRestApiPhenotype(unittest.TestCase):
 
         # na_values='' is necessary to not overwrite NA strings here
         pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t',
-                                 na_values='', keep_default_na=False, index_col='FID')
+                                 na_values='', keep_default_na=False, index_col='FID', dtype=str)
         assert pheno_file is not None
         assert not pheno_file.empty
         assert pheno_file.shape == (4, 3 + 1) # plus IID
@@ -185,10 +233,10 @@ class TestRestApiPhenotype(unittest.TestCase):
         assert len(pheno_file.columns) == len(expected_columns)
         assert all(x in expected_columns for x in pheno_file.columns)
 
-        assert pheno_file.loc[1, 'IID'] == 1
-        assert pheno_file.loc[2, 'IID'] == 2
-        assert pheno_file.loc[3, 'IID'] == 3
-        assert pheno_file.loc[4, 'IID'] == 4
+        assert pheno_file.loc[1, 'IID'] == '1'
+        assert pheno_file.loc[2, 'IID'] == '2'
+        assert pheno_file.loc[3, 'IID'] == '3'
+        assert pheno_file.loc[4, 'IID'] == '4'
 
         assert pheno_file.loc[1, 'c21_0_0'] == 'Option number 1'
         assert pheno_file.loc[2, 'c21_0_0'] == 'Option number 2'
@@ -224,7 +272,7 @@ class TestRestApiPhenotype(unittest.TestCase):
 
         # na_values='' is necessary to not overwrite NA strings here
         pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t',
-                                 na_values='', keep_default_na=False, index_col='FID')
+                                 na_values='', keep_default_na=False, index_col='FID', dtype=str)
         assert pheno_file is not None
         assert not pheno_file.empty
         assert pheno_file.shape == (4, 3 + 1) # plus IID
@@ -237,10 +285,10 @@ class TestRestApiPhenotype(unittest.TestCase):
         assert len(pheno_file.columns) == len(expected_columns)
         assert all(x in expected_columns for x in pheno_file.columns)
 
-        assert pheno_file.loc[1, 'IID'] == 1
-        assert pheno_file.loc[2, 'IID'] == 2
-        assert pheno_file.loc[3, 'IID'] == 3
-        assert pheno_file.loc[4, 'IID'] == 4
+        assert pheno_file.loc[1, 'IID'] == '1'
+        assert pheno_file.loc[2, 'IID'] == '2'
+        assert pheno_file.loc[3, 'IID'] == '3'
+        assert pheno_file.loc[4, 'IID'] == '4'
 
         assert pheno_file.loc[1, 'c48_0_0'] == '2011-08-14'
         assert pheno_file.loc[2, 'c48_0_0'] == '2016-11-30'
@@ -262,7 +310,7 @@ class TestRestApiPhenotype(unittest.TestCase):
         # Validate
         assert response.status_code == 200, response.status_code
 
-        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', index_col='FID')
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', index_col='FID', dtype=str)
         assert pheno_file is not None
         assert not pheno_file.empty
         assert pheno_file.shape == (4, 2 + 1) # plus IID
@@ -277,10 +325,10 @@ class TestRestApiPhenotype(unittest.TestCase):
         # column order
         assert pheno_file.columns.tolist()[0] == 'IID'
 
-        assert pheno_file.loc[1, 'IID'] == 1
-        assert pheno_file.loc[2, 'IID'] == 2
-        assert pheno_file.loc[3, 'IID'] == 3
-        assert pheno_file.loc[4, 'IID'] == 4
+        assert pheno_file.loc[1, 'IID'] == '1'
+        assert pheno_file.loc[2, 'IID'] == '2'
+        assert pheno_file.loc[3, 'IID'] == '3'
+        assert pheno_file.loc[4, 'IID'] == '4'
 
         assert pheno_file.loc[1, 'c21_0_0'] == 'Option number 1'
         assert pheno_file.loc[2, 'c21_0_0'] == 'Option number 2'
@@ -336,7 +384,7 @@ class TestRestApiPhenotype(unittest.TestCase):
         # Validate
         assert response.status_code == 200, response.status_code
 
-        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', index_col='FID')
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', index_col='FID', dtype=str)
         assert pheno_file is not None
         assert not pheno_file.empty
         assert pheno_file.shape[0] == 2
@@ -352,8 +400,8 @@ class TestRestApiPhenotype(unittest.TestCase):
         # column order
         assert pheno_file.columns.tolist()[0] == 'IID'
 
-        assert pheno_file.loc[1, 'IID'] == 1
-        assert pheno_file.loc[2, 'IID'] == 2
+        assert pheno_file.loc[1, 'IID'] == '1'
+        assert pheno_file.loc[2, 'IID'] == '2'
 
         assert pheno_file.loc[1, 'c21_0_0'] == 'Option number 1'
         assert pheno_file.loc[2, 'c21_0_0'] == 'Option number 2'
@@ -361,8 +409,8 @@ class TestRestApiPhenotype(unittest.TestCase):
         assert pheno_file.loc[1, 'c21_2_0'] == 'Yes'
         assert pheno_file.loc[2, 'c21_2_0'] == 'No'
 
-        assert pheno_file.loc[1, 'c47_0_0'].round(5) == 45.55412
-        assert pheno_file.loc[2, 'c47_0_0'].round(5) == -0.55461
+        assert pheno_file.loc[1, 'c47_0_0'] == '45.55412'
+        assert pheno_file.loc[2, 'c47_0_0'] == '-0.55461'
 
         assert pheno_file.loc[1, 'c48_0_0'] == '2011-08-14'
         assert pheno_file.loc[2, 'c48_0_0'] == '2016-11-30'
