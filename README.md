@@ -4,8 +4,7 @@
 # ukbrest
 
 ## Downloading and running
-The easiest way to get ukbrest up and running is using Docker. The instructions below are just to get things working
-quickly. You should read the Docker documentation if you want to, for example, keep data saved across different runs.
+The easiest way to get ukbrest up and running is using Docker. The instructions below are just to get things working quickly. You should read the Docker documentation if you want to, for example, keep data saved across different runs.
 
 The first thing you have to do is creating a virtual network and getting PostgreSQL up:
 
@@ -26,10 +25,7 @@ $ docker run --rm --net ukb \
   miltondp/ukbrest --load
 ```
 
-The third step consists in indexing your genotype data. You have to use the
-[bgenix](https://bitbucket.org/gavinband/bgen/wiki/bgenix) indexer to generate a `.bgi` file
-for each `.bgen` file (for each chromosome). This feature will be added soon to ukbrest, so you don't have to
-download and compile bgenix.
+The third step consists in indexing your genotype data. You have to use the [bgenix](https://bitbucket.org/gavinband/bgen/wiki/bgenix) indexer to generate a `.bgi` file for each `.bgen` file (for each chromosome). This feature will be added soon to ukbrest, so you don't have to download and compile bgenix.
 
 Finally, run ukbrest with:
 
@@ -40,8 +36,7 @@ $ docker run --rm --net ukb -p 5000:5000 \
   miltondp/ukbrest
 ```
 
-Make sure the directory `/mnt/genotype` (you can choose another one) has you genotype data (chr21impv1.bgen,
-chr21impv1.bgen.bgi, etc).
+Make sure the directory `/mnt/genotype` (you can choose another one) has you genotype data (chr21impv1.bgen, chr21impv1.bgen.bgi, etc).
 
 
 ## Querying genotype data
