@@ -12,7 +12,7 @@ The first thing you have to do is creating a virtual network and getting Postgre
 ```bash
 $ docker network create ukb
 
-$ docker run --rm --name pg --net ukb -e POSTGRES_USER=test \
+$ docker run -d --name pg --net ukb -e POSTGRES_USER=test \
   -e POSTGRES_PASSWORD=test -e POSTGRES_DB=ukb -p 5432:5432 \
   postgres:9.6
 ```
