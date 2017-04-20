@@ -1,5 +1,6 @@
 import os, sys
 import csv
+import json
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
@@ -92,7 +93,7 @@ class Pheno2SQL:
             if col_type in ('Continuous'):
                 final_col_type = 'float64'
             elif col_type in ('Integer'):
-                final_col_type = 'object'
+                final_col_type = 'int'
 
             column_types[col] = final_col_type
 
@@ -281,7 +282,7 @@ class Pheno2SQL:
 
         # select needed tables to join
         all_columns = ['eid'] + columns
-        all_columns_quoted = ["'{}'".format(x) for x in (all_columns)]
+        all_columns_quoted = ["'{}'".format(x.replace("'", "''")) for x in all_columns]
 
         # FIXME: are parameters correctly escaped by the arg parser?
         tables_needed_df = pd.read_sql(
