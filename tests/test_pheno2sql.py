@@ -927,3 +927,31 @@ class Pheno2SQLTest(unittest.TestCase):
         assert pd.isnull(tmp.loc[2, 'c48_0_0'])
         assert tmp.loc[3, 'c47_0_0'].round(5) == -5.32471
         assert tmp.loc[3, 'c48_0_0'].strftime('%Y-%m-%d') == '2010-01-01'
+
+    def test_postgresql_integer_is_nan(self):
+        # Prepare
+        csv_file = get_repository_path('pheno2sql/example06_nan_integer.csv')
+        db_engine = 'postgresql://test:test@localhost:5432/ukb'
+
+        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, n_jobs=1)
+
+        # Run
+        p2sql.load_data()
+
+        # Validate
+        assert p2sql.db_type == 'postgresql'
+
+        ## Check data is correct
+        tmp = pd.read_sql('select * from ukb_pheno_01', create_engine(db_engine), index_col='eid')
+        assert not tmp.empty
+        assert tmp.shape[0] == 4
+        assert tmp.loc[1, 'c31_0_0'].strftime('%Y-%m-%d') == '2012-01-05'
+        assert int(tmp.loc[1, 'c34_0_0']) == 21
+        assert int(tmp.loc[1, 'c46_0_0']) == -9
+        assert tmp.loc[2, 'c31_0_0'].strftime('%Y-%m-%d') == '2015-12-30'
+        assert int(tmp.loc[2, 'c34_0_0']) == 12
+        pd.isnull(tmp.loc[2, 'c46_0_0'])
+        assert tmp.loc[3, 'c31_0_0'].strftime('%Y-%m-%d') == '2007-03-19'
+        assert int(tmp.loc[3, 'c34_0_0']) == 1
+        assert int(tmp.loc[3, 'c46_0_0']) == -7
+        assert pd.isnull(tmp.loc[4, 'c31_0_0'])

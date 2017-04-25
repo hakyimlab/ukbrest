@@ -171,8 +171,10 @@ class Pheno2SQL:
         table_name = self._get_table_name(column_names_idx)
         output_csv_filename = os.path.join(get_tmpdir(self.tmpdir), table_name + '.csv')
         full_column_names = ['eid'] + [x[0] for x in column_names]
+
+        dtypes_int_as_object = {k: (v if v != 'int' else 'object') for k, v in self._original_column_and_dtypes.items()}
         data_reader = pd.read_csv(self.ukb_csv, index_col=0, header=0, usecols=full_column_names,
-                                  chunksize=self.chunksize, dtype=self._original_column_and_dtypes,
+                                  chunksize=self.chunksize, dtype=dtypes_int_as_object,
                                   parse_dates=[col for col in self._original_date_columns if col in full_column_names])
 
         new_columns = [x[1] for x in column_names]
