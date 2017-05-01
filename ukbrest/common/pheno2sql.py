@@ -56,9 +56,9 @@ class Pheno2SQL:
         """
         return (seq[pos:pos + size] for pos in range(0, len(seq), size))
 
-    def _get_columns_dtypes(self, ukbcsv_file):
+    def _get_db_columns_dtypes(self, ukbcsv_file):
         """
-        Returns a tuple with Pandas-compatible type list and parse date columns.
+        Returns a Pandas-compatible type list with SQLAlchemy types for each column.
 
         :param ukbcsv_file:
         :return:
@@ -78,7 +78,6 @@ class Pheno2SQL:
         del tmp
 
         db_column_types = {}
-        column_date_types = []
 
         # open just to get columns
         csv_df = pd.read_csv(ukbcsv_file, index_col=0, header=0, nrows=1)
@@ -88,24 +87,20 @@ class Pheno2SQL:
         print('      Reading columns', flush=True)
         for col in columns:
             col_type = df[col]
-            final_col_type = 'str'
             final_db_col_type = TEXT
 
-            if col_type in ('Continuous', 'Integer'):
-                final_col_type = 'float'
+            if col_type == 'Continuous':
                 final_db_col_type = FLOAT
 
-            if col_type in ('Integer'):
-                final_col_type = 'int'
+            elif col_type == 'Integer':
                 final_db_col_type = INT
 
-            if col_type in ('Date', 'Time'):
-                column_date_types.append(col)
+            elif col_type in ('Date', 'Time'):
                 final_db_col_type = TIMESTAMP
 
             db_column_types[col] = final_db_col_type
 
-        return db_column_types, column_date_types
+        return db_column_types
 
     def _rename_columns(self, column_name):
         if column_name == 'eid':
@@ -131,13 +126,10 @@ class Pheno2SQL:
         self.chunked_table_column_names = {self._get_table_name(col_idx): [col[1] for col in col_names]
                                            for col_idx, col_names in self.chunked_column_names}
 
-        self._original_db_dtypes, self._original_date_columns = self._get_columns_dtypes(self.ukb_csv)
+        self._original_db_dtypes = self._get_db_columns_dtypes(self.ukb_csv)
         self._db_dtypes = {self._rename_columns(k): v for k, v in self._original_db_dtypes.items()}
-        # FIXME: this is kind of duplicating code before
-        self._date_columns = [self._rename_columns(col) for col in self._original_date_columns]
 
-        data_sample = pd.read_csv(self.ukb_csv, index_col=0, header=0, nrows=1, dtype=str,
-                                  parse_dates=self._original_date_columns)
+        data_sample = pd.read_csv(self.ukb_csv, index_col=0, header=0, nrows=1, dtype=str)
         data_sample = data_sample.rename(columns=self._rename_columns)
 
         engine = create_engine(self.db_engine)
@@ -169,8 +161,7 @@ class Pheno2SQL:
         full_column_names = ['eid'] + [x[0] for x in column_names]
 
         data_reader = pd.read_csv(self.ukb_csv, index_col=0, header=0, usecols=full_column_names,
-                                  chunksize=self.chunksize, dtype=str,
-                                  parse_dates=[col for col in self._original_date_columns if col in full_column_names])
+                                  chunksize=self.chunksize, dtype=str)
 
         new_columns = [x[1] for x in column_names]
 
