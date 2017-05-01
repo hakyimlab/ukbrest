@@ -1,10 +1,10 @@
 import os, sys
 import csv
-import json
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 from sqlalchemy import create_engine
+from sqlalchemy.types import TEXT, FLOAT, TIMESTAMP, INT
 from subprocess import Popen, PIPE
 from urllib.parse import urlparse
 
@@ -77,7 +77,7 @@ class Pheno2SQL:
         df = df.fillna(method='ffill')
         del tmp
 
-        column_types = {}
+        db_column_types = {}
         column_date_types = []
 
         # open just to get columns
@@ -89,18 +89,23 @@ class Pheno2SQL:
         for col in columns:
             col_type = df[col]
             final_col_type = 'str'
+            final_db_col_type = TEXT
 
-            if col_type in ('Continuous'):
-                final_col_type = 'float64'
-            elif col_type in ('Integer'):
+            if col_type in ('Continuous', 'Integer'):
+                final_col_type = 'float'
+                final_db_col_type = FLOAT
+
+            if col_type in ('Integer'):
                 final_col_type = 'int'
-
-            column_types[col] = final_col_type
+                final_db_col_type = INT
 
             if col_type in ('Date', 'Time'):
                 column_date_types.append(col)
+                final_db_col_type = TIMESTAMP
 
-        return column_types, column_date_types
+            db_column_types[col] = final_db_col_type
+
+        return db_column_types, column_date_types
 
     def _rename_columns(self, column_name):
         if column_name == 'eid':
@@ -115,8 +120,9 @@ class Pheno2SQL:
         """
         print('  Creating database tables', flush=True)
 
-        tmp = pd.read_csv(self.ukb_csv, index_col=0, header=0, nrows=10, low_memory=False)
+        tmp = pd.read_csv(self.ukb_csv, index_col=0, header=0, nrows=1, low_memory=False)
         old_columns = tmp.columns.tolist()
+        del tmp
         new_columns = [self._rename_columns(x) for x in old_columns]
 
         all_columns = tuple(zip(old_columns, new_columns))
@@ -124,15 +130,13 @@ class Pheno2SQL:
         self.chunked_column_names = tuple(enumerate(self._chunker(all_columns, self.n_columns_per_table)))
         self.chunked_table_column_names = {self._get_table_name(col_idx): [col[1] for col in col_names]
                                            for col_idx, col_names in self.chunked_column_names}
-        # for col_idx, col_names in self.chunked_column_names:
-        #     self.chunked_table_column_names[self._get_table_name(col_idx)] = [col[1] for col in col_names]
 
-        self._original_column_and_dtypes, self._original_date_columns = self._get_columns_dtypes(self.ukb_csv)
-        self.columns_and_dtypes = {self._rename_columns(k): v for k, v in self._original_column_and_dtypes.items()}
+        self._original_db_dtypes, self._original_date_columns = self._get_columns_dtypes(self.ukb_csv)
+        self._db_dtypes = {self._rename_columns(k): v for k, v in self._original_db_dtypes.items()}
         # FIXME: this is kind of duplicating code before
         self._date_columns = [self._rename_columns(col) for col in self._original_date_columns]
 
-        data_sample = pd.read_csv(self.ukb_csv, index_col=0, header=0, nrows=1, dtype=self._original_column_and_dtypes,
+        data_sample = pd.read_csv(self.ukb_csv, index_col=0, header=0, nrows=1, dtype=str,
                                   parse_dates=self._original_date_columns)
         data_sample = data_sample.rename(columns=self._rename_columns)
 
@@ -147,7 +151,7 @@ class Pheno2SQL:
             # Create main table structure
             table_name = self._get_table_name(column_names_idx)
             print('    Table {} ({} columns)'.format(table_name, len(new_columns_names)), flush=True)
-            data_sample.loc[[], new_columns_names].to_sql(table_name, engine, if_exists='replace')
+            data_sample.loc[[], new_columns_names].to_sql(table_name, engine, if_exists='replace', dtype=self._db_dtypes)
 
             # Create auxiliary table
             n_column_names = len(new_columns_names)
@@ -158,23 +162,14 @@ class Pheno2SQL:
             aux_table = aux_table.set_index('field')
             aux_table.to_sql('fields', engine, if_exists=fields_table_if_exist[column_names_idx])
 
-    def _replace_null_str(self, chunk):
-        col_spec_str = {self._rename_columns(col_name): {np.nan: ''}
-                        for col_name, col_type in self._original_column_and_dtypes.items()
-                        if col_type == 'str' and not col_name in self._original_date_columns}
-        # col_spec_date = {col_name: {'': np.nan} for col_name in self._date_columns}
-        # col_spec_str.update(col_spec_date)
-
-        return chunk.replace(col_spec_str)
 
     def _save_column_range(self, column_names_idx, column_names):
         table_name = self._get_table_name(column_names_idx)
         output_csv_filename = os.path.join(get_tmpdir(self.tmpdir), table_name + '.csv')
         full_column_names = ['eid'] + [x[0] for x in column_names]
 
-        dtypes_int_as_object = {k: (v if v != 'int' else 'object') for k, v in self._original_column_and_dtypes.items()}
         data_reader = pd.read_csv(self.ukb_csv, index_col=0, header=0, usecols=full_column_names,
-                                  chunksize=self.chunksize, dtype=dtypes_int_as_object,
+                                  chunksize=self.chunksize, dtype=str,
                                   parse_dates=[col for col in self._original_date_columns if col in full_column_names])
 
         new_columns = [x[1] for x in column_names]
