@@ -26,17 +26,17 @@ class Pheno2SQLTest(unittest.TestCase):
         assert p2sql.db_type == 'sqlite'
 
         ## Check table exists
-        tmp = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table' AND name='{}';".format('ukb_pheno_00'), create_engine(db_engine))
+        tmp = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table' AND name='{}';".format('ukb_pheno_0_00'), create_engine(db_engine))
         assert not tmp.empty
 
         ## Check columns are correct
-        tmp = pd.read_sql('select * from ukb_pheno_00', create_engine(db_engine))
+        tmp = pd.read_sql('select * from ukb_pheno_0_00', create_engine(db_engine))
         expected_columns = ["eid","c21_0_0","c21_1_0","c21_2_0","c31_0_0","c34_0_0","c46_0_0","c47_0_0","c48_0_0"]
         assert len(tmp.columns) == len(expected_columns)
         assert all(x in expected_columns for x in tmp.columns)
 
         ## Check data is correct
-        tmp = pd.read_sql('select * from ukb_pheno_00', create_engine(db_engine), index_col='eid')
+        tmp = pd.read_sql('select * from ukb_pheno_0_00', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
         assert tmp.shape[0] == 2
         assert tmp.loc[1, 'c21_0_0'] == 'Option number 1'
@@ -70,17 +70,17 @@ class Pheno2SQLTest(unittest.TestCase):
         assert p2sql.db_type == 'postgresql'
 
         ## Check table exists
-        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_00'), create_engine(db_engine))
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_0_00'), create_engine(db_engine))
         assert table.iloc[0, 0]
 
         ## Check columns are correct
-        tmp = pd.read_sql('select * from ukb_pheno_00', create_engine(db_engine))
+        tmp = pd.read_sql('select * from ukb_pheno_0_00', create_engine(db_engine))
         expected_columns = ["eid","c21_0_0","c21_1_0","c21_2_0","c31_0_0","c34_0_0","c46_0_0","c47_0_0","c48_0_0"]
         assert len(tmp.columns) == len(expected_columns)
         assert all(x in expected_columns for x in tmp.columns)
 
         ## Check data is correct
-        tmp = pd.read_sql('select * from ukb_pheno_00', create_engine(db_engine), index_col='eid')
+        tmp = pd.read_sql('select * from ukb_pheno_0_00', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
         assert tmp.shape[0] == 2
         assert tmp.loc[1, 'c21_0_0'] == 'Option number 1'
@@ -111,17 +111,17 @@ class Pheno2SQLTest(unittest.TestCase):
 
         # Validate
         ## Check table exists
-        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_00'), create_engine(db_engine))
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_0_00'), create_engine(db_engine))
         assert table.iloc[0, 0]
 
         ## Check columns are correct
-        tmp = pd.read_sql('select * from ukb_pheno_00', create_engine(db_engine))
+        tmp = pd.read_sql('select * from ukb_pheno_0_00', create_engine(db_engine))
         expected_columns = ["eid","c21_0_0","c21_1_0","c21_2_0","c31_0_0","c34_0_0","c46_0_0","c47_0_0","c48_0_0"]
         assert len(tmp.columns) == len(expected_columns)
         assert all(x in expected_columns for x in tmp.columns)
 
         ## Check data is correct
-        tmp = pd.read_sql('select * from ukb_pheno_00', create_engine(db_engine), index_col='eid')
+        tmp = pd.read_sql('select * from ukb_pheno_0_00', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
         assert tmp.shape[0] == 2
 
@@ -142,33 +142,33 @@ class Pheno2SQLTest(unittest.TestCase):
         assert p2sql.db_type == 'sqlite'
 
         ## Check tables exist
-        table = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table' AND name='{}';".format('ukb_pheno_00'), create_engine(db_engine))
+        table = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table' AND name='{}';".format('ukb_pheno_0_00'), create_engine(db_engine))
         assert not table.empty
 
-        table = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table' AND name='{}';".format('ukb_pheno_01'), create_engine(db_engine))
+        table = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table' AND name='{}';".format('ukb_pheno_0_01'), create_engine(db_engine))
         assert not table.empty
 
-        table = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table' AND name='{}';".format('ukb_pheno_02'), create_engine(db_engine))
+        table = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table' AND name='{}';".format('ukb_pheno_0_02'), create_engine(db_engine))
         assert not table.empty
 
         ## Check columns are correct
-        tmp = pd.read_sql('select * from ukb_pheno_00', create_engine(db_engine))
+        tmp = pd.read_sql('select * from ukb_pheno_0_00', create_engine(db_engine))
         expected_columns = ["eid","c21_0_0","c21_1_0","c21_2_0"]
         assert len(tmp.columns) == len(expected_columns)
         assert all(x in expected_columns for x in tmp.columns)
 
-        tmp = pd.read_sql('select * from ukb_pheno_01', create_engine(db_engine))
+        tmp = pd.read_sql('select * from ukb_pheno_0_01', create_engine(db_engine))
         expected_columns = ["eid","c31_0_0","c34_0_0","c46_0_0"]
         assert len(tmp.columns) == len(expected_columns)
         assert all(x in expected_columns for x in tmp.columns)
 
-        tmp = pd.read_sql('select * from ukb_pheno_02', create_engine(db_engine))
+        tmp = pd.read_sql('select * from ukb_pheno_0_02', create_engine(db_engine))
         expected_columns = ["eid","c47_0_0","c48_0_0"]
         assert len(tmp.columns) == len(expected_columns)
         assert all(x in expected_columns for x in tmp.columns)
 
         ## Check data is correct
-        tmp = pd.read_sql('select * from ukb_pheno_00', create_engine(db_engine), index_col='eid')
+        tmp = pd.read_sql('select * from ukb_pheno_0_00', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
         assert tmp.shape[0] == 2
         assert tmp.loc[1, 'c21_0_0'] == 'Option number 1'
@@ -178,7 +178,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert pd.isnull(tmp.loc[2, 'c21_1_0'])
         assert tmp.loc[2, 'c21_2_0'] == 'No'
 
-        tmp = pd.read_sql('select * from ukb_pheno_01', create_engine(db_engine), index_col='eid')
+        tmp = pd.read_sql('select * from ukb_pheno_0_01', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
         assert tmp.shape[0] == 2
         assert tmp.loc[1, 'c31_0_0'] == '2012-01-05'
@@ -188,7 +188,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert int(tmp.loc[2, 'c34_0_0']) == 12
         assert int(tmp.loc[2, 'c46_0_0']) == -2
 
-        tmp = pd.read_sql('select * from ukb_pheno_02', create_engine(db_engine), index_col='eid')
+        tmp = pd.read_sql('select * from ukb_pheno_0_02', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
         assert tmp.shape[0] == 2
         assert tmp.loc[1, 'c47_0_0'].round(5) == 45.55412
@@ -210,33 +210,33 @@ class Pheno2SQLTest(unittest.TestCase):
         assert p2sql.db_type == 'postgresql'
 
         ## Check tables exist
-        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_00'), create_engine(db_engine))
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_0_00'), create_engine(db_engine))
         assert table.iloc[0, 0]
 
-        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_01'), create_engine(db_engine))
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_0_01'), create_engine(db_engine))
         assert table.iloc[0, 0]
 
-        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_02'), create_engine(db_engine))
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_0_02'), create_engine(db_engine))
         assert table.iloc[0, 0]
 
         ## Check columns are correct
-        tmp = pd.read_sql('select * from ukb_pheno_00', create_engine(db_engine))
+        tmp = pd.read_sql('select * from ukb_pheno_0_00', create_engine(db_engine))
         expected_columns = ["eid","c21_0_0","c21_1_0","c21_2_0"]
         assert len(tmp.columns) == len(expected_columns)
         assert all(x in expected_columns for x in tmp.columns)
 
-        tmp = pd.read_sql('select * from ukb_pheno_01', create_engine(db_engine))
+        tmp = pd.read_sql('select * from ukb_pheno_0_01', create_engine(db_engine))
         expected_columns = ["eid","c31_0_0","c34_0_0","c46_0_0"]
         assert len(tmp.columns) == len(expected_columns)
         assert all(x in expected_columns for x in tmp.columns)
 
-        tmp = pd.read_sql('select * from ukb_pheno_02', create_engine(db_engine))
+        tmp = pd.read_sql('select * from ukb_pheno_0_02', create_engine(db_engine))
         expected_columns = ["eid","c47_0_0","c48_0_0"]
         assert len(tmp.columns) == len(expected_columns)
         assert all(x in expected_columns for x in tmp.columns)
 
         ## Check data is correct
-        tmp = pd.read_sql('select * from ukb_pheno_00', create_engine(db_engine), index_col='eid')
+        tmp = pd.read_sql('select * from ukb_pheno_0_00', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
         assert tmp.shape[0] == 2
         assert tmp.loc[1, 'c21_0_0'] == 'Option number 1'
@@ -246,7 +246,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert pd.isnull(tmp.loc[2, 'c21_1_0'])
         assert tmp.loc[2, 'c21_2_0'] == 'No'
 
-        tmp = pd.read_sql('select * from ukb_pheno_01', create_engine(db_engine), index_col='eid')
+        tmp = pd.read_sql('select * from ukb_pheno_0_01', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
         assert tmp.shape[0] == 2
         assert tmp.loc[1, 'c31_0_0'].strftime('%Y-%m-%d') == '2012-01-05'
@@ -256,7 +256,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert int(tmp.loc[2, 'c34_0_0']) == 12
         assert int(tmp.loc[2, 'c46_0_0']) == -2
 
-        tmp = pd.read_sql('select * from ukb_pheno_02', create_engine(db_engine), index_col='eid')
+        tmp = pd.read_sql('select * from ukb_pheno_0_02', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
         assert tmp.shape[0] == 2
         assert tmp.loc[1, 'c47_0_0'].round(5) == 45.55412
@@ -275,17 +275,17 @@ class Pheno2SQLTest(unittest.TestCase):
 
             # Validate
             ## Check table exists
-            table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_00'), create_engine(db_engine))
+            table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_0_00'), create_engine(db_engine))
             assert table.iloc[0, 0]
 
             ## Check columns are correct
-            tmp = pd.read_sql('select * from ukb_pheno_00', create_engine(db_engine))
+            tmp = pd.read_sql('select * from ukb_pheno_0_00', create_engine(db_engine))
             expected_columns = ["eid","c21_0_0","c21_1_0","c21_2_0","c31_0_0","c34_0_0","c46_0_0","c47_0_0","c48_0_0"]
             assert len(tmp.columns) == len(expected_columns)
             assert all(x in expected_columns for x in tmp.columns)
 
             ## Check data is correct
-            tmp = pd.read_sql('select * from ukb_pheno_00', create_engine(db_engine), index_col='eid')
+            tmp = pd.read_sql('select * from ukb_pheno_0_00', create_engine(db_engine), index_col='eid')
             assert not tmp.empty
             assert tmp.shape[0] == 2
 
@@ -309,27 +309,27 @@ class Pheno2SQLTest(unittest.TestCase):
         assert p2sql.db_type == 'sqlite'
 
         ## Check tables exist
-        table = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table' AND name='{}';".format('ukb_pheno_00'), create_engine(db_engine))
+        table = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table' AND name='{}';".format('ukb_pheno_0_00'), create_engine(db_engine))
         assert not table.empty
 
-        table = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table' AND name='{}';".format('ukb_pheno_01'), create_engine(db_engine))
+        table = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table' AND name='{}';".format('ukb_pheno_0_01'), create_engine(db_engine))
         assert not table.empty
 
-        table = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table' AND name='{}';".format('ukb_pheno_02'), create_engine(db_engine))
+        table = pd.read_sql("SELECT name FROM sqlite_master WHERE type='table' AND name='{}';".format('ukb_pheno_0_02'), create_engine(db_engine))
         assert not table.empty
 
         ## Check columns are correct
-        tmp = pd.read_sql('select * from ukb_pheno_00', create_engine(db_engine))
+        tmp = pd.read_sql('select * from ukb_pheno_0_00', create_engine(db_engine))
         expected_columns = ["eid","c21_0_0","c21_1_0","c21_2_0"]
         assert len(tmp.columns) == len(expected_columns)
         assert all(x in expected_columns for x in tmp.columns)
 
-        tmp = pd.read_sql('select * from ukb_pheno_01', create_engine(db_engine))
+        tmp = pd.read_sql('select * from ukb_pheno_0_01', create_engine(db_engine))
         expected_columns = ["eid","c31_0_0","c34_0_0","c46_0_0"]
         assert len(tmp.columns) == len(expected_columns)
         assert all(x in expected_columns for x in tmp.columns)
 
-        tmp = pd.read_sql('select * from ukb_pheno_02', create_engine(db_engine))
+        tmp = pd.read_sql('select * from ukb_pheno_0_02', create_engine(db_engine))
         expected_columns = ["eid","c47_0_0","c48_0_0"]
         assert len(tmp.columns) == len(expected_columns)
         assert all(x in expected_columns for x in tmp.columns)
@@ -348,14 +348,14 @@ class Pheno2SQLTest(unittest.TestCase):
         tmp = pd.read_sql('select * from fields', create_engine(db_engine), index_col='field')
         assert not tmp.empty
         assert tmp.shape[0] == 8
-        assert tmp.loc['c21_0_0', 'table_name'] == 'ukb_pheno_00'
-        assert tmp.loc['c21_1_0', 'table_name'] == 'ukb_pheno_00'
-        assert tmp.loc['c21_2_0', 'table_name'] == 'ukb_pheno_00'
-        assert tmp.loc['c31_0_0', 'table_name'] == 'ukb_pheno_01'
-        assert tmp.loc['c34_0_0', 'table_name'] == 'ukb_pheno_01'
-        assert tmp.loc['c46_0_0', 'table_name'] == 'ukb_pheno_01'
-        assert tmp.loc['c47_0_0', 'table_name'] == 'ukb_pheno_02'
-        assert tmp.loc['c48_0_0', 'table_name'] == 'ukb_pheno_02'
+        assert tmp.loc['c21_0_0', 'table_name'] == 'ukb_pheno_0_00'
+        assert tmp.loc['c21_1_0', 'table_name'] == 'ukb_pheno_0_00'
+        assert tmp.loc['c21_2_0', 'table_name'] == 'ukb_pheno_0_00'
+        assert tmp.loc['c31_0_0', 'table_name'] == 'ukb_pheno_0_01'
+        assert tmp.loc['c34_0_0', 'table_name'] == 'ukb_pheno_0_01'
+        assert tmp.loc['c46_0_0', 'table_name'] == 'ukb_pheno_0_01'
+        assert tmp.loc['c47_0_0', 'table_name'] == 'ukb_pheno_0_02'
+        assert tmp.loc['c48_0_0', 'table_name'] == 'ukb_pheno_0_02'
 
     def test_postgresql_auxiliary_table_is_created(self):
         # Prepare
@@ -371,27 +371,27 @@ class Pheno2SQLTest(unittest.TestCase):
         assert p2sql.db_type == 'postgresql'
 
         ## Check tables exist
-        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_00'), create_engine(db_engine))
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_0_00'), create_engine(db_engine))
         assert table.iloc[0, 0]
 
-        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_01'), create_engine(db_engine))
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_0_01'), create_engine(db_engine))
         assert table.iloc[0, 0]
 
-        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_02'), create_engine(db_engine))
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_0_02'), create_engine(db_engine))
         assert table.iloc[0, 0]
 
         ## Check columns are correct
-        tmp = pd.read_sql('select * from ukb_pheno_00', create_engine(db_engine))
+        tmp = pd.read_sql('select * from ukb_pheno_0_00', create_engine(db_engine))
         expected_columns = ["eid","c21_0_0","c21_1_0","c21_2_0"]
         assert len(tmp.columns) == len(expected_columns)
         assert all(x in expected_columns for x in tmp.columns)
 
-        tmp = pd.read_sql('select * from ukb_pheno_01', create_engine(db_engine))
+        tmp = pd.read_sql('select * from ukb_pheno_0_01', create_engine(db_engine))
         expected_columns = ["eid","c31_0_0","c34_0_0","c46_0_0"]
         assert len(tmp.columns) == len(expected_columns)
         assert all(x in expected_columns for x in tmp.columns)
 
-        tmp = pd.read_sql('select * from ukb_pheno_02', create_engine(db_engine))
+        tmp = pd.read_sql('select * from ukb_pheno_0_02', create_engine(db_engine))
         expected_columns = ["eid","c47_0_0","c48_0_0"]
         assert len(tmp.columns) == len(expected_columns)
         assert all(x in expected_columns for x in tmp.columns)
@@ -410,14 +410,89 @@ class Pheno2SQLTest(unittest.TestCase):
         tmp = pd.read_sql('select * from fields', create_engine(db_engine), index_col='field')
         assert not tmp.empty
         assert tmp.shape[0] == 8
-        assert tmp.loc['c21_0_0', 'table_name'] == 'ukb_pheno_00'
-        assert tmp.loc['c21_1_0', 'table_name'] == 'ukb_pheno_00'
-        assert tmp.loc['c21_2_0', 'table_name'] == 'ukb_pheno_00'
-        assert tmp.loc['c31_0_0', 'table_name'] == 'ukb_pheno_01'
-        assert tmp.loc['c34_0_0', 'table_name'] == 'ukb_pheno_01'
-        assert tmp.loc['c46_0_0', 'table_name'] == 'ukb_pheno_01'
-        assert tmp.loc['c47_0_0', 'table_name'] == 'ukb_pheno_02'
-        assert tmp.loc['c48_0_0', 'table_name'] == 'ukb_pheno_02'
+        assert tmp.loc['c21_0_0', 'table_name'] == 'ukb_pheno_0_00'
+        assert tmp.loc['c21_1_0', 'table_name'] == 'ukb_pheno_0_00'
+        assert tmp.loc['c21_2_0', 'table_name'] == 'ukb_pheno_0_00'
+        assert tmp.loc['c31_0_0', 'table_name'] == 'ukb_pheno_0_01'
+        assert tmp.loc['c34_0_0', 'table_name'] == 'ukb_pheno_0_01'
+        assert tmp.loc['c46_0_0', 'table_name'] == 'ukb_pheno_0_01'
+        assert tmp.loc['c47_0_0', 'table_name'] == 'ukb_pheno_0_02'
+        assert tmp.loc['c48_0_0', 'table_name'] == 'ukb_pheno_0_02'
+
+    def test_postgresql_two_csv_files(self):
+        # Prepare
+        csv01 = get_repository_path('pheno2sql/example08_01.csv')
+        csv02 = get_repository_path('pheno2sql/example08_02.csv')
+        db_engine = POSTGRESQL_ENGINE
+
+        p2sql = Pheno2SQL((csv01, csv02), db_engine)
+
+        # Run
+        p2sql.load_data()
+
+        # Validate
+        assert p2sql.db_type == 'postgresql'
+
+        ## Check tables exist
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_0_00'), create_engine(db_engine))
+        assert table.iloc[0, 0]
+
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_1_00'), create_engine(db_engine))
+        assert table.iloc[0, 0]
+
+        ## Check columns are correct
+        tmp = pd.read_sql('select * from ukb_pheno_0_00', create_engine(db_engine))
+        expected_columns = ["eid","c21_0_0","c21_1_0","c21_2_0","c31_0_0","c34_0_0","c46_0_0","c47_0_0","c48_0_0"]
+        assert len(tmp.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in tmp.columns)
+
+        tmp = pd.read_sql('select * from ukb_pheno_1_00', create_engine(db_engine))
+        expected_columns = ["eid","c100_0_0", "c100_1_0", "c100_2_0", "c110_0_0", "c120_0_0", "c130_0_0", "c140_0_0", "c150_0_0"]
+        assert len(tmp.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in tmp.columns)
+
+        ## Check data is correct
+        tmp = pd.read_sql('select * from ukb_pheno_0_00', create_engine(db_engine), index_col='eid')
+        assert not tmp.empty
+        assert tmp.shape[0] == 5
+        assert tmp.loc[1, 'c21_0_0'] == 'Option number 1'
+        assert tmp.loc[1, 'c21_1_0'] == 'No response'
+        assert tmp.loc[1, 'c21_2_0'] == 'Yes'
+        assert tmp.loc[1, 'c31_0_0'].strftime('%Y-%m-%d') == '2011-03-07'
+        assert int(tmp.loc[1, 'c34_0_0']) == -33
+        assert int(tmp.loc[1, 'c46_0_0']) == -9
+        assert tmp.loc[1, 'c47_0_0'].round(5) == 41.55312
+        assert tmp.loc[1, 'c48_0_0'].strftime('%Y-%m-%d') == '2010-07-14'
+
+        assert tmp.loc[5, 'c21_0_0'] == 'Option number 5'
+        assert tmp.loc[5, 'c21_1_0'] == 'Maybe'
+        assert tmp.loc[5, 'c21_2_0'] == 'Probably'
+        assert pd.isnull(tmp.loc[5, 'c31_0_0'])
+        assert int(tmp.loc[5, 'c34_0_0']) == -4
+        assert int(tmp.loc[5, 'c46_0_0']) == 1
+        assert pd.isnull(tmp.loc[5, 'c47_0_0'])
+        assert tmp.loc[5, 'c48_0_0'].strftime('%Y-%m-%d') == '1999-10-11'
+
+        tmp = pd.read_sql('select * from ukb_pheno_1_00', create_engine(db_engine), index_col='eid')
+        assert not tmp.empty
+        assert tmp.shape[0] == 3
+        assert int(tmp.loc[1, 'c100_0_0']) == -9
+        assert int(tmp.loc[1, 'c100_1_0']) == 3
+        assert pd.isnull(tmp.loc[1, 'c100_2_0'])
+        assert tmp.loc[1, 'c110_0_0'].round(5) == 42.55312
+        assert int(tmp.loc[1, 'c120_0_0']) == -33
+        assert tmp.loc[1, 'c130_0_0'] == 'Option number 1'
+        assert tmp.loc[1, 'c140_0_0'].strftime('%Y-%m-%d') == '2011-03-07'
+        assert tmp.loc[1, 'c150_0_0'].strftime('%Y-%m-%d') == '2010-07-14'
+
+        assert pd.isnull(tmp.loc[3, 'c100_0_0'])
+        assert int(tmp.loc[3, 'c100_1_0']) == -4
+        assert int(tmp.loc[3, 'c100_2_0']) == -10
+        assert tmp.loc[3, 'c110_0_0'].round(5) == -35.31471
+        assert int(tmp.loc[3, 'c120_0_0']) == 0
+        assert tmp.loc[3, 'c130_0_0'] == 'Option number 3'
+        assert tmp.loc[3, 'c140_0_0'].strftime('%Y-%m-%d') == '1997-04-15'
+        assert pd.isnull(tmp.loc[3, 'c150_0_0'])
 
     def test_sqlite_query_single_table(self):
         # Prepare
@@ -499,7 +574,54 @@ class Pheno2SQLTest(unittest.TestCase):
         assert query_result.loc[3, 'c48_0_0'].strftime('%Y-%m-%d') == '2010-01-01'
         assert query_result.loc[4, 'c48_0_0'].strftime('%Y-%m-%d') == '2011-02-15'
 
+    def test_postgresql_two_csv_files_query_single_table(self):
+        # Prepare
+        csv01 = get_repository_path('pheno2sql/example08_01.csv')
+        csv02 = get_repository_path('pheno2sql/example08_02.csv')
+        db_engine = POSTGRESQL_ENGINE
+
+        p2sql = Pheno2SQL((csv01, csv02), db_engine, n_columns_per_table=999999)
+        p2sql.load_data()
+
+        # Run
+        columns = ['c21_0_0', 'c21_2_0', 'c48_0_0']
+
+        query_result = p2sql.query(columns)
+
+        # Validate
+        assert query_result is not None
+
+        assert query_result.index.name == 'eid'
+        assert len(query_result.index) == 5
+        assert all(x in query_result.index for x in range(1, 5 + 1))
+
+        assert len(query_result.columns) == len(columns)
+        assert all(x in columns for x in query_result.columns)
+
+        assert not query_result.empty
+        assert query_result.shape[0] == 5
+        assert query_result.loc[1, 'c21_0_0'] == 'Option number 1'
+        assert query_result.loc[2, 'c21_0_0'] == 'Option number 2'
+        assert query_result.loc[3, 'c21_0_0'] == 'Option number 3'
+        assert query_result.loc[4, 'c21_0_0'] == 'Option number 4'
+        assert query_result.loc[5, 'c21_0_0'] == 'Option number 5'
+
+        assert query_result.loc[1, 'c21_2_0'] == 'Yes'
+        assert query_result.loc[2, 'c21_2_0'] == 'No'
+        assert query_result.loc[3, 'c21_2_0'] == 'Maybe'
+        assert pd.isnull(query_result.loc[4, 'c21_2_0'])
+        assert query_result.loc[5, 'c21_2_0'] == 'Probably'
+
+        assert query_result.loc[1, 'c48_0_0'].strftime('%Y-%m-%d') == '2010-07-14'
+        assert query_result.loc[2, 'c48_0_0'].strftime('%Y-%m-%d') == '2017-11-30'
+        assert query_result.loc[3, 'c48_0_0'].strftime('%Y-%m-%d') == '2020-01-01'
+        assert query_result.loc[4, 'c48_0_0'].strftime('%Y-%m-%d') == '1990-02-15'
+        assert query_result.loc[5, 'c48_0_0'].strftime('%Y-%m-%d') == '1999-10-11'
+
+    @nottest
     def test_sqlite_query_multiple_tables(self):
+        # RIGHT and FULL OUTER JOINs are not currently supported
+
         # Prepare
         csv_file = get_repository_path('pheno2sql/example02.csv')
         db_engine = SQLITE_ENGINE
@@ -579,6 +701,107 @@ class Pheno2SQLTest(unittest.TestCase):
         assert query_result.loc[3, 'c48_0_0'].strftime('%Y-%m-%d') == '2010-01-01'
         assert query_result.loc[4, 'c48_0_0'].strftime('%Y-%m-%d') == '2011-02-15'
 
+    def test_postgresql_two_csv_files_query_multiple_tables(self):
+        # Prepare
+        csv01 = get_repository_path('pheno2sql/example08_01.csv')
+        csv02 = get_repository_path('pheno2sql/example08_02.csv')
+        db_engine = POSTGRESQL_ENGINE
+
+        p2sql = Pheno2SQL((csv01, csv02), db_engine, n_columns_per_table=999999)
+        p2sql.load_data()
+
+        # Run
+        columns = ['c21_0_0', 'c21_2_0', 'c110_0_0', 'c150_0_0']
+
+        query_result = p2sql.query(columns)
+
+        # Validate
+        assert query_result is not None
+
+        assert query_result.index.name == 'eid'
+        assert len(query_result.index) == 5
+        assert all(x in query_result.index for x in range(1, 5 + 1))
+
+        assert len(query_result.columns) == len(columns)
+        assert all(x in columns for x in query_result.columns)
+
+        assert not query_result.empty
+        assert query_result.shape[0] == 5
+        assert query_result.loc[1, 'c21_0_0'] == 'Option number 1'
+        assert query_result.loc[2, 'c21_0_0'] == 'Option number 2'
+        assert query_result.loc[3, 'c21_0_0'] == 'Option number 3'
+        assert query_result.loc[4, 'c21_0_0'] == 'Option number 4'
+        assert query_result.loc[5, 'c21_0_0'] == 'Option number 5'
+
+        assert query_result.loc[1, 'c21_2_0'] == 'Yes'
+        assert query_result.loc[2, 'c21_2_0'] == 'No'
+        assert query_result.loc[3, 'c21_2_0'] == 'Maybe'
+        assert pd.isnull(query_result.loc[4, 'c21_2_0'])
+        assert query_result.loc[5, 'c21_2_0'] == 'Probably'
+
+        assert query_result.loc[1, 'c110_0_0'].round(5) == 42.55312
+        assert pd.isnull(query_result.loc[2, 'c110_0_0'])
+        assert query_result.loc[3, 'c110_0_0'].round(5) == -35.31471
+        assert pd.isnull(query_result.loc[4, 'c110_0_0'])
+        assert pd.isnull(query_result.loc[5, 'c110_0_0'])
+
+        assert query_result.loc[1, 'c150_0_0'].strftime('%Y-%m-%d') == '2010-07-14'
+        assert query_result.loc[2, 'c150_0_0'].strftime('%Y-%m-%d') == '2017-11-30'
+        assert pd.isnull(query_result.loc[3, 'c150_0_0'])
+        assert pd.isnull(query_result.loc[4, 'c150_0_0'])
+        assert pd.isnull(query_result.loc[5, 'c150_0_0'])
+
+    def test_postgresql_two_csv_files_flipped_query_multiple_tables(self):
+        # Prepare
+        # In this test the files are just flipped
+        csv01 = get_repository_path('pheno2sql/example08_01.csv')
+        csv02 = get_repository_path('pheno2sql/example08_02.csv')
+        db_engine = POSTGRESQL_ENGINE
+
+        p2sql = Pheno2SQL((csv02, csv01), db_engine, n_columns_per_table=999999)
+        p2sql.load_data()
+
+        # Run
+        columns = ['c21_0_0', 'c21_2_0', 'c110_0_0', 'c150_0_0']
+
+        query_result = p2sql.query(columns)
+
+        # Validate
+        assert query_result is not None
+
+        assert query_result.index.name == 'eid'
+        assert len(query_result.index) == 5
+        assert all(x in query_result.index for x in range(1, 5 + 1))
+
+        assert len(query_result.columns) == len(columns)
+        assert all(x in columns for x in query_result.columns)
+
+        assert not query_result.empty
+        assert query_result.shape[0] == 5
+        assert query_result.loc[1, 'c21_0_0'] == 'Option number 1'
+        assert query_result.loc[2, 'c21_0_0'] == 'Option number 2'
+        assert query_result.loc[3, 'c21_0_0'] == 'Option number 3'
+        assert query_result.loc[4, 'c21_0_0'] == 'Option number 4'
+        assert query_result.loc[5, 'c21_0_0'] == 'Option number 5'
+
+        assert query_result.loc[1, 'c21_2_0'] == 'Yes'
+        assert query_result.loc[2, 'c21_2_0'] == 'No'
+        assert query_result.loc[3, 'c21_2_0'] == 'Maybe'
+        assert pd.isnull(query_result.loc[4, 'c21_2_0'])
+        assert query_result.loc[5, 'c21_2_0'] == 'Probably'
+
+        assert query_result.loc[1, 'c110_0_0'].round(5) == 42.55312
+        assert pd.isnull(query_result.loc[2, 'c110_0_0'])
+        assert query_result.loc[3, 'c110_0_0'].round(5) == -35.31471
+        assert pd.isnull(query_result.loc[4, 'c110_0_0'])
+        assert pd.isnull(query_result.loc[5, 'c110_0_0'])
+
+        assert query_result.loc[1, 'c150_0_0'].strftime('%Y-%m-%d') == '2010-07-14'
+        assert query_result.loc[2, 'c150_0_0'].strftime('%Y-%m-%d') == '2017-11-30'
+        assert pd.isnull(query_result.loc[3, 'c150_0_0'])
+        assert pd.isnull(query_result.loc[4, 'c150_0_0'])
+        assert pd.isnull(query_result.loc[5, 'c150_0_0'])
+
     @nottest
     def test_sqlite_query_custom_columns(self):
         # SQLite is very limited when selecting variables, renaming, doing math operations, etc
@@ -629,7 +852,10 @@ class Pheno2SQLTest(unittest.TestCase):
         assert query_result.loc[3, 'c47_squared'].round(5) == round((-5.32471) ** 2, 5)
         assert query_result.loc[4, 'c47_squared'].round(5) == round(55.19832 ** 2, 5)
 
+    @nottest
     def test_sqlite_query_single_filter(self):
+        # RIGHT and FULL OUTER JOINs are not currently supported
+
         # Prepare
         csv_file = get_repository_path('pheno2sql/example02.csv')
         db_engine = SQLITE_ENGINE
@@ -699,7 +925,10 @@ class Pheno2SQLTest(unittest.TestCase):
         assert query_result.loc[1, 'c47_0_0'].round(5) == 45.55412
         assert query_result.loc[4, 'c47_0_0'].round(5) == 55.19832
 
+    @nottest
     def test_sqlite_query_multiple_and_filter(self):
+        # 'RIGHT and FULL OUTER JOINs are not currently supported'
+
         # Prepare
         csv_file = get_repository_path('pheno2sql/example02.csv')
         db_engine = SQLITE_ENGINE
@@ -786,7 +1015,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert p2sql.db_type == 'sqlite'
 
         ## Check data is correct
-        tmp = pd.read_sql('select * from ukb_pheno_00', create_engine(db_engine), index_col='eid')
+        tmp = pd.read_sql('select * from ukb_pheno_0_00', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
         assert tmp.shape[0] == 4
         assert tmp.loc[1, 'c21_0_0'] == 'Option number 1'
@@ -800,7 +1029,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert tmp.loc[3, 'c21_2_0'] == 'Maybe'
         assert pd.isnull(tmp.loc[4, 'c21_2_0'])
 
-        tmp = pd.read_sql('select * from ukb_pheno_01', create_engine(db_engine), index_col='eid')
+        tmp = pd.read_sql('select * from ukb_pheno_0_01', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
         assert tmp.shape[0] == 4
         assert tmp.loc[1, 'c31_0_0'] == '2012-01-05'
@@ -813,7 +1042,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert int(tmp.loc[3, 'c34_0_0']) == 1
         assert int(tmp.loc[3, 'c46_0_0']) == -7
 
-        tmp = pd.read_sql('select * from ukb_pheno_02', create_engine(db_engine), index_col='eid')
+        tmp = pd.read_sql('select * from ukb_pheno_0_02', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
         assert tmp.shape[0] == 4
         # FIXME: this is strange, data type in this particular case needs np.round
@@ -838,7 +1067,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert p2sql.db_type == 'postgresql'
 
         ## Check data is correct
-        tmp = pd.read_sql('select * from ukb_pheno_00', create_engine(db_engine), index_col='eid')
+        tmp = pd.read_sql('select * from ukb_pheno_0_00', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
         assert tmp.shape[0] == 4
         assert tmp.loc[1, 'c21_0_0'] == 'Option number 1'
@@ -853,7 +1082,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert pd.isnull(tmp.loc[4, 'c21_2_0'])
 
 
-        tmp = pd.read_sql('select * from ukb_pheno_01', create_engine(db_engine), index_col='eid')
+        tmp = pd.read_sql('select * from ukb_pheno_0_01', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
         assert tmp.shape[0] == 4
         assert tmp.loc[1, 'c31_0_0'].strftime('%Y-%m-%d') == '2012-01-05'
@@ -866,7 +1095,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert int(tmp.loc[3, 'c34_0_0']) == 1
         assert int(tmp.loc[3, 'c46_0_0']) == -7
 
-        tmp = pd.read_sql('select * from ukb_pheno_02', create_engine(db_engine), index_col='eid')
+        tmp = pd.read_sql('select * from ukb_pheno_0_02', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
         assert tmp.shape[0] == 4
         assert tmp.loc[1, 'c47_0_0'].round(5) == 45.55412
@@ -890,7 +1119,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert p2sql.db_type == 'postgresql'
 
         ## Check data is correct
-        tmp = pd.read_sql('select * from ukb_pheno_00', create_engine(db_engine), index_col='eid')
+        tmp = pd.read_sql('select * from ukb_pheno_0_00', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
         assert tmp.shape[0] == 4
         assert tmp.loc[1, 'c21_0_0'] == 'Option number 1'
@@ -904,7 +1133,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert tmp.loc[3, 'c21_2_0'] == 'Maybe'
         assert pd.isnull(tmp.loc[4, 'c21_2_0'])
 
-        tmp = pd.read_sql('select * from ukb_pheno_01', create_engine(db_engine), index_col='eid')
+        tmp = pd.read_sql('select * from ukb_pheno_0_01', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
         assert tmp.shape[0] == 4
         assert tmp.loc[1, 'c31_0_0'].strftime('%Y-%m-%d') == '2012-01-05'
@@ -918,7 +1147,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert int(tmp.loc[3, 'c46_0_0']) == -7
         assert pd.isnull(tmp.loc[4, 'c31_0_0'])
 
-        tmp = pd.read_sql('select * from ukb_pheno_02', create_engine(db_engine), index_col='eid')
+        tmp = pd.read_sql('select * from ukb_pheno_0_02', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
         assert tmp.shape[0] == 4
         assert tmp.loc[1, 'c47_0_0'].round(5) == 45.55412
@@ -942,7 +1171,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert p2sql.db_type == 'postgresql'
 
         ## Check data is correct
-        tmp = pd.read_sql('select * from ukb_pheno_01', create_engine(db_engine), index_col='eid')
+        tmp = pd.read_sql('select * from ukb_pheno_0_01', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
         assert tmp.shape[0] == 4
         assert tmp.loc[1, 'c31_0_0'].strftime('%Y-%m-%d') == '2012-01-05'
@@ -970,7 +1199,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert p2sql.db_type == 'postgresql'
 
         ## Check data is correct
-        tmp = pd.read_sql('select * from ukb_pheno_01', create_engine(db_engine), index_col='eid')
+        tmp = pd.read_sql('select * from ukb_pheno_0_01', create_engine(db_engine), index_col='eid')
         assert not tmp.empty
         assert tmp.shape[0] == 4
 
