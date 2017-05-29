@@ -50,10 +50,10 @@ class UKBQueryTest(unittest.TestCase):
 
         assert results.loc[1, '2.aa'] == 0.8654
         assert results.loc[1, '2.ab'] == 0.1041
-        assert results.loc[1, '2.bb'] == 0.0305 # FIXME: I understand that this should be rounded to 0.0306
+        assert results.loc[1, '2.bb'] == 0.0306
 
         assert results.loc[2, '300.aa'] == 0.0828
-        assert results.loc[2, '300.ab'] == 0.7751 # FIXME: I understand that this should be rounded to 0.7752
+        assert results.loc[2, '300.ab'] == 0.7752
         assert results.loc[2, '300.bb'] == 0.1421
 
         pos_values = results['pos'].unique()
@@ -109,7 +109,7 @@ class UKBQueryTest(unittest.TestCase):
         assert results.loc[0, '1.bb'] == 0.0302
 
         assert results.loc[1, '2.aa'] == 0.0698
-        assert results.loc[1, '2.ab'] == 0.9117
+        assert results.loc[1, '2.ab'] == 0.9116
         assert results.loc[1, '2.bb'] == 0.0186
 
         assert results.loc[2, '300.aa'] == 0.0826
@@ -118,7 +118,7 @@ class UKBQueryTest(unittest.TestCase):
 
         assert results.loc[3, '299.aa'] == 0.7988
         assert results.loc[3, '299.ab'] == 0.1666
-        assert results.loc[3, '299.bb'] == 0.0345
+        assert results.loc[3, '299.bb'] == 0.0346
 
         assert results.loc[4, '150.aa'] == 0.0773
         assert results.loc[4, '150.ab'] == 0.8683
@@ -179,7 +179,7 @@ class UKBQueryTest(unittest.TestCase):
         assert results.loc[0, '1.bb'] == 0.0302
 
         assert results.loc[1, '2.aa'] == 0.0698
-        assert results.loc[1, '2.ab'] == 0.9117
+        assert results.loc[1, '2.ab'] == 0.9116
         assert results.loc[1, '2.bb'] == 0.0186
 
         assert results.loc[2, '300.aa'] == 0.0826
@@ -188,7 +188,7 @@ class UKBQueryTest(unittest.TestCase):
 
         assert results.loc[3, '299.aa'] == 0.7988
         assert results.loc[3, '299.ab'] == 0.1666
-        assert results.loc[3, '299.bb'] == 0.0345
+        assert results.loc[3, '299.bb'] == 0.0346
 
         assert results.loc[4, '150.aa'] == 0.0773
         assert results.loc[4, '150.ab'] == 0.8683
@@ -242,10 +242,10 @@ class UKBQueryTest(unittest.TestCase):
 
         assert results.loc[1, '2.aa'] == 0.8654
         assert results.loc[1, '2.ab'] == 0.1041
-        assert results.loc[1, '2.bb'] == 0.0305 # FIXME: I understand that this should be rounded to 0.0306
+        assert results.loc[1, '2.bb'] == 0.0306
 
         assert results.loc[2, '300.aa'] == 0.0828
-        assert results.loc[2, '300.ab'] == 0.7751 # FIXME: I understand that this should be rounded to 0.7752
+        assert results.loc[2, '300.ab'] == 0.7752
         assert results.loc[2, '300.bb'] == 0.1421
 
         pos_values = results['pos'].unique()
@@ -298,7 +298,7 @@ class UKBQueryTest(unittest.TestCase):
         assert results.loc[4, 'allele1'] == 'G'
         assert results.loc[4, 'allele2'] == 'T'
 
-        assert results.loc[0, '1.aa'] == 0.7888
+        assert results.loc[0, '1.aa'] == 0.7889
         assert results.loc[0, '1.ab'] == 0.1538
         assert results.loc[0, '1.bb'] == 0.0573
 
