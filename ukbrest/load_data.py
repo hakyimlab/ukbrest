@@ -7,7 +7,7 @@ from ukbrest import config
 
 parser = argparse.ArgumentParser()
 parser.add_argument('genotype_path', type=str, help='UK Biobank genotype (imputed) path')
-parser.add_argument('phenotype_csv', type=str, help='UK Biobank phenotype data in CSV format')
+parser.add_argument('phenotype_csv', type=str, nargs='+', help='UK Biobank phenotype data in CSV format')
 parser.add_argument('--tmp_dir', dest='tmp_dir', type=str, required=False, help='Directory where write temporal files',
                     default=tempfile.gettempdir())
 parser.add_argument('--db_uri', dest='db_uri', type=str, required=False, help='Database engine URI',

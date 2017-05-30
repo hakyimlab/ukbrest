@@ -7,7 +7,6 @@ import argparse
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--csv_filename', dest='csv_filename', required=False, type=str, help='Phenotype CSV file name', default=None)
 parser.add_argument('--start', dest='start', action='store_true', required=False, help='Specifies whether the HTTP server should be started.', default=True)
 parser.add_argument('--load', dest='load', action='store_true', required=False, help='Specifies whether data should be loaded into the DB.', default=False)
 
@@ -38,20 +37,12 @@ def _setup_phenotype_path():
                      'the option "-v hostDir:{}" of "docker run"'.format(phenotype_path))
 
     # check whether there is at least one and only one csv file
-    phenotype_csv_file = [f for f in listdir(phenotype_path) if f.lower().endswith('.csv')]
+    phenotype_csv_file = sorted([f for f in listdir(phenotype_path) if f.lower().endswith('.csv')])
 
     if len(phenotype_csv_file) == 0:
         parser.error('No .csv files were found in the phenotype directory')
 
-    if len(phenotype_csv_file) > 1 and not args.csv_filename:
-        parser.error('More than one .csv files were found in the phenotype directory. '
-                     'Specify which one should be used with option --csv_filename')
-    elif len(phenotype_csv_file) > 1 and args.csv_filename:
-        phenotype_csv_filename = args.csv_filename
-    else:
-        phenotype_csv_filename = phenotype_csv_file[0]
-
-    environ['UKBREST_PHENOTYPE_CSV'] = join(phenotype_path, phenotype_csv_filename)
+    environ['UKBREST_PHENOTYPE_CSV'] = ';'.join([join(phenotype_path, csv_file) for csv_file in phenotype_csv_file])
 
 def _setup_db_uri():
     db_uri = environ.get('UKBREST_DB_URI', None)
