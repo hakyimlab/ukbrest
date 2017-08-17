@@ -18,7 +18,6 @@ class Pheno2SQL:
     def __init__(self, ukb_csvs, connection_string, table_prefix='ukb_pheno_', n_columns_per_table=sys.maxsize,
                  n_jobs=-1, tmpdir=tempfile.mkdtemp(prefix='ukbrest'), loading_chunksize=10000, sql_chunksize=None):
         """
-
         :param ukb_csvs:
         :param connection_string:
         :param table_prefix:
@@ -327,9 +326,26 @@ class Pheno2SQL:
 
         return tables_needed_df
 
-    def query(self, columns, filterings=None):
+    def _get_fields_from_reg_exp(self, ecolumns):
+        if ecolumns is None:
+            return []
+
+        where_st = ["field ~ '{}'".format(ecol) for ecol in ecolumns]
+        select_st = """
+            select distinct field
+            from fields
+            where {}
+            order by field
+        """.format(' or '.join(where_st))
+
+        return pd.read_sql(select_st, self._get_db_engine()).loc[:, 'field'].tolist()
+
+    def query(self, columns, ecolumns=None, filterings=None, int_to_str=False):
+        # get fields from regular expression
+        reg_exp_columns = self._get_fields_from_reg_exp(ecolumns)
+
         # select needed tables to join
-        all_columns = ['eid'] + columns
+        all_columns = ['eid'] + columns + reg_exp_columns
         tables_needed_df = self._get_needed_tables(all_columns)
 
         # FIXME: are parameters correctly escaped by the arg parser?

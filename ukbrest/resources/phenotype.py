@@ -1,6 +1,6 @@
 import json
-import tempfile
 
+from werkzeug.exceptions import BadRequest
 from flask import Response
 from flask_restful import Resource, reqparse, current_app as app, Api
 
@@ -8,7 +8,8 @@ from flask_restful import Resource, reqparse, current_app as app, Api
 class PhenotypeAPI(Resource):
     def __init__(self, **kwargs):
         self.parser = reqparse.RequestParser()
-        self.parser.add_argument('columns', type=str, action='append', required=True, help='Columns to include')
+        self.parser.add_argument('columns', type=str, action='append', required=False, help='Columns to include')
+        self.parser.add_argument('ecolumns', type=str, action='append', required=False, help='Columns to include (with regular expressions)')
         self.parser.add_argument('filters', type=str, action='append', required=False, help='Filters to include (AND)')
         self.parser.add_argument('Accept', location='headers', choices=PHENOTYPE_FORMATS.keys(),
                                  help='Only {} are supported'.format(' and '.join(PHENOTYPE_FORMATS.keys())))
@@ -20,7 +21,10 @@ class PhenotypeAPI(Resource):
     def get(self):
         args = self.parser.parse_args()
 
-        return self.pheno2sql.query(args.columns, args.filters)
+        if args.columns is None and args.ecolumns is None:
+            raise BadRequest('You have to specify either columns or ecolumns')
+
+        return self.pheno2sql.query(args.columns, args.ecolumns, args.filters)
 
 
 class PhenotypeFieldsAPI(Resource):
