@@ -1,19 +1,22 @@
 import os, sys
 import csv
+from urllib.parse import urlparse
+from subprocess import Popen, PIPE
+import tempfile
+
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 from sqlalchemy import create_engine
 from sqlalchemy.types import TEXT, FLOAT, TIMESTAMP, INT
-from subprocess import Popen, PIPE
-from urllib.parse import urlparse
 
 from ukbrest.common.utils.datagen import get_tmpdir
+from ukbrest.config import logger
 
 
 class Pheno2SQL:
     def __init__(self, ukb_csvs, connection_string, table_prefix='ukb_pheno_', n_columns_per_table=sys.maxsize,
-                 n_jobs=-1, tmpdir='/tmp/ukbrest', loading_chunksize=10000, sql_chunksize=None):
+                 n_jobs=-1, tmpdir=tempfile.mkdtemp(prefix='ukbrest'), loading_chunksize=10000, sql_chunksize=None):
         """
 
         :param ukb_csvs:
@@ -39,7 +42,7 @@ class Pheno2SQL:
         self.db_type = parse_result.scheme
 
         if self.db_type == 'sqlite':
-            print('Warning: sqlite does not support parallel loading')
+            logger.warning('sqlite does not support parallel loading')
             self.db_file = self.connection_string.split(':///')[-1]
         elif self.db_type == 'postgresql':
             self.db_host = parse_result.hostname
@@ -53,7 +56,11 @@ class Pheno2SQL:
         self.n_jobs = n_jobs
         self.tmpdir = tmpdir
         self.loading_chunksize = loading_chunksize
+
         self.sql_chunksize = sql_chunksize
+        if self.sql_chunksize is None:
+            logger.warning('UKBREST_PHENOTYPE_CHUNKSIZE was not set, no chunksize for SQL queries, what can lead to '
+                           'memory problems.')
 
     def __enter__(self):
         return self
@@ -98,15 +105,15 @@ class Pheno2SQL:
         :return:
         """
 
-        print('    Getting field data types', flush=True)
+        logger.info('Getting columns types')
 
         filename = os.path.splitext(ukbcsv_file)[0] + '.html'
 
-        print('      Reading data types from {}'.format(filename), flush=True)
+        logger.info('Reading data types from {}'.format(filename))
         with open(filename, 'r', encoding='latin1') as f:
             tmp = pd.read_html(f, match='UDI', header=0, index_col=1, flavor='html5lib')
 
-        print('      Filling NaN values', flush=True)
+        logger.debug('Filling NaN values')
         df = tmp[0].loc[:, 'Type']
         df = df.fillna(method='ffill')
         del tmp
@@ -118,7 +125,7 @@ class Pheno2SQL:
         columns = csv_df.columns.tolist()
         del csv_df
 
-        print('      Reading columns', flush=True)
+        logger.debug('Reading columns')
         for col in columns:
             col_type = df[col]
             final_db_col_type = TEXT
@@ -147,7 +154,7 @@ class Pheno2SQL:
         Reads the data types of each data field in csv_file and create the necessary database tables.
         :return:
         """
-        print('  Creating database tables', flush=True)
+        logger.info('Creating database tables')
 
         tmp = pd.read_csv(csv_file, index_col=0, header=0, nrows=1, low_memory=False)
         old_columns = tmp.columns.tolist()
@@ -179,7 +186,7 @@ class Pheno2SQL:
 
             # Create main table structure
             table_name = self._get_table_name(column_names_idx, csv_file_idx)
-            print('    Table {} ({} columns)'.format(table_name, len(new_columns_names)), flush=True)
+            logger.info('Table {} ({} columns)'.format(table_name, len(new_columns_names)))
             data_sample.loc[[], new_columns_names].to_sql(table_name, self._get_db_engine(), if_exists=data_table_if_exist, dtype=self._db_dtypes)
 
             # Create auxiliary table
@@ -202,7 +209,7 @@ class Pheno2SQL:
 
         new_columns = [x[1] for x in column_names]
 
-        print('    {}'.format(output_csv_filename), flush=True)
+        logger.debug('{}'.format(output_csv_filename))
 
         write_headers = True
         if self.db_type == 'sqlite':
@@ -220,7 +227,7 @@ class Pheno2SQL:
         return table_name, output_csv_filename
 
     def _create_temporary_csvs(self, csv_file, csv_file_idx):
-        print('  Writing temporary CSV files')
+        logger.debug('Writing temporary CSV files')
 
         self._close_db_engine()
         self.table_csvs = Parallel(n_jobs=self.n_jobs)(
@@ -229,7 +236,7 @@ class Pheno2SQL:
         )
 
     def _load_single_csv(self, table_name, file_path):
-        print('    {} -> {}'.format(file_path, table_name))
+        logger.info('{} -> {}'.format(file_path, table_name))
 
         if self.db_type == 'sqlite':
             statement = (
@@ -274,7 +281,7 @@ class Pheno2SQL:
                 raise Exception(stdout_data + b'\n' + stderr_data)
 
     def _load_csv(self):
-        print('  Loading CSV files into database', flush=True)
+        logger.info('Loading CSV files into database')
 
         if self.db_type != 'sqlite':
             self._close_db_engine()
@@ -292,7 +299,7 @@ class Pheno2SQL:
         Load self.ukb_csv into the database configured.
         :return:
         """
-        print('Loading phenotype data into database', flush=True)
+        logger.info('Loading phenotype data into database')
 
         for csv_file_idx, csv_file in enumerate(self.ukb_csvs):
             self._create_tables_schema(csv_file, csv_file_idx)

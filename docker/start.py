@@ -5,6 +5,8 @@ from os import environ
 from os.path import isdir, join
 import argparse
 
+from ukbrest.config import logger
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--start', dest='start', action='store_true', required=False, help='Specifies whether the HTTP server should be started.', default=True)
@@ -17,16 +19,17 @@ def _setup_genotype_path():
     genotype_path = environ.get('UKBREST_GENOTYPE_PATH', None)
 
     if not isdir(genotype_path):
-        parser.error('The genotype directory does not exist. You have to mount it using '
-                     'the option "-v hostDir:{}" of "docker run"'.format(genotype_path))
+        logger.warning('The genotype directory does not exist. You have to mount it using '
+                       'the option "-v hostDir:{}" of "docker run"'.format(genotype_path))
+        return
 
     bgen_files = [f for f in listdir(genotype_path) if f.lower().endswith('.bgen')]
     if len(bgen_files) == 0:
-        parser.error('No .bgen files were found in the genotype directory.')
+        logger.warning('No .bgen files were found in the genotype directory')
 
-    bgen_files = [f for f in listdir(genotype_path) if f.lower().endswith('.bgi')]
-    if len(bgen_files) == 0:
-        parser.error('No .bgi files were found in the genotype directory.')
+    bgi_files = [f for f in listdir(genotype_path) if f.lower().endswith('.bgi')]
+    if len(bgi_files) == 0:
+        logger.warning('No .bgi files were found in the genotype directory')
 
 
 def _setup_phenotype_path():
@@ -44,10 +47,6 @@ def _setup_phenotype_path():
 
     environ['UKBREST_PHENOTYPE_CSV'] = ';'.join([join(phenotype_path, csv_file) for csv_file in phenotype_csv_file])
 
-    phenotype_chunksize = environ.get('UKBREST_PHENOTYPE_CHUNKSIZE', None)
-    if not phenotype_chunksize:
-        print('Warning: UKBREST_PHENOTYPE_CHUNKSIZE was not set, no chunksize for SQL queries, what can lead to'
-              'memory problems.')
 
 def _setup_db_uri():
     db_uri = environ.get('UKBREST_DB_URI', None)

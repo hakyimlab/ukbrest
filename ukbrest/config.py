@@ -1,6 +1,6 @@
-from os.path import isdir, isfile
 from os import environ
 from tempfile import gettempdir
+import logging
 
 genotype_path = environ.get('UKBREST_GENOTYPE_PATH', None)
 
@@ -15,3 +15,14 @@ db_uri = environ.get('UKBREST_DB_URI', None)
 n_columns_per_table = environ.get('UKBREST_N_COLUMNS_PER_TABLE', 1500)
 tmp_dir = environ.get('UKBREST_TEMP_DIR', gettempdir())
 debug = bool(environ.get('UKBREST_DEBUG', False))
+
+# logger
+logger = logging.getLogger('ukbrest')
+logger.setLevel(logging.INFO)
+
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+
+logger.addHandler(console_handler)
