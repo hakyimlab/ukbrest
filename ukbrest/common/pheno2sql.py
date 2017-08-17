@@ -12,12 +12,12 @@ from ukbrest.common.utils.datagen import get_tmpdir
 
 
 class Pheno2SQL:
-    def __init__(self, ukb_csvs, db_engine, table_prefix='ukb_pheno_', n_columns_per_table=sys.maxsize,
+    def __init__(self, ukb_csvs, connection_string, table_prefix='ukb_pheno_', n_columns_per_table=sys.maxsize,
                  n_jobs=-1, tmpdir='/tmp/ukbrest', loading_chunksize=10000, sql_chunksize=None):
         """
 
         :param ukb_csvs:
-        :param db_engine:
+        :param connection_string:
         :param table_prefix:
         :param n_columns_per_table:
         :param n_jobs:
@@ -32,15 +32,16 @@ class Pheno2SQL:
         else:
             self.ukb_csvs = (ukb_csvs,)
 
-        self.db_engine = db_engine
-        parse_result = urlparse(self.db_engine)
+        self.connection_string = connection_string
+        self.db_engine = None
+
+        parse_result = urlparse(self.connection_string)
         self.db_type = parse_result.scheme
 
         if self.db_type == 'sqlite':
             print('Warning: sqlite does not support parallel loading')
-            self.db_file = self.db_engine.split(':///')[-1]
+            self.db_file = self.connection_string.split(':///')[-1]
         elif self.db_type == 'postgresql':
-            parse_result = urlparse(self.db_engine)
             self.db_host = parse_result.hostname
             self.db_port = parse_result.port
             self.db_name = parse_result.path.split('/')[-1]
@@ -60,6 +61,22 @@ class Pheno2SQL:
     def __exit__(self, exc_type, exc_val, exc_tb):
         for f in os.listdir(self.tmpdir):
             os.remove(os.path.join(self.tmpdir, f))
+
+    def _get_db_engine(self):
+        if self.db_engine is None:
+            if self.db_type != 'sqlite':
+                kargs = {'pool_size': 10}
+            else:
+                kargs = {}
+
+            self.db_engine = create_engine(self.connection_string, **kargs)
+
+        return self.db_engine
+
+    def _close_db_engine(self):
+        if self.db_engine is not None:
+            del(self.db_engine)
+            self.db_engine = None
 
     def _get_table_name(self, column_range_index, csv_file_idx):
         return '{}{}_{:02d}'.format(self.table_prefix, csv_file_idx, column_range_index)
@@ -149,8 +166,6 @@ class Pheno2SQL:
         data_sample = pd.read_csv(csv_file, index_col=0, header=0, nrows=1, dtype=str)
         data_sample = data_sample.rename(columns=self._rename_columns)
 
-        engine = create_engine(self.db_engine)
-
         data_table_if_exist = 'replace'
 
         if csv_file_idx == 0:
@@ -165,7 +180,7 @@ class Pheno2SQL:
             # Create main table structure
             table_name = self._get_table_name(column_names_idx, csv_file_idx)
             print('    Table {} ({} columns)'.format(table_name, len(new_columns_names)), flush=True)
-            data_sample.loc[[], new_columns_names].to_sql(table_name, engine, if_exists=data_table_if_exist, dtype=self._db_dtypes)
+            data_sample.loc[[], new_columns_names].to_sql(table_name, self._get_db_engine(), if_exists=data_table_if_exist, dtype=self._db_dtypes)
 
             # Create auxiliary table
             n_column_names = len(new_columns_names)
@@ -174,7 +189,7 @@ class Pheno2SQL:
 
             aux_table = pd.DataFrame({'field': new_columns_names, 'table_name': table_name})
             aux_table = aux_table.set_index('field')
-            aux_table.to_sql('fields', engine, if_exists=fields_table_if_exist[column_names_idx])
+            aux_table.to_sql('fields', self._get_db_engine(), if_exists=fields_table_if_exist[column_names_idx])
 
 
     def _save_column_range(self, csv_file, csv_file_idx, column_names_idx, column_names):
@@ -207,6 +222,7 @@ class Pheno2SQL:
     def _create_temporary_csvs(self, csv_file, csv_file_idx):
         print('  Writing temporary CSV files')
 
+        self._close_db_engine()
         self.table_csvs = Parallel(n_jobs=self.n_jobs)(
             delayed(self._save_column_range)(csv_file, csv_file_idx, column_names_idx, column_names)
             for column_names_idx, column_names in self.chunked_column_names
@@ -261,6 +277,7 @@ class Pheno2SQL:
         print('  Loading CSV files into database', flush=True)
 
         if self.db_type != 'sqlite':
+            self._close_db_engine()
             # parallel csv loading is only supported in databases different than sqlite
             Parallel(n_jobs=self.n_jobs)(
                 delayed(self._load_single_csv)(table_name, file_path)
@@ -288,7 +305,7 @@ class Pheno2SQL:
 
         return tables[0] + ' ' + ' '.join(['full outer join {} using (eid) '.format(t) for t in tables[1:]])
 
-    def _get_needed_tables(self, all_columns, engine):
+    def _get_needed_tables(self, all_columns):
         all_columns_quoted = ["'{}'".format(x.replace("'", "''")) for x in all_columns]
 
         # FIXME: are parameters correctly escaped by the arg parser?
@@ -296,7 +313,7 @@ class Pheno2SQL:
             'select distinct table_name '
             'from fields '
             'where field in (' + ','.join(all_columns_quoted) + ')',
-        engine).loc[:, 'table_name'].tolist()
+        self._get_db_engine()).loc[:, 'table_name'].tolist()
 
         if len(tables_needed_df) == 0:
             raise Exception('Tables not found.')
@@ -304,18 +321,16 @@ class Pheno2SQL:
         return tables_needed_df
 
     def query(self, columns, filterings=None):
-        engine = create_engine(self.db_engine)
-
         # select needed tables to join
         all_columns = ['eid'] + columns
-        tables_needed_df = self._get_needed_tables(all_columns, engine)
+        tables_needed_df = self._get_needed_tables(all_columns)
 
         # FIXME: are parameters correctly escaped by the arg parser?
         results_iterator = pd.read_sql(
             'select ' + ','.join(all_columns) +
             ' from ' + self._create_joins(tables_needed_df) +
             ((' where ' + ' and '.join(filterings)) if filterings is not None else ''),
-            engine, index_col='eid', chunksize=self.sql_chunksize)
+        self._get_db_engine(), index_col='eid', chunksize=self.sql_chunksize)
 
         if self.sql_chunksize is None:
             results_iterator = iter([results_iterator])
