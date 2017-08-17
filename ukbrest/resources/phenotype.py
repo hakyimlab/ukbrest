@@ -38,39 +38,39 @@ class PhenotypeFieldsAPI(Resource):
         return [k for k, v in self.pheno2sql._db_dtypes.items()]
 
 
-def generate(file_handle):
-    while True:
-        # FIXME: buffer size hardcoded
-        chunk = file_handle.read(8192)
-        if chunk:
-            yield chunk
-        else:
-            break
+def _data_generator(all_data, data_conversion_func):
+    from io import StringIO
+
+    for row_idx, row in enumerate(all_data):
+        f = StringIO()
+        data_conversion_func(row, row_idx, f)
+
+        yield f.getvalue()
 
 
-def output_phenotype(data, code, headers=None):
-    data.index.names = ['FID']
+def _to_phenotype(data, data_chunk_idx, buffer):
+    data.index.name = 'FID'
     data = data.assign(IID=data.index.values.copy())
 
     columns = data.columns.tolist()
-    columns_reordered = ['IID'] + [c for c in columns if c !='IID']
+    columns_reordered = ['IID'] + [c for c in columns if c != 'IID']
     data = data.loc[:, columns_reordered]
 
-    f = tempfile.TemporaryFile(mode='r+')
-    data.to_csv(f, sep='\t', na_rep='NA')
-    f.seek(0)
+    data.to_csv(buffer, sep='\t', na_rep='NA', header=data_chunk_idx == 0)
 
-    resp = Response(generate(f), code)
+
+def output_phenotype(data, code, headers=None):
+    resp = Response(_data_generator(data, _to_phenotype), code)
     resp.headers.extend(headers or {})
     return resp
 
 
-def output_csv(data, code, headers=None):
-    f = tempfile.TemporaryFile(mode='r+')
-    data.to_csv(f)
-    f.seek(0)
+def _to_csv(data, data_chunk_idx, buffer):
+    data.to_csv(buffer, header=data_chunk_idx == 0)
 
-    resp = Response(generate(f), code)
+
+def output_csv(data, code, headers=None):
+    resp = Response(_data_generator(data, _to_csv), code)
     resp.headers.extend(headers or {})
     return resp
 

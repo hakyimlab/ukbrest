@@ -44,6 +44,11 @@ def _setup_phenotype_path():
 
     environ['UKBREST_PHENOTYPE_CSV'] = ';'.join([join(phenotype_path, csv_file) for csv_file in phenotype_csv_file])
 
+    phenotype_chunksize = environ.get('UKBREST_PHENOTYPE_CHUNKSIZE', None)
+    if not phenotype_chunksize:
+        print('Warning: UKBREST_PHENOTYPE_CHUNKSIZE was not set, no chunksize for SQL queries, what can lead to'
+              'memory problems.')
+
 def _setup_db_uri():
     db_uri = environ.get('UKBREST_DB_URI', None)
 

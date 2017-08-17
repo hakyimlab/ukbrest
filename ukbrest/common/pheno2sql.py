@@ -13,7 +13,19 @@ from ukbrest.common.utils.datagen import get_tmpdir
 
 class Pheno2SQL:
     def __init__(self, ukb_csvs, db_engine, table_prefix='ukb_pheno_', n_columns_per_table=sys.maxsize,
-                 n_jobs=-1, tmpdir='/tmp/ukbrest', chunksize=10000):
+                 n_jobs=-1, tmpdir='/tmp/ukbrest', loading_chunksize=10000, sql_chunksize=None):
+        """
+
+        :param ukb_csvs:
+        :param db_engine:
+        :param table_prefix:
+        :param n_columns_per_table:
+        :param n_jobs:
+        :param tmpdir:
+        :param loading_chunksize: number of lines to read when loading CSV files to the SQL database.
+        :param sql_chunksize: when an SQL query is submited to get phenotypes, this parameteres indicates the
+        chunksize (number of rows).
+        """
 
         if isinstance(ukb_csvs, (tuple, list)):
             self.ukb_csvs = ukb_csvs
@@ -39,7 +51,8 @@ class Pheno2SQL:
         self.n_columns_per_table = n_columns_per_table
         self.n_jobs = n_jobs
         self.tmpdir = tmpdir
-        self.chunksize = chunksize
+        self.loading_chunksize = loading_chunksize
+        self.sql_chunksize = sql_chunksize
 
     def __enter__(self):
         return self
@@ -170,7 +183,7 @@ class Pheno2SQL:
         full_column_names = ['eid'] + [x[0] for x in column_names]
 
         data_reader = pd.read_csv(csv_file, index_col=0, header=0, usecols=full_column_names,
-                                  chunksize=self.chunksize, dtype=str)
+                                  chunksize=self.loading_chunksize, dtype=str)
 
         new_columns = [x[1] for x in column_names]
 
@@ -275,11 +288,7 @@ class Pheno2SQL:
 
         return tables[0] + ' ' + ' '.join(['full outer join {} using (eid) '.format(t) for t in tables[1:]])
 
-    def query(self, columns, filterings=None):
-        engine = create_engine(self.db_engine)
-
-        # select needed tables to join
-        all_columns = ['eid'] + columns
+    def _get_needed_tables(self, all_columns, engine):
         all_columns_quoted = ["'{}'".format(x.replace("'", "''")) for x in all_columns]
 
         # FIXME: are parameters correctly escaped by the arg parser?
@@ -292,12 +301,27 @@ class Pheno2SQL:
         if len(tables_needed_df) == 0:
             raise Exception('Tables not found.')
 
+        return tables_needed_df
+
+    def query(self, columns, filterings=None):
+        engine = create_engine(self.db_engine)
+
+        # select needed tables to join
+        all_columns = ['eid'] + columns
+        tables_needed_df = self._get_needed_tables(all_columns, engine)
+
         # FIXME: are parameters correctly escaped by the arg parser?
-        return pd.read_sql(
+        results_iterator = pd.read_sql(
             'select ' + ','.join(all_columns) +
             ' from ' + self._create_joins(tables_needed_df) +
             ((' where ' + ' and '.join(filterings)) if filterings is not None else ''),
-            engine, index_col='eid')
+            engine, index_col='eid', chunksize=self.sql_chunksize)
+
+        if self.sql_chunksize is None:
+            results_iterator = iter([results_iterator])
+
+        for chunk in results_iterator:
+            yield chunk
 
 
 if __name__ == '__main__':

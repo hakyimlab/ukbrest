@@ -32,6 +32,7 @@ Finally, run ukbrest with:
 ```bash
 $ docker run --rm --net ukb -p 5000:5000 \
   -v /mnt/genotype:/var/lib/genotype \
+  -e UKBREST_PHENOTYPE_CHUNKSIZE="10000" \
   -e UKBREST_DB_URI="postgresql://test:test@pg:5432/ukb" \
   miltondp/ukbrest
 ```

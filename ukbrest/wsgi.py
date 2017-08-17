@@ -10,7 +10,8 @@ def setup_app(app):
     app.config.update({'genoquery': genoq})
 
     # Add Pheno2SQL object
-    p2sql = Pheno2SQL(config.phenotype_csv, config.db_uri, n_columns_per_table=config.n_columns_per_table, tmpdir=config.tmp_dir)
+    p2sql = Pheno2SQL(config.phenotype_csv, config.db_uri, n_columns_per_table=config.n_columns_per_table,
+                      tmpdir=config.tmp_dir, sql_chunksize=config.phenotype_chunksize)
     app.config.update({'pheno2sql': p2sql})
 
 

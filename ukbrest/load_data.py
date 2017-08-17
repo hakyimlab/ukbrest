@@ -23,5 +23,6 @@ if __name__ == '__main__':
     # args = parser.parse_args()
 
     p2sql = Pheno2SQL(config.phenotype_csv, config.db_uri,
-                      n_columns_per_table=config.n_columns_per_table, tmpdir=config.tmp_dir)
+                      n_columns_per_table=config.n_columns_per_table, tmpdir=config.tmp_dir,
+                      sql_chunksize=config.phenotype_chunksize)
     p2sql.load_data()

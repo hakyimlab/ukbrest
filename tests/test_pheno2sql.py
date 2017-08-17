@@ -505,7 +505,7 @@ class Pheno2SQLTest(unittest.TestCase):
         # Run
         columns = ['c21_0_0', 'c21_2_0', 'c48_0_0']
 
-        query_result = p2sql.query(columns)
+        query_result = next(p2sql.query(columns))
 
         # Validate
         assert query_result is not None
@@ -545,7 +545,7 @@ class Pheno2SQLTest(unittest.TestCase):
         # Run
         columns = ['c21_0_0', 'c21_2_0', 'c48_0_0']
 
-        query_result = p2sql.query(columns)
+        query_result = next(p2sql.query(columns))
 
         # Validate
         assert query_result is not None
@@ -586,7 +586,7 @@ class Pheno2SQLTest(unittest.TestCase):
         # Run
         columns = ['c21_0_0', 'c21_2_0', 'c48_0_0']
 
-        query_result = p2sql.query(columns)
+        query_result = next(p2sql.query(columns))
 
         # Validate
         assert query_result is not None
@@ -672,7 +672,7 @@ class Pheno2SQLTest(unittest.TestCase):
         # Run
         columns = ['c21_0_0', 'c21_2_0', 'c48_0_0']
 
-        query_result = p2sql.query(columns)
+        query_result = next(p2sql.query(columns))
 
         # Validate
         assert query_result is not None
@@ -713,7 +713,7 @@ class Pheno2SQLTest(unittest.TestCase):
         # Run
         columns = ['c21_0_0', 'c21_2_0', 'c110_0_0', 'c150_0_0']
 
-        query_result = p2sql.query(columns)
+        query_result = next(p2sql.query(columns))
 
         # Validate
         assert query_result is not None
@@ -764,7 +764,7 @@ class Pheno2SQLTest(unittest.TestCase):
         # Run
         columns = ['c21_0_0', 'c21_2_0', 'c110_0_0', 'c150_0_0']
 
-        query_result = p2sql.query(columns)
+        query_result = next(p2sql.query(columns))
 
         # Validate
         assert query_result is not None
@@ -818,7 +818,7 @@ class Pheno2SQLTest(unittest.TestCase):
         # Run
         columns = ['c21_0_0', 'c21_2_0', 'c47_0_0', '(c47_0_0 ^ 2.0) as c47_squared']
 
-        query_result = p2sql.query(columns)
+        query_result = next(p2sql.query(columns))
 
         # Validate
         assert query_result is not None
@@ -902,7 +902,7 @@ class Pheno2SQLTest(unittest.TestCase):
         columns = ['c21_0_0', 'c21_2_0', 'c47_0_0']
         filter = ['c47_0_0 > 0']
 
-        query_result = p2sql.query(columns, filter)
+        query_result = next(p2sql.query(columns, filterings=filter))
 
         # Validate
         assert query_result is not None
@@ -975,7 +975,7 @@ class Pheno2SQLTest(unittest.TestCase):
         columns = ['c21_0_0', 'c21_2_0', 'c47_0_0', 'c48_0_0']
         filter = ["c48_0_0 > '2011-01-01'", "c21_2_0 <> ''"]
 
-        query_result = p2sql.query(columns, filter)
+        query_result = next(p2sql.query(columns, filterings=filter))
 
         # Validate
         assert query_result is not None
@@ -1216,3 +1216,127 @@ class Pheno2SQLTest(unittest.TestCase):
         assert int(tmp.loc[3, 'c46_0_0']) == -7
 
         assert pd.isnull(tmp.loc[4, 'c31_0_0'])
+
+    def test_postgresql_sql_chunksize01(self):
+        # Prepare
+        csv_file = get_repository_path('pheno2sql/example02.csv')
+        db_engine = POSTGRESQL_ENGINE
+
+        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, sql_chunksize=2)
+        p2sql.load_data()
+
+        # Run
+        columns = ['c21_0_0', 'c21_2_0', 'c48_0_0']
+
+        query_result = p2sql.query(columns)
+
+        # Validate
+        assert query_result is not None
+
+        import collections
+        assert isinstance(query_result, collections.Iterable)
+
+        index_len_sum = 0
+
+        for chunk_idx, chunk in enumerate(query_result):
+            assert chunk.index.name == 'eid'
+
+            index_len_sum += len(chunk.index)
+            assert len(chunk.index) == 2
+
+            if chunk_idx == 0:
+                indexes = (1, 2)
+                assert all(x in chunk.index for x in indexes)
+            else:
+                indexes = (3, 4)
+                assert all(x in chunk.index for x in indexes)
+
+            assert len(chunk.columns) == len(columns)
+            assert all(x in columns for x in chunk.columns)
+
+            assert not chunk.empty
+            assert chunk.shape[0] == 2
+            if chunk_idx == 0:
+                assert chunk.loc[1, 'c21_0_0'] == 'Option number 1'
+                assert chunk.loc[2, 'c21_0_0'] == 'Option number 2'
+
+                assert chunk.loc[1, 'c21_2_0'] == 'Yes'
+                assert chunk.loc[2, 'c21_2_0'] == 'No'
+
+                assert chunk.loc[1, 'c48_0_0'].strftime('%Y-%m-%d') == '2011-08-14'
+                assert chunk.loc[2, 'c48_0_0'].strftime('%Y-%m-%d') == '2016-11-30'
+            else:
+                assert chunk.loc[3, 'c21_0_0'] == 'Option number 3'
+                assert chunk.loc[4, 'c21_0_0'] == 'Option number 4'
+
+                assert chunk.loc[3, 'c21_2_0'] == 'Maybe'
+                assert pd.isnull(chunk.loc[4, 'c21_2_0'])
+
+                assert chunk.loc[3, 'c48_0_0'].strftime('%Y-%m-%d') == '2010-01-01'
+                assert chunk.loc[4, 'c48_0_0'].strftime('%Y-%m-%d') == '2011-02-15'
+
+        assert index_len_sum == 4
+
+    def test_postgresql_sql_chunksize02(self):
+        # Prepare
+        csv_file = get_repository_path('pheno2sql/example02.csv')
+        db_engine = POSTGRESQL_ENGINE
+
+        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, sql_chunksize=3)
+        p2sql.load_data()
+
+        # Run
+        columns = ['c21_0_0', 'c21_2_0', 'c48_0_0']
+
+        query_result = p2sql.query(columns)
+
+        # Validate
+        assert query_result is not None
+
+        import collections
+        assert isinstance(query_result, collections.Iterable)
+
+        index_len_sum = 0
+
+        for chunk_idx, chunk in enumerate(query_result):
+            assert chunk.index.name == 'eid'
+
+            index_len_sum += len(chunk.index)
+
+            if chunk_idx == 0:
+                assert len(chunk.index) == 3
+                indexes = (1, 2, 3)
+                assert all(x in chunk.index for x in indexes)
+            else:
+                assert len(chunk.index) == 1
+                indexes = (4,)
+                assert all(x in chunk.index for x in indexes)
+
+            assert len(chunk.columns) == len(columns)
+            assert all(x in columns for x in chunk.columns)
+
+            assert not chunk.empty
+            if chunk_idx == 0:
+                assert chunk.shape[0] == 3
+
+                assert chunk.loc[1, 'c21_0_0'] == 'Option number 1'
+                assert chunk.loc[2, 'c21_0_0'] == 'Option number 2'
+                assert chunk.loc[3, 'c21_0_0'] == 'Option number 3'
+
+                assert chunk.loc[1, 'c21_2_0'] == 'Yes'
+                assert chunk.loc[2, 'c21_2_0'] == 'No'
+                assert chunk.loc[3, 'c21_2_0'] == 'Maybe'
+
+                assert chunk.loc[1, 'c48_0_0'].strftime('%Y-%m-%d') == '2011-08-14'
+                assert chunk.loc[2, 'c48_0_0'].strftime('%Y-%m-%d') == '2016-11-30'
+                assert chunk.loc[3, 'c48_0_0'].strftime('%Y-%m-%d') == '2010-01-01'
+            else:
+                assert chunk.shape[0] == 1
+
+                assert chunk.loc[4, 'c21_0_0'] == 'Option number 4'
+
+                assert pd.isnull(chunk.loc[4, 'c21_2_0'])
+
+                assert chunk.loc[4, 'c48_0_0'].strftime('%Y-%m-%d') == '2011-02-15'
+
+        assert index_len_sum == 4
