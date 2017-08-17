@@ -1,5 +1,6 @@
 import os
 import unittest
+import tempfile
 
 import numpy as np
 import pandas as pd
@@ -104,9 +105,10 @@ class Pheno2SQLTest(unittest.TestCase):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example01.csv')
         db_engine = POSTGRESQL_ENGINE
+        temp_dir = tempfile.mkdtemp()
 
         # Run
-        with Pheno2SQL(csv_file, db_engine) as p2sql:
+        with Pheno2SQL(csv_file, db_engine, tmpdir=temp_dir) as p2sql:
             p2sql.load_data()
 
         # Validate
@@ -126,7 +128,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert tmp.shape[0] == 2
 
         ## Check that temporary files were deleted
-        assert len(os.listdir('/tmp/ukbrest')) == 0
+        assert len(os.listdir(temp_dir)) == 0
 
     def test_sqlite_less_columns_per_table(self):
         # Prepare
