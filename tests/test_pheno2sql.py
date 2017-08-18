@@ -343,8 +343,8 @@ class Pheno2SQLTest(unittest.TestCase):
         ## Check columns are correct
         tmp = pd.read_sql('select * from fields', create_engine(db_engine))
         expected_columns = ["field", "table_name"]
-        assert len(tmp.columns) == len(expected_columns)
-        assert all(x in expected_columns for x in tmp.columns)
+        assert len(tmp.columns) >= len(expected_columns)
+        assert all(x in tmp.columns for x in expected_columns)
 
         ## Check data is correct
         tmp = pd.read_sql('select * from fields', create_engine(db_engine), index_col='field')
@@ -359,7 +359,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert tmp.loc['c47_0_0', 'table_name'] == 'ukb_pheno_0_02'
         assert tmp.loc['c48_0_0', 'table_name'] == 'ukb_pheno_0_02'
 
-    def test_postgresql_auxiliary_table_is_created(self):
+    def test_postgresql_auxiliary_table_is_created_and_has_minimum_data_required(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example01.csv')
         db_engine = POSTGRESQL_ENGINE
@@ -405,8 +405,8 @@ class Pheno2SQLTest(unittest.TestCase):
         ## Check columns are correct
         tmp = pd.read_sql('select * from fields', create_engine(db_engine))
         expected_columns = ["field", "table_name"]
-        assert len(tmp.columns) == len(expected_columns)
-        assert all(x in expected_columns for x in tmp.columns)
+        assert len(tmp.columns) >= len(expected_columns)
+        assert all(x in tmp.columns for x in expected_columns)
 
         ## Check data is correct
         tmp = pd.read_sql('select * from fields', create_engine(db_engine), index_col='field')
@@ -420,6 +420,75 @@ class Pheno2SQLTest(unittest.TestCase):
         assert tmp.loc['c46_0_0', 'table_name'] == 'ukb_pheno_0_01'
         assert tmp.loc['c47_0_0', 'table_name'] == 'ukb_pheno_0_02'
         assert tmp.loc['c48_0_0', 'table_name'] == 'ukb_pheno_0_02'
+
+    def test_postgresql_auxiliary_table_with_more_information(self):
+        # Prepare
+        csv_file = get_repository_path('pheno2sql/example01.csv')
+        db_engine = POSTGRESQL_ENGINE
+
+        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, n_jobs=1)
+
+        # Run
+        p2sql.load_data()
+
+        # Validate
+        assert p2sql.db_type == 'postgresql'
+
+        ## Check tables exist
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_0_00'), create_engine(db_engine))
+        assert table.iloc[0, 0]
+
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_0_01'), create_engine(db_engine))
+        assert table.iloc[0, 0]
+
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_0_02'), create_engine(db_engine))
+        assert table.iloc[0, 0]
+
+        ## Check auxiliary table existance
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('fields'), create_engine(db_engine))
+        assert table.iloc[0, 0]
+
+        ## Check columns are correct
+        tmp = pd.read_sql('select * from fields', create_engine(db_engine))
+        expected_columns = ["field", "table_name", "type", "description"]
+        assert len(tmp.columns) == len(expected_columns), len(tmp.columns)
+        assert all(x in expected_columns for x in tmp.columns)
+
+        ## Check data is correct
+        tmp = pd.read_sql('select * from fields', create_engine(db_engine), index_col='field')
+        assert not tmp.empty
+        assert tmp.shape[0] == 8
+        assert tmp.loc['c21_0_0', 'table_name'] == 'ukb_pheno_0_00'
+        assert tmp.loc['c21_0_0', 'type'] == 'Categorical (single)'
+        assert tmp.loc['c21_0_0', 'description'] == 'An string value'
+
+        assert tmp.loc['c21_1_0', 'table_name'] == 'ukb_pheno_0_00'
+        assert tmp.loc['c21_1_0', 'type'] == 'Categorical (single)'
+        assert tmp.loc['c21_1_0', 'description'] == 'An string value'
+
+        assert tmp.loc['c21_2_0', 'table_name'] == 'ukb_pheno_0_00'
+        assert tmp.loc['c21_2_0', 'type'] == 'Categorical (single)'
+        assert tmp.loc['c21_2_0', 'description'] == 'An string value'
+
+        assert tmp.loc['c31_0_0', 'table_name'] == 'ukb_pheno_0_01'
+        assert tmp.loc['c31_0_0', 'type'] == 'Date'
+        assert tmp.loc['c31_0_0', 'description'] == 'A date'
+
+        assert tmp.loc['c34_0_0', 'table_name'] == 'ukb_pheno_0_01'
+        assert tmp.loc['c34_0_0', 'type'] == 'Integer'
+        assert tmp.loc['c34_0_0', 'description'] == 'Some integer'
+
+        assert tmp.loc['c46_0_0', 'table_name'] == 'ukb_pheno_0_01'
+        assert tmp.loc['c46_0_0', 'type'] == 'Integer'
+        assert tmp.loc['c46_0_0', 'description'] == 'Some another integer'
+
+        assert tmp.loc['c47_0_0', 'table_name'] == 'ukb_pheno_0_02'
+        assert tmp.loc['c47_0_0', 'type'] == 'Continuous'
+        assert tmp.loc['c47_0_0', 'description'] == 'Some continuous value'
+
+        assert tmp.loc['c48_0_0', 'table_name'] == 'ukb_pheno_0_02'
+        assert tmp.loc['c48_0_0', 'type'] == 'Time'
+        assert tmp.loc['c48_0_0', 'description'] == 'Some time'
 
     def test_postgresql_two_csv_files(self):
         # Prepare

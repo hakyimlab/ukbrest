@@ -113,11 +113,16 @@ class Pheno2SQL:
             tmp = pd.read_html(f, match='UDI', header=0, index_col=1, flavor='html5lib')
 
         logger.debug('Filling NaN values')
-        df = tmp[0].loc[:, 'Type']
-        df = df.fillna(method='ffill')
+        df_types = tmp[0].loc[:, 'Type']
+        df_types = df_types.fillna(method='ffill')
+
+        df_descriptions = tmp[0].loc[:, 'Description']
+        df_descriptions = df_descriptions.fillna(method='ffill')
         del tmp
 
         db_column_types = {}
+        column_types = {}
+        column_descriptions = {}
 
         # open just to get columns
         csv_df = pd.read_csv(ukbcsv_file, index_col=0, header=0, nrows=1)
@@ -126,7 +131,7 @@ class Pheno2SQL:
 
         logger.debug('Reading columns')
         for col in columns:
-            col_type = df[col]
+            col_type = df_types[col]
             final_db_col_type = TEXT
 
             if col_type == 'Continuous':
@@ -139,8 +144,10 @@ class Pheno2SQL:
                 final_db_col_type = TIMESTAMP
 
             db_column_types[col] = final_db_col_type
+            column_types[self._rename_columns(col)] = col_type
+            column_descriptions[self._rename_columns(col)] = df_descriptions[col].split('Uses data-coding ')[0]
 
-        return db_column_types
+        return db_column_types, column_types, column_descriptions
 
     def _rename_columns(self, column_name):
         if column_name == 'eid':
@@ -166,7 +173,7 @@ class Pheno2SQL:
         self.chunked_table_column_names = {self._get_table_name(col_idx, csv_file_idx): [col[1] for col in col_names]
                                            for col_idx, col_names in self.chunked_column_names}
 
-        self._original_db_dtypes = self._get_db_columns_dtypes(csv_file)
+        self._original_db_dtypes, self._fields_dtypes, all_fields_description = self._get_db_columns_dtypes(csv_file)
         self._db_dtypes = {self._rename_columns(k): v for k, v in self._original_db_dtypes.items()}
 
         data_sample = pd.read_csv(csv_file, index_col=0, header=0, nrows=1, dtype=str)
@@ -182,6 +189,8 @@ class Pheno2SQL:
         current_stop = 0
         for column_names_idx, column_names in self.chunked_column_names:
             new_columns_names = [x[1] for x in column_names]
+            fields_dtypes = [self._fields_dtypes[x] for x in new_columns_names]
+            fields_description = [all_fields_description[x] for x in new_columns_names]
 
             # Create main table structure
             table_name = self._get_table_name(column_names_idx, csv_file_idx)
@@ -193,7 +202,12 @@ class Pheno2SQL:
             current_start = current_stop
             current_stop = current_start + n_column_names
 
-            aux_table = pd.DataFrame({'field': new_columns_names, 'table_name': table_name})
+            aux_table = pd.DataFrame({
+                'field': new_columns_names,
+                'table_name': table_name,
+                'type': fields_dtypes,
+                'description': fields_description
+            })
             aux_table = aux_table.set_index('field')
             aux_table.to_sql('fields', self._get_db_engine(), if_exists=fields_table_if_exist[column_names_idx])
 
