@@ -240,7 +240,7 @@ class Pheno2SQL:
         return table_name, output_csv_filename
 
     def _create_temporary_csvs(self, csv_file, csv_file_idx):
-        logger.debug('Writing temporary CSV files')
+        logger.info('Writing temporary CSV files')
 
         self._close_db_engine()
         self.table_csvs = Parallel(n_jobs=self.n_jobs)(
