@@ -315,9 +315,13 @@ class Pheno2SQL:
         logger.info('Loading phenotype data into database')
 
         for csv_file_idx, csv_file in enumerate(self.ukb_csvs):
+            logger.info('Working on {}'.format(csv_file))
+
             self._create_tables_schema(csv_file, csv_file_idx)
             self._create_temporary_csvs(csv_file, csv_file_idx)
             self._load_csv()
+
+        logger.info('Loading finished!')
 
     def _create_joins(self, tables):
         if len(tables) == 1:
