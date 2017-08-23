@@ -156,6 +156,95 @@ class TestRestApiPhenotype(unittest.TestCase):
         assert pheno_file.loc[3, 'c48_0_0'] == '2010-01-01'
         assert pheno_file.loc[4, 'c48_0_0'] == '2011-02-15'
 
+    def test_phenotype_query_multiple_column_renaming(self):
+        # Prepare
+        columns = ['c21_0_0 as c21', 'c31_0_0 c31', 'c48_0_0']
+
+        parameters = {
+            'columns': columns,
+        }
+
+        # Run
+        response = self.app.get('/ukbrest/api/v1.0/phenotype',
+                                query_string=parameters, headers={'accept': 'text/phenotype'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', index_col='FID', dtype=str)
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (4, 3 + 1) # plus IID
+
+        assert pheno_file.index.name == 'FID'
+        assert len(pheno_file.index) == 4
+        assert all(x in pheno_file.index for x in range(1, 4 + 1))
+
+        expected_columns = ['IID'] + ['c21', 'c31', 'c48_0_0']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[1, 'IID'] == '1'
+        assert pheno_file.loc[2, 'IID'] == '2'
+        assert pheno_file.loc[3, 'IID'] == '3'
+        assert pheno_file.loc[4, 'IID'] == '4'
+
+        assert pheno_file.loc[1, 'c21'] == 'Option number 1'
+        assert pheno_file.loc[2, 'c21'] == 'Option number 2'
+        assert pheno_file.loc[3, 'c21'] == 'Option number 3'
+        assert pheno_file.loc[4, 'c21'] == 'Option number 4'
+
+        assert pheno_file.loc[1, 'c31'] == '2012-01-05'
+        assert pheno_file.loc[2, 'c31'] == '2015-12-30'
+        assert pheno_file.loc[3, 'c31'] == '2007-03-19'
+        assert pheno_file.loc[4, 'c31'] == '2002-05-09'
+
+        assert pheno_file.loc[1, 'c48_0_0'] == '2011-08-14'
+        assert pheno_file.loc[2, 'c48_0_0'] == '2016-11-30'
+        assert pheno_file.loc[3, 'c48_0_0'] == '2010-01-01'
+        assert pheno_file.loc[4, 'c48_0_0'] == '2011-02-15'
+
+    def test_phenotype_query_filtering_with_column_no_mentioned_in_select(self):
+        # Prepare
+        columns = ['c21_0_0 as c21', 'c21_2_0 c21_2']
+        filtering = ["c46_0_0 < 0", "c48_0_0 > '2011-01-01'"]
+
+        parameters = {
+            'columns': columns,
+            'filters': filtering,
+        }
+
+        # Run
+        response = self.app.get('/ukbrest/api/v1.0/phenotype', query_string=parameters)
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', index_col='FID', dtype=str)
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape[0] == 2
+        assert pheno_file.shape[1] == 2 + 1 # plus IID
+
+        assert pheno_file.index.name == 'FID'
+        assert len(pheno_file.index) == 2
+        assert all(x in pheno_file.index for x in (1, 2))
+
+        expected_columns = ['IID'] + ['c21', 'c21_2']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+        # column order
+        assert pheno_file.columns.tolist()[0] == 'IID'
+
+        assert pheno_file.loc[1, 'IID'] == '1'
+        assert pheno_file.loc[2, 'IID'] == '2'
+
+        assert pheno_file.loc[1, 'c21'] == 'Option number 1'
+        assert pheno_file.loc[2, 'c21'] == 'Option number 2'
+
+        assert pheno_file.loc[1, 'c21_2'] == 'Yes'
+        assert pheno_file.loc[2, 'c21_2'] == 'No'
+
     def test_phenotype_query_multiple_column_integer_values(self):
         # Prepare
         columns = ['c34_0_0', 'c46_0_0', 'c47_0_0']
@@ -246,6 +335,216 @@ class TestRestApiPhenotype(unittest.TestCase):
         assert pheno_file.loc[4, 'c34_0_0'] == '17'
 
         assert pheno_file.loc[1, 'c46_0_0'] == '-9'
+        assert pheno_file.loc[2, 'c46_0_0'] == 'NA'
+        assert pheno_file.loc[3, 'c46_0_0'] == '-7'
+        assert pheno_file.loc[4, 'c46_0_0'] == '4'
+
+        assert pheno_file.loc[1, 'c47_0_0'] == '45.55412'
+        assert pheno_file.loc[2, 'c47_0_0'] == '-0.55461'
+        assert pheno_file.loc[3, 'c47_0_0'] == '-5.32471'
+        assert pheno_file.loc[4, 'c47_0_0'] == '55.19832'
+
+    def test_phenotype_query_multiple_column_integer_values_with_nan_using_columns_renaming_with_as(self):
+        # Prepare
+        self.setUp('pheno2sql/example06_nan_integer.csv')
+
+        columns = ['c34_0_0 as c34', 'c46_0_0 as c46', 'c47_0_0 as c47']
+
+        parameters = {
+            'columns': columns,
+        }
+
+        # Run
+        response = self.app.get('/ukbrest/api/v1.0/phenotype',
+                                query_string=parameters, headers={'accept': 'text/phenotype'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', na_values='',
+                                 keep_default_na=False, index_col='FID', dtype=str)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (4, 3 + 1) # plus IID
+
+        assert pheno_file.index.name == 'FID'
+        assert len(pheno_file.index) == 4
+        assert all(x in pheno_file.index for x in range(1, 4 + 1))
+
+        expected_columns = ['IID'] + ['c34', 'c46', 'c47']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[1, 'IID'] == '1'
+        assert pheno_file.loc[2, 'IID'] == '2'
+        assert pheno_file.loc[3, 'IID'] == '3'
+        assert pheno_file.loc[4, 'IID'] == '4'
+
+        assert pheno_file.loc[1, 'c34'] == '21'
+        assert pheno_file.loc[2, 'c34'] == '12'
+        assert pheno_file.loc[3, 'c34'] == '1'
+        assert pheno_file.loc[4, 'c34'] == '17'
+
+        assert pheno_file.loc[1, 'c46'] == '-9', pheno_file.loc[1, 'c46']
+        assert pheno_file.loc[2, 'c46'] == 'NA'
+        assert pheno_file.loc[3, 'c46'] == '-7'
+        assert pheno_file.loc[4, 'c46'] == '4'
+
+        assert pheno_file.loc[1, 'c47'] == '45.55412'
+        assert pheno_file.loc[2, 'c47'] == '-0.55461'
+        assert pheno_file.loc[3, 'c47'] == '-5.32471'
+        assert pheno_file.loc[4, 'c47'] == '55.19832'
+
+    def test_phenotype_query_multiple_column_integer_values_with_nan_using_columns_renaming_with_as_uppercase(self):
+        # Prepare
+        self.setUp('pheno2sql/example06_nan_integer.csv')
+
+        columns = ['c34_0_0 as c34', 'c46_0_0 AS c46', 'c47_0_0 as c47']
+
+        parameters = {
+            'columns': columns,
+        }
+
+        # Run
+        response = self.app.get('/ukbrest/api/v1.0/phenotype',
+                                query_string=parameters, headers={'accept': 'text/phenotype'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', na_values='',
+                                 keep_default_na=False, index_col='FID', dtype=str)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (4, 3 + 1) # plus IID
+
+        assert pheno_file.index.name == 'FID'
+        assert len(pheno_file.index) == 4
+        assert all(x in pheno_file.index for x in range(1, 4 + 1))
+
+        expected_columns = ['IID'] + ['c34', 'c46', 'c47']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[1, 'IID'] == '1'
+        assert pheno_file.loc[2, 'IID'] == '2'
+        assert pheno_file.loc[3, 'IID'] == '3'
+        assert pheno_file.loc[4, 'IID'] == '4'
+
+        assert pheno_file.loc[1, 'c34'] == '21'
+        assert pheno_file.loc[2, 'c34'] == '12'
+        assert pheno_file.loc[3, 'c34'] == '1'
+        assert pheno_file.loc[4, 'c34'] == '17'
+
+        assert pheno_file.loc[1, 'c46'] == '-9', pheno_file.loc[1, 'c46']
+        assert pheno_file.loc[2, 'c46'] == 'NA'
+        assert pheno_file.loc[3, 'c46'] == '-7'
+        assert pheno_file.loc[4, 'c46'] == '4'
+
+        assert pheno_file.loc[1, 'c47'] == '45.55412'
+        assert pheno_file.loc[2, 'c47'] == '-0.55461'
+        assert pheno_file.loc[3, 'c47'] == '-5.32471'
+        assert pheno_file.loc[4, 'c47'] == '55.19832'
+
+    def test_phenotype_query_multiple_column_integer_values_with_nan_using_columns_renaming_with_space(self):
+        # Prepare
+        self.setUp('pheno2sql/example06_nan_integer.csv')
+
+        columns = ['c34_0_0 as c34', 'c46_0_0 c46', 'c47_0_0 as c47']
+
+        parameters = {
+            'columns': columns,
+        }
+
+        # Run
+        response = self.app.get('/ukbrest/api/v1.0/phenotype',
+                                query_string=parameters, headers={'accept': 'text/phenotype'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', na_values='',
+                                 keep_default_na=False, index_col='FID', dtype=str)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (4, 3 + 1) # plus IID
+
+        assert pheno_file.index.name == 'FID'
+        assert len(pheno_file.index) == 4
+        assert all(x in pheno_file.index for x in range(1, 4 + 1))
+
+        expected_columns = ['IID'] + ['c34', 'c46', 'c47']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[1, 'IID'] == '1'
+        assert pheno_file.loc[2, 'IID'] == '2'
+        assert pheno_file.loc[3, 'IID'] == '3'
+        assert pheno_file.loc[4, 'IID'] == '4'
+
+        assert pheno_file.loc[1, 'c34'] == '21'
+        assert pheno_file.loc[2, 'c34'] == '12'
+        assert pheno_file.loc[3, 'c34'] == '1'
+        assert pheno_file.loc[4, 'c34'] == '17'
+
+        assert pheno_file.loc[1, 'c46'] == '-9', pheno_file.loc[1, 'c46']
+        assert pheno_file.loc[2, 'c46'] == 'NA'
+        assert pheno_file.loc[3, 'c46'] == '-7'
+        assert pheno_file.loc[4, 'c46'] == '4'
+
+        assert pheno_file.loc[1, 'c47'] == '45.55412'
+        assert pheno_file.loc[2, 'c47'] == '-0.55461'
+        assert pheno_file.loc[3, 'c47'] == '-5.32471'
+        assert pheno_file.loc[4, 'c47'] == '55.19832'
+
+    def test_phenotype_query_multiple_column_integer_values_with_nan_using_reg_exp(self):
+        # Prepare
+        self.setUp('pheno2sql/example06_nan_integer.csv')
+
+        columns = ['c34_0_0 as c34']
+        reg_exp_columns = ['c4[67]_0_0']
+
+        parameters = {
+            'columns': columns,
+            'ecolumns': reg_exp_columns,
+        }
+
+        # Run
+        response = self.app.get('/ukbrest/api/v1.0/phenotype',
+                                query_string=parameters, headers={'accept': 'text/phenotype'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', na_values='',
+                                 keep_default_na=False, index_col='FID', dtype=str)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (4, 3 + 1) # plus IID
+
+        assert pheno_file.index.name == 'FID'
+        assert len(pheno_file.index) == 4
+        assert all(x in pheno_file.index for x in range(1, 4 + 1))
+
+        expected_columns = ['IID'] + ['c34', 'c46_0_0', 'c47_0_0']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[1, 'IID'] == '1'
+        assert pheno_file.loc[2, 'IID'] == '2'
+        assert pheno_file.loc[3, 'IID'] == '3'
+        assert pheno_file.loc[4, 'IID'] == '4'
+
+        assert pheno_file.loc[1, 'c34'] == '21'
+        assert pheno_file.loc[2, 'c34'] == '12'
+        assert pheno_file.loc[3, 'c34'] == '1'
+        assert pheno_file.loc[4, 'c34'] == '17'
+
+        assert pheno_file.loc[1, 'c46_0_0'] == '-9', pheno_file.loc[1, 'c46']
         assert pheno_file.loc[2, 'c46_0_0'] == 'NA'
         assert pheno_file.loc[3, 'c46_0_0'] == '-7'
         assert pheno_file.loc[4, 'c46_0_0'] == '4'

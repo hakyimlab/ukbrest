@@ -16,9 +16,12 @@ from ukbrest.config import logger
 
 
 class Pheno2SQL:
-    _RE_COLUMN_NAME_PATTERN = '(c[0-9a-z_]+_[0-9]+_[0-9]+)'
-    RE_COLUMN_NAME = re.compile(_RE_COLUMN_NAME_PATTERN)
-    RE_FULL_COLUMN_NAME = re.compile('^' + _RE_COLUMN_NAME_PATTERN + '$')
+    _RE_COLUMN_NAME_PATTERN = '(?i)c[0-9a-z_]+_[0-9]+_[0-9]+'
+    RE_COLUMN_NAME = re.compile('({})'.format(_RE_COLUMN_NAME_PATTERN))
+
+    _RE_FULL_COLUMN_NAME_RENAME_PATTERN = '^(?i)(?P<field>{})([ ]+([ ]*as[ ]+)?(?P<rename>[\w_]+))?$'.format(_RE_COLUMN_NAME_PATTERN)
+    # _RE_FULL_COLUMN_NAME_RENAME_PATTERN = '^(?P<field>{})(([ ]+as[ ]+)?(?P<rename>[\w_]+))?$'.format(_RE_COLUMN_NAME_PATTERN)
+    RE_FULL_COLUMN_NAME_RENAME = re.compile(_RE_FULL_COLUMN_NAME_RENAME_PATTERN)
 
     def __init__(self, ukb_csvs, connection_string, table_prefix='ukb_pheno_', n_columns_per_table=sys.maxsize,
                  n_jobs=-1, tmpdir=tempfile.mkdtemp(prefix='ukbrest'), loading_chunksize=10000, sql_chunksize=None):
@@ -374,19 +377,49 @@ class Pheno2SQL:
 
         return pd.read_sql(select_st, self._get_db_engine()).loc[:, 'field'].tolist()
 
-    def query(self, columns, ecolumns=None, filterings=None):
-        # get fields from regular expression
-        reg_exp_columns = self._get_fields_from_reg_exp(ecolumns)
+    def _get_fields_from_statements(self, statement):
+        """This method gets all fields mentioned in the statements."""
+        columns_fields = []
+        if statement is not None:
+            columns_fields = list(set([x for col in statement for x in re.findall(Pheno2SQL.RE_COLUMN_NAME, col)]))
 
+        return columns_fields
+
+    def _get_integer_fields(self, columns):
+        """This method returns a list of fields (either its column specification, like c64_0_0 or its rename like
+        myfield) that are of type integer."""
+        int_columns = []
+
+        for col in columns:
+            if col == 'eid':
+                continue
+
+            match = re.search(Pheno2SQL.RE_FULL_COLUMN_NAME_RENAME, col)
+
+            if match is None:
+                continue
+
+            col_field = match.group('field')
+
+            if self.fields_dtypes[col_field] != 'Integer':
+                continue
+
+            # select rename first, if not specified select field column
+            col_rename = next((grp_val for grp_val in (match.group('rename'), match.group('field')) if grp_val is not None))
+            int_columns.append(col_rename)
+
+        return int_columns
+
+    def query(self, columns=None, ecolumns=None, filterings=None):
         # select needed tables to join
-        all_columns = ['eid'] + (columns if columns is not None else []) + reg_exp_columns
-        tables_needed_df = self._get_needed_tables(all_columns)
+        columns_fields = self._get_fields_from_statements(columns)
+        reg_exp_columns_fields = self._get_fields_from_reg_exp(ecolumns)
+        filterings_columns_fields = self._get_fields_from_statements(filterings)
 
-        int_columns = \
-            [col for col in all_columns
-                if col != 'eid' and
-                re.match(Pheno2SQL.RE_FULL_COLUMN_NAME, col) and
-                self.fields_dtypes[col] == 'Integer']
+        tables_needed_df = self._get_needed_tables(columns_fields + reg_exp_columns_fields + filterings_columns_fields)
+
+        all_columns = ['eid'] + (columns if columns is not None else []) + reg_exp_columns_fields
+        int_columns = self._get_integer_fields(all_columns)
 
         # FIXME: are parameters correctly escaped by the arg parser?
         results_iterator = pd.read_sql(
