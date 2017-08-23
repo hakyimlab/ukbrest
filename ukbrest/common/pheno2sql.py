@@ -12,7 +12,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.types import TEXT, FLOAT, TIMESTAMP, INT
 
 from ukbrest.common.utils.datagen import get_tmpdir
-from ukbrest.config import logger
+from ukbrest.config import logger, SQL_CHUNKSIZE_ENV
 
 
 class Pheno2SQL:
@@ -23,11 +23,11 @@ class Pheno2SQL:
     # _RE_FULL_COLUMN_NAME_RENAME_PATTERN = '^(?P<field>{})(([ ]+as[ ]+)?(?P<rename>[\w_]+))?$'.format(_RE_COLUMN_NAME_PATTERN)
     RE_FULL_COLUMN_NAME_RENAME = re.compile(_RE_FULL_COLUMN_NAME_RENAME_PATTERN)
 
-    def __init__(self, ukb_csvs, connection_string, table_prefix='ukb_pheno_', n_columns_per_table=sys.maxsize,
-                 n_jobs=-1, tmpdir=tempfile.mkdtemp(prefix='ukbrest'), loading_chunksize=10000, sql_chunksize=None):
+    def __init__(self, ukb_csvs, db_uri, table_prefix='ukb_pheno_', n_columns_per_table=sys.maxsize,
+                 n_jobs=-1, tmpdir=tempfile.mkdtemp(prefix='ukbrest'), loading_chunksize=5000, sql_chunksize=None):
         """
         :param ukb_csvs:
-        :param connection_string:
+        :param db_uri:
         :param table_prefix:
         :param n_columns_per_table:
         :param n_jobs:
@@ -42,15 +42,15 @@ class Pheno2SQL:
         else:
             self.ukb_csvs = (ukb_csvs,)
 
-        self.connection_string = connection_string
+        self.db_uri = db_uri
         self.db_engine = None
 
-        parse_result = urlparse(self.connection_string)
+        parse_result = urlparse(self.db_uri)
         self.db_type = parse_result.scheme
 
         if self.db_type == 'sqlite':
             logger.warning('sqlite does not support parallel loading')
-            self.db_file = self.connection_string.split(':///')[-1]
+            self.db_file = self.db_uri.split(':///')[-1]
         elif self.db_type == 'postgresql':
             self.db_host = parse_result.hostname
             self.db_port = parse_result.port
@@ -66,10 +66,10 @@ class Pheno2SQL:
 
         self.sql_chunksize = sql_chunksize
         if self.sql_chunksize is None:
-            logger.warning('UKBREST_PHENOTYPE_CHUNKSIZE was not set, no chunksize for SQL queries, what can lead to '
-                           'memory problems.')
+            logger.warning('{} was not set, no chunksize for SQL queries, what can lead to '
+                           'memory problems.'.format(SQL_CHUNKSIZE_ENV))
 
-        self.fields_dtypes = {}
+        self._fields_dtypes = {}
 
         # this is a temporary variable that holds information about loading
         self._loading_tmp = {}
@@ -88,7 +88,7 @@ class Pheno2SQL:
             else:
                 kargs = {}
 
-            self.db_engine = create_engine(self.connection_string, **kargs)
+            self.db_engine = create_engine(self.db_uri, **kargs)
 
         return self.db_engine
 
@@ -190,7 +190,7 @@ class Pheno2SQL:
         # get columns dtypes (for PostgreSQL and standard ones)
         db_types_old_column_names, all_fields_dtypes, all_fields_description = self._get_db_columns_dtypes(csv_file)
         db_dtypes = {self._rename_columns(k): v for k, v in db_types_old_column_names.items()}
-        self.fields_dtypes.update(all_fields_dtypes)
+        self._fields_dtypes.update(all_fields_dtypes)
 
         data_sample = pd.read_csv(csv_file, index_col=0, header=0, nrows=1, dtype=str)
         data_sample = data_sample.rename(columns=self._rename_columns)
@@ -342,6 +342,14 @@ class Pheno2SQL:
 
         logger.info('Loading finished!')
 
+    def initialize(self):
+        logger.info('Initializing')
+
+        logger.info('Loading fields dtypes')
+        self.init_field_dtypes()
+
+        logger.info('Initialization finished!')
+
     def _create_joins(self, tables):
         if len(tables) == 1:
             return tables[0]
@@ -362,6 +370,24 @@ class Pheno2SQL:
             raise Exception('Tables not found.')
 
         return tables_needed_df
+
+    def get_field_dtype(self, field=None):
+        """Returns the type of the field. If field is None, then it just loads all fields types"""
+
+        if field in self._fields_dtypes:
+            return self._fields_dtypes[field]
+
+        # initialize dbtypes for all fields
+        field_type = pd.read_sql(
+            'select distinct field, type '
+            'from fields',
+        self._get_db_engine())
+
+        for row in field_type.itertuples():
+            self._fields_dtypes[row.field] = row.type
+
+        return self._fields_dtypes[field] if field in self._fields_dtypes else None
+
 
     def _get_fields_from_reg_exp(self, ecolumns):
         if ecolumns is None:
@@ -401,7 +427,7 @@ class Pheno2SQL:
 
             col_field = match.group('field')
 
-            if self.fields_dtypes[col_field] != 'Integer':
+            if self.get_field_dtype(col_field) != 'Integer':
                 continue
 
             # select rename first, if not specified select field column

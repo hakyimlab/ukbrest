@@ -12,17 +12,22 @@ from ukbrest.common.pheno2sql import Pheno2SQL
 
 
 class TestRestApiPhenotype(unittest.TestCase):
-    def setUp(self, filename=None, **kwargs):
+    def setUp(self, filename=None, load_data=True, **kwargs):
         # Load data
         if filename is None:
             csv_file = get_repository_path('pheno2sql/example02.csv')
-        else:
+        elif isinstance(filename, (tuple, list)):
+            csv_file = tuple([get_repository_path(f) for f in filename])
+        elif isinstance(filename, str):
             csv_file = get_repository_path(filename)
+        else:
+            raise ValueError('filename unknown type')
 
         db_engine = POSTGRESQL_ENGINE
 
         p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=2, **kwargs)
-        p2sql.load_data()
+        if load_data:
+            p2sql.load_data()
 
         # Configure
         app.app.config['TESTING'] = True
@@ -1092,3 +1097,90 @@ class TestRestApiPhenotype(unittest.TestCase):
         assert pheno_file.loc[3, 'c84_0_2'] == '-68'
         assert pheno_file.loc[4, 'c84_0_2'] == 'NA'
         assert pheno_file.loc[5, 'c84_0_2'] == '-445'
+
+    def test_phenotype_query_columns_pheno2sql_instance_not_loaded(self):
+        """This test uses a different Pheno2SQL instance without previous loading"""
+
+        # Prepare
+        csv01 = get_repository_path('pheno2sql/example08_01.csv')
+        csv02 = get_repository_path('pheno2sql/example08_02.csv')
+        csvs = (csv01, csv02)
+
+        # first load data
+        self.setUp(csvs)
+
+        # then create another instance without executing load_data method
+        self.setUp(csvs, load_data=False)
+
+        columns = ['c48_0_0', 'c120_0_0 as c120', 'c150_0_0 c150']
+        reg_exp_columns = ['c21_[01]_0', 'c100_\d_0']
+
+        parameters = {
+            'columns': columns,
+            'ecolumns': reg_exp_columns,
+        }
+
+        # Run
+        response = self.app.get('/ukbrest/api/v1.0/phenotype', query_string=parameters)
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', na_values='',
+                                 keep_default_na=False, index_col='FID', dtype=str)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (5, 8 + 1), pheno_file.shape # plus IID
+
+        assert pheno_file.index.name == 'FID'
+        assert len(pheno_file.index) == 5
+        assert all(x in pheno_file.index for x in range(1, 5 + 1))
+
+        expected_columns = ['IID'] + ['c21_0_0', 'c21_1_0', 'c48_0_0', 'c120', 'c150', 'c100_0_0', 'c100_1_0', 'c100_2_0']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+        # column order
+        assert pheno_file.columns.tolist()[0] == 'IID'
+
+        assert pheno_file.loc[1, 'IID'] == '1'
+        assert pheno_file.loc[2, 'IID'] == '2'
+        assert pheno_file.loc[3, 'IID'] == '3'
+        assert pheno_file.loc[4, 'IID'] == '4'
+        assert pheno_file.loc[5, 'IID'] == '5'
+
+        assert pheno_file.loc[1, 'c21_0_0'] == 'Option number 1'
+        assert pheno_file.loc[2, 'c21_0_0'] == 'Option number 2'
+        assert pheno_file.loc[3, 'c21_0_0'] == 'Option number 3'
+        assert pheno_file.loc[4, 'c21_0_0'] == 'Option number 4'
+        assert pheno_file.loc[5, 'c21_0_0'] == 'Option number 5'
+
+        assert pheno_file.loc[1, 'c21_1_0'] == 'No response'
+        assert pheno_file.loc[2, 'c21_1_0'] == 'NA'
+        assert pheno_file.loc[3, 'c21_1_0'] == 'Of course'
+        assert pheno_file.loc[4, 'c21_1_0'] == "I don't know"
+        assert pheno_file.loc[5, 'c21_1_0'] == 'Maybe'
+
+        assert pheno_file.loc[1, 'c48_0_0'] == '2010-07-14'
+        assert pheno_file.loc[2, 'c48_0_0'] == '2017-11-30'
+        assert pheno_file.loc[3, 'c48_0_0'] == '2020-01-01'
+        assert pheno_file.loc[4, 'c48_0_0'] == '1990-02-15'
+        assert pheno_file.loc[5, 'c48_0_0'] == '1999-10-11'
+
+        assert pheno_file.loc[1, 'c100_0_0'] == '-9', pheno_file.loc[1, 'c100_0_0']
+        assert pheno_file.loc[2, 'c100_0_0'] == '-2'
+        assert pheno_file.loc[3, 'c100_0_0'] == 'NA'
+        assert pheno_file.loc[4, 'c100_0_0'] == 'NA'
+        assert pheno_file.loc[5, 'c100_0_0'] == 'NA'
+
+        assert pheno_file.loc[1, 'c100_1_0'] == '3', pheno_file.loc[1, 'c100_1_0']
+        assert pheno_file.loc[2, 'c100_1_0'] == '3'
+        assert pheno_file.loc[3, 'c100_1_0'] == '-4'
+        assert pheno_file.loc[4, 'c100_1_0'] == 'NA'
+        assert pheno_file.loc[5, 'c100_1_0'] == 'NA'
+
+        assert pheno_file.loc[1, 'c100_2_0'] == 'NA', pheno_file.loc[1, 'c100_2_0']
+        assert pheno_file.loc[2, 'c100_2_0'] == '1'
+        assert pheno_file.loc[3, 'c100_2_0'] == '-10'
+        assert pheno_file.loc[4, 'c100_2_0'] == 'NA'
+        assert pheno_file.loc[5, 'c100_2_0'] == 'NA'
