@@ -4,6 +4,7 @@ import unittest
 
 from ukbrest import app
 import pandas as pd
+from nose.tools import nottest
 
 from tests.settings import POSTGRESQL_ENGINE
 from tests.utils import get_repository_path
@@ -195,6 +196,57 @@ class TestRestApiPhenotype(unittest.TestCase):
 
         assert pheno_file.loc[1, 'c46_0_0'] == '-9'
         assert pheno_file.loc[2, 'c46_0_0'] == '-2'
+        assert pheno_file.loc[3, 'c46_0_0'] == '-7'
+        assert pheno_file.loc[4, 'c46_0_0'] == '4'
+
+        assert pheno_file.loc[1, 'c47_0_0'] == '45.55412'
+        assert pheno_file.loc[2, 'c47_0_0'] == '-0.55461'
+        assert pheno_file.loc[3, 'c47_0_0'] == '-5.32471'
+        assert pheno_file.loc[4, 'c47_0_0'] == '55.19832'
+
+    def test_phenotype_query_multiple_column_integer_values_with_nan(self):
+        # Prepare
+        self.setUp('pheno2sql/example06_nan_integer.csv')
+
+        columns = ['c34_0_0', 'c46_0_0', 'c47_0_0']
+
+        parameters = {
+            'columns': columns,
+        }
+
+        # Run
+        response = self.app.get('/ukbrest/api/v1.0/phenotype',
+                                query_string=parameters, headers={'accept': 'text/phenotype'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', na_values='',
+                                 keep_default_na=False, index_col='FID', dtype=str)
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (4, 3 + 1) # plus IID
+
+        assert pheno_file.index.name == 'FID'
+        assert len(pheno_file.index) == 4
+        assert all(x in pheno_file.index for x in range(1, 4 + 1))
+
+        expected_columns = ['IID'] + columns
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[1, 'IID'] == '1'
+        assert pheno_file.loc[2, 'IID'] == '2'
+        assert pheno_file.loc[3, 'IID'] == '3'
+        assert pheno_file.loc[4, 'IID'] == '4'
+
+        assert pheno_file.loc[1, 'c34_0_0'] == '21'
+        assert pheno_file.loc[2, 'c34_0_0'] == '12'
+        assert pheno_file.loc[3, 'c34_0_0'] == '1'
+        assert pheno_file.loc[4, 'c34_0_0'] == '17'
+
+        assert pheno_file.loc[1, 'c46_0_0'] == '-9'
+        assert pheno_file.loc[2, 'c46_0_0'] == 'NA'
         assert pheno_file.loc[3, 'c46_0_0'] == '-7'
         assert pheno_file.loc[4, 'c46_0_0'] == '4'
 
@@ -669,8 +721,8 @@ class TestRestApiPhenotype(unittest.TestCase):
         assert pheno_file.loc[5, 'c48_0_0'] == '1999-10-11'
 
         # FIXME: this should be integer, not float
-        assert pheno_file.loc[1, 'c84_0_0'] == '11.0', pheno_file.loc[1, 'c84_0_0']
-        assert pheno_file.loc[2, 'c84_0_0'] == '-21.0'
+        assert pheno_file.loc[1, 'c84_0_0'] == '11', pheno_file.loc[1, 'c84_0_0']
+        assert pheno_file.loc[2, 'c84_0_0'] == '-21'
         assert pheno_file.loc[3, 'c84_0_0'] == 'NA'
-        assert pheno_file.loc[4, 'c84_0_0'] == '41.0'
-        assert pheno_file.loc[5, 'c84_0_0'] == '51.0'
+        assert pheno_file.loc[4, 'c84_0_0'] == '41'
+        assert pheno_file.loc[5, 'c84_0_0'] == '51'

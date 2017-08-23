@@ -3,6 +3,7 @@ import csv
 from urllib.parse import urlparse
 from subprocess import Popen, PIPE
 import tempfile
+import re
 
 import numpy as np
 import pandas as pd
@@ -15,6 +16,10 @@ from ukbrest.config import logger
 
 
 class Pheno2SQL:
+    _RE_COLUMN_NAME_PATTERN = '(c[0-9a-z_]+_[0-9]+_[0-9]+)'
+    RE_COLUMN_NAME = re.compile(_RE_COLUMN_NAME_PATTERN)
+    RE_FULL_COLUMN_NAME = re.compile('^' + _RE_COLUMN_NAME_PATTERN + '$')
+
     def __init__(self, ukb_csvs, connection_string, table_prefix='ukb_pheno_', n_columns_per_table=sys.maxsize,
                  n_jobs=-1, tmpdir=tempfile.mkdtemp(prefix='ukbrest'), loading_chunksize=10000, sql_chunksize=None):
         """
@@ -60,6 +65,11 @@ class Pheno2SQL:
         if self.sql_chunksize is None:
             logger.warning('UKBREST_PHENOTYPE_CHUNKSIZE was not set, no chunksize for SQL queries, what can lead to '
                            'memory problems.')
+
+        self.fields_dtypes = {}
+
+        # this is a temporary variable that holds information about loading
+        self._loading_tmp = {}
 
     def __enter__(self):
         return self
@@ -169,12 +179,15 @@ class Pheno2SQL:
 
         all_columns = tuple(zip(old_columns, new_columns))
         # FIXME: check if self.n_columns_per_table is greater than the real number of columns
-        self.chunked_column_names = tuple(enumerate(self._chunker(all_columns, self.n_columns_per_table)))
-        self.chunked_table_column_names = {self._get_table_name(col_idx, csv_file_idx): [col[1] for col in col_names]
-                                           for col_idx, col_names in self.chunked_column_names}
+        self._loading_tmp['chunked_column_names'] = tuple(enumerate(self._chunker(all_columns, self.n_columns_per_table)))
+        self._loading_tmp['chunked_table_column_names'] = \
+            {self._get_table_name(col_idx, csv_file_idx): [col[1] for col in col_names]
+             for col_idx, col_names in self._loading_tmp['chunked_column_names']}
 
-        self._original_db_dtypes, self._fields_dtypes, all_fields_description = self._get_db_columns_dtypes(csv_file)
-        self._db_dtypes = {self._rename_columns(k): v for k, v in self._original_db_dtypes.items()}
+        # get columns dtypes (for PostgreSQL and standard ones)
+        db_types_old_column_names, all_fields_dtypes, all_fields_description = self._get_db_columns_dtypes(csv_file)
+        db_dtypes = {self._rename_columns(k): v for k, v in db_types_old_column_names.items()}
+        self.fields_dtypes.update(all_fields_dtypes)
 
         data_sample = pd.read_csv(csv_file, index_col=0, header=0, nrows=1, dtype=str)
         data_sample = data_sample.rename(columns=self._rename_columns)
@@ -182,20 +195,20 @@ class Pheno2SQL:
         data_table_if_exist = 'replace'
 
         if csv_file_idx == 0:
-            fields_table_if_exist = ['replace'] + ['append'] * (len(self.chunked_column_names) - 1)
+            fields_table_if_exist = ['replace'] + ['append'] * (len(self._loading_tmp['chunked_column_names']) - 1)
         else:
-            fields_table_if_exist = ['append'] * (len(self.chunked_column_names))
+            fields_table_if_exist = ['append'] * (len(self._loading_tmp['chunked_column_names']))
 
         current_stop = 0
-        for column_names_idx, column_names in self.chunked_column_names:
+        for column_names_idx, column_names in self._loading_tmp['chunked_column_names']:
             new_columns_names = [x[1] for x in column_names]
-            fields_dtypes = [self._fields_dtypes[x] for x in new_columns_names]
+            fields_dtypes = [all_fields_dtypes[x] for x in new_columns_names]
             fields_description = [all_fields_description[x] for x in new_columns_names]
 
             # Create main table structure
             table_name = self._get_table_name(column_names_idx, csv_file_idx)
             logger.info('Table {} ({} columns)'.format(table_name, len(new_columns_names)))
-            data_sample.loc[[], new_columns_names].to_sql(table_name, self._get_db_engine(), if_exists=data_table_if_exist, dtype=self._db_dtypes)
+            data_sample.loc[[], new_columns_names].to_sql(table_name, self._get_db_engine(), if_exists=data_table_if_exist, dtype=db_dtypes)
 
             # Create auxiliary table
             n_column_names = len(new_columns_names)
@@ -245,7 +258,7 @@ class Pheno2SQL:
         self._close_db_engine()
         self.table_csvs = Parallel(n_jobs=self.n_jobs)(
             delayed(self._save_column_range)(csv_file, csv_file_idx, column_names_idx, column_names)
-            for column_names_idx, column_names in self.chunked_column_names
+            for column_names_idx, column_names in self._loading_tmp['chunked_column_names']
         )
 
     def _load_single_csv(self, table_name, file_path):
@@ -267,7 +280,7 @@ class Pheno2SQL:
 
             # For each column, set NULL rows with empty strings
             # FIXME: this codes needs refactoring
-            for col_name in self.chunked_table_column_names[table_name]:
+            for col_name in self._loading_tmp['chunked_table_column_names'][table_name]:
                 statement = (
                     'update {table_name} set {col_name} = null where {col_name} == "nan";'
                 ).format(**locals())
@@ -321,6 +334,9 @@ class Pheno2SQL:
             self._create_temporary_csvs(csv_file, csv_file_idx)
             self._load_csv()
 
+        # delete temporary variable
+        del(self._loading_tmp)
+
         logger.info('Loading finished!')
 
     def _create_joins(self, tables):
@@ -358,13 +374,19 @@ class Pheno2SQL:
 
         return pd.read_sql(select_st, self._get_db_engine()).loc[:, 'field'].tolist()
 
-    def query(self, columns, ecolumns=None, filterings=None, int_to_str=False):
+    def query(self, columns, ecolumns=None, filterings=None):
         # get fields from regular expression
         reg_exp_columns = self._get_fields_from_reg_exp(ecolumns)
 
         # select needed tables to join
         all_columns = ['eid'] + columns + reg_exp_columns
         tables_needed_df = self._get_needed_tables(all_columns)
+
+        int_columns = \
+            [col for col in all_columns
+                if col != 'eid' and
+                re.match(Pheno2SQL.RE_FULL_COLUMN_NAME, col) and
+                self.fields_dtypes[col] == 'Integer']
 
         # FIXME: are parameters correctly escaped by the arg parser?
         results_iterator = pd.read_sql(
@@ -377,6 +399,9 @@ class Pheno2SQL:
             results_iterator = iter([results_iterator])
 
         for chunk in results_iterator:
+            for col in int_columns:
+                chunk[col] = chunk[col].map(lambda x: np.nan if np.isnan(x) else '{:1.0f}'.format(x))
+
             yield chunk
 
 

@@ -39,7 +39,7 @@ class PhenotypeFieldsAPI(Resource):
     def get(self):
         # FIXME: should not return Response nor json, just raw data
         # FIXME: accessing protected field _db_types
-        return [k for k, v in self.pheno2sql._db_dtypes.items()]
+        return [k for k, v in self.pheno2sql.fields_dtypes.items()]
 
 
 def _data_generator(all_data, data_conversion_func):
