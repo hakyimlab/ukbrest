@@ -45,7 +45,8 @@ ENV PYTHONPATH="/opt"
 WORKDIR /opt
 
 COPY docker/start.py /opt/
-ENV GUNICORN_CMD_ARGS="--log-file=- -w 4 -k eventlet -b 0.0.0.0:5000"
+ENV WEB_CONCURRENCY=4
+ENV GUNICORN_CMD_ARGS="--log-file=- -k eventlet -b 0.0.0.0:5000"
 
 EXPOSE 5000
 

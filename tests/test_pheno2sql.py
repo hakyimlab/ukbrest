@@ -364,7 +364,7 @@ class Pheno2SQLTest(unittest.TestCase):
         csv_file = get_repository_path('pheno2sql/example01.csv')
         db_engine = POSTGRESQL_ENGINE
 
-        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, n_jobs=1)
+        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, loading_n_jobs=1)
 
         # Run
         p2sql.load_data()
@@ -426,7 +426,7 @@ class Pheno2SQLTest(unittest.TestCase):
         csv_file = get_repository_path('pheno2sql/example01.csv')
         db_engine = POSTGRESQL_ENGINE
 
-        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, n_jobs=1)
+        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, loading_n_jobs=1)
 
         # Run
         p2sql.load_data()
@@ -1077,7 +1077,7 @@ class Pheno2SQLTest(unittest.TestCase):
         csv_file = get_repository_path('pheno2sql/example03.csv')
         db_engine = SQLITE_ENGINE
 
-        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, n_jobs=1)
+        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, loading_n_jobs=1)
 
         # Run
         p2sql.load_data()
@@ -1129,7 +1129,7 @@ class Pheno2SQLTest(unittest.TestCase):
         csv_file = get_repository_path('pheno2sql/example03.csv')
         db_engine = POSTGRESQL_ENGINE
 
-        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, n_jobs=1)
+        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, loading_n_jobs=1)
 
         # Run
         p2sql.load_data()
@@ -1181,7 +1181,7 @@ class Pheno2SQLTest(unittest.TestCase):
         csv_file = get_repository_path('pheno2sql/example04.csv')
         db_engine = 'postgresql://test:test@localhost:5432/ukb'
 
-        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, n_jobs=1)
+        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, loading_n_jobs=1)
 
         # Run
         p2sql.load_data()
@@ -1233,7 +1233,7 @@ class Pheno2SQLTest(unittest.TestCase):
         csv_file = get_repository_path('pheno2sql/example06_nan_integer.csv')
         db_engine = 'postgresql://test:test@localhost:5432/ukb'
 
-        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, n_jobs=1)
+        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, loading_n_jobs=1)
 
         # Run
         p2sql.load_data()
@@ -1261,7 +1261,7 @@ class Pheno2SQLTest(unittest.TestCase):
         csv_file = get_repository_path('pheno2sql/example07_first_nan_integer.csv')
         db_engine = 'postgresql://test:test@localhost:5432/ukb'
 
-        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, n_jobs=1)
+        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, loading_n_jobs=1)
 
         # Run
         p2sql.load_data()

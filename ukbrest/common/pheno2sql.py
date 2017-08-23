@@ -20,17 +20,16 @@ class Pheno2SQL:
     RE_COLUMN_NAME = re.compile('({})'.format(_RE_COLUMN_NAME_PATTERN))
 
     _RE_FULL_COLUMN_NAME_RENAME_PATTERN = '^(?i)(?P<field>{})([ ]+([ ]*as[ ]+)?(?P<rename>[\w_]+))?$'.format(_RE_COLUMN_NAME_PATTERN)
-    # _RE_FULL_COLUMN_NAME_RENAME_PATTERN = '^(?P<field>{})(([ ]+as[ ]+)?(?P<rename>[\w_]+))?$'.format(_RE_COLUMN_NAME_PATTERN)
     RE_FULL_COLUMN_NAME_RENAME = re.compile(_RE_FULL_COLUMN_NAME_RENAME_PATTERN)
 
     def __init__(self, ukb_csvs, db_uri, table_prefix='ukb_pheno_', n_columns_per_table=sys.maxsize,
-                 n_jobs=-1, tmpdir=tempfile.mkdtemp(prefix='ukbrest'), loading_chunksize=5000, sql_chunksize=None):
+                 loading_n_jobs=-1, tmpdir=tempfile.mkdtemp(prefix='ukbrest'), loading_chunksize=5000, sql_chunksize=None):
         """
         :param ukb_csvs:
         :param db_uri:
         :param table_prefix:
         :param n_columns_per_table:
-        :param n_jobs:
+        :param loading_n_jobs:
         :param tmpdir:
         :param loading_chunksize: number of lines to read when loading CSV files to the SQL database.
         :param sql_chunksize: when an SQL query is submited to get phenotypes, this parameteres indicates the
@@ -60,7 +59,7 @@ class Pheno2SQL:
 
         self.table_prefix = table_prefix
         self.n_columns_per_table = n_columns_per_table
-        self.n_jobs = n_jobs
+        self.loading_n_jobs = loading_n_jobs
         self.tmpdir = tmpdir
         self.loading_chunksize = loading_chunksize
 
@@ -259,7 +258,7 @@ class Pheno2SQL:
         logger.info('Writing temporary CSV files')
 
         self._close_db_engine()
-        self.table_csvs = Parallel(n_jobs=self.n_jobs)(
+        self.table_csvs = Parallel(n_jobs=self.loading_n_jobs)(
             delayed(self._save_column_range)(csv_file, csv_file_idx, column_names_idx, column_names)
             for column_names_idx, column_names in self._loading_tmp['chunked_column_names']
         )
@@ -315,7 +314,7 @@ class Pheno2SQL:
         if self.db_type != 'sqlite':
             self._close_db_engine()
             # parallel csv loading is only supported in databases different than sqlite
-            Parallel(n_jobs=self.n_jobs)(
+            Parallel(n_jobs=self.loading_n_jobs)(
                 delayed(self._load_single_csv)(table_name, file_path)
                 for table_name, file_path in self.table_csvs
             )

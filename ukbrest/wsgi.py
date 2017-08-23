@@ -6,12 +6,11 @@ from ukbrest.common.pheno2sql import Pheno2SQL
 
 def setup_app(app):
     # Add GenoQuery object
-    genoq = GenoQuery(config.genotype_path, tmpdir=config.tmp_dir, debug=config.debug)
+    genoq = GenoQuery(config.genotype_path, tmpdir=config.tmpdir, debug=config.debug)
     app.config.update({'genoquery': genoq})
 
     # Add Pheno2SQL object
-    p2sql = Pheno2SQL(config.phenotype_csv, config.db_uri, n_columns_per_table=config.n_columns_per_table,
-                      tmpdir=config.tmp_dir, sql_chunksize=config.phenotype_chunksize)
+    p2sql = Pheno2SQL(**config.get_pheno2sql_parameters())
     app.config.update({'pheno2sql': p2sql})
 
 

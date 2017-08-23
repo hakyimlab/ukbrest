@@ -5,7 +5,7 @@ from os import environ
 from os.path import isdir, join
 import argparse
 
-from ukbrest.config import logger
+from ukbrest.config import logger, GENOTYPE_PATH_ENV, PHENOTYPE_PATH, PHENOTYPE_CSV_ENV, DB_URI_ENV
 
 
 parser = argparse.ArgumentParser()
@@ -16,7 +16,7 @@ args, unknown = parser.parse_known_args()
 
 
 def _setup_genotype_path():
-    genotype_path = environ.get('UKBREST_GENOTYPE_PATH', None)
+    genotype_path = environ.get(GENOTYPE_PATH_ENV, None)
 
     if not isdir(genotype_path):
         logger.warning('The genotype directory does not exist. You have to mount it using '
@@ -33,7 +33,7 @@ def _setup_genotype_path():
 
 
 def _setup_phenotype_path():
-    phenotype_path = environ.get('UKBREST_PHENOTYPE_PATH', None)
+    phenotype_path = environ.get(PHENOTYPE_PATH, None)
 
     if not isdir(phenotype_path):
         parser.error('The phenotype directory does not exist. You have to mount it using '
@@ -45,11 +45,11 @@ def _setup_phenotype_path():
     if len(phenotype_csv_file) == 0:
         parser.error('No .csv files were found in the phenotype directory')
 
-    environ['UKBREST_PHENOTYPE_CSV'] = ';'.join([join(phenotype_path, csv_file) for csv_file in phenotype_csv_file])
+    environ[PHENOTYPE_CSV_ENV] = ';'.join([join(phenotype_path, csv_file) for csv_file in phenotype_csv_file])
 
 
 def _setup_db_uri():
-    db_uri = environ.get('UKBREST_DB_URI', None)
+    db_uri = environ.get(DB_URI_ENV, None)
 
     if db_uri is None:
         parser.error('No DB URI was specified. You have to set it using the environment variable UKBREST_DB_URI. For '
