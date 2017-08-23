@@ -12,7 +12,7 @@ from ukbrest.common.pheno2sql import Pheno2SQL
 
 
 class TestRestApiPhenotype(unittest.TestCase):
-    def setUp(self, filename=None):
+    def setUp(self, filename=None, **kwargs):
         # Load data
         if filename is None:
             csv_file = get_repository_path('pheno2sql/example02.csv')
@@ -21,7 +21,7 @@ class TestRestApiPhenotype(unittest.TestCase):
 
         db_engine = POSTGRESQL_ENGINE
 
-        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=2)
+        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=2, **kwargs)
         p2sql.load_data()
 
         # Configure
@@ -668,7 +668,7 @@ class TestRestApiPhenotype(unittest.TestCase):
         assert pheno_file.loc[1, 'c48_0_0'] == '2011-08-14'
         assert pheno_file.loc[2, 'c48_0_0'] == '2016-11-30'
 
-    def test_phenotype_query_columns_with_regular_expression(self):
+    def test_phenotype_query_columns_with_regular_expression_and_standard_columns(self):
         # Prepare
         self.setUp('pheno2sql/example09_with_arrays.csv')
 
@@ -720,9 +720,76 @@ class TestRestApiPhenotype(unittest.TestCase):
         assert pheno_file.loc[4, 'c48_0_0'] == '1990-02-15'
         assert pheno_file.loc[5, 'c48_0_0'] == '1999-10-11'
 
-        # FIXME: this should be integer, not float
         assert pheno_file.loc[1, 'c84_0_0'] == '11', pheno_file.loc[1, 'c84_0_0']
         assert pheno_file.loc[2, 'c84_0_0'] == '-21'
         assert pheno_file.loc[3, 'c84_0_0'] == 'NA'
         assert pheno_file.loc[4, 'c84_0_0'] == '41'
         assert pheno_file.loc[5, 'c84_0_0'] == '51'
+
+        assert pheno_file.loc[1, 'c84_0_1'] == '1', pheno_file.loc[1, 'c84_0_1']
+        assert pheno_file.loc[2, 'c84_0_1'] == '99'
+        assert pheno_file.loc[3, 'c84_0_1'] == '98'
+        assert pheno_file.loc[4, 'c84_0_1'] == '-37'
+        assert pheno_file.loc[5, 'c84_0_1'] == '36'
+
+        assert pheno_file.loc[1, 'c84_0_2'] == '999'
+        assert pheno_file.loc[2, 'c84_0_2'] == '152'
+        assert pheno_file.loc[3, 'c84_0_2'] == '-68'
+        assert pheno_file.loc[4, 'c84_0_2'] == 'NA'
+        assert pheno_file.loc[5, 'c84_0_2'] == '-445'
+
+    def test_phenotype_query_columns_with_regular_expression_only(self):
+        # Prepare
+        self.setUp('pheno2sql/example09_with_arrays.csv')
+
+        reg_exp_columns = ['c84_0_\d+']
+
+        parameters = {
+            'ecolumns': reg_exp_columns,
+        }
+
+        # Run
+        response = self.app.get('/ukbrest/api/v1.0/phenotype', query_string=parameters)
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', na_values='',
+                                 keep_default_na=False, index_col='FID', dtype=str)
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (5, 3 + 1), pheno_file.shape # plus IID
+
+        assert pheno_file.index.name == 'FID'
+        assert len(pheno_file.index) == 5
+        assert all(x in pheno_file.index for x in range(1, 5 + 1))
+
+        expected_columns = ['IID'] + ['c84_0_0', 'c84_0_1', 'c84_0_2']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+        # column order
+        assert pheno_file.columns.tolist()[0] == 'IID'
+
+        assert pheno_file.loc[1, 'IID'] == '1'
+        assert pheno_file.loc[2, 'IID'] == '2'
+        assert pheno_file.loc[3, 'IID'] == '3'
+        assert pheno_file.loc[4, 'IID'] == '4'
+        assert pheno_file.loc[5, 'IID'] == '5'
+
+        assert pheno_file.loc[1, 'c84_0_0'] == '11', pheno_file.loc[1, 'c84_0_0']
+        assert pheno_file.loc[2, 'c84_0_0'] == '-21'
+        assert pheno_file.loc[3, 'c84_0_0'] == 'NA'
+        assert pheno_file.loc[4, 'c84_0_0'] == '41'
+        assert pheno_file.loc[5, 'c84_0_0'] == '51'
+
+        assert pheno_file.loc[1, 'c84_0_1'] == '1', pheno_file.loc[1, 'c84_0_1']
+        assert pheno_file.loc[2, 'c84_0_1'] == '99'
+        assert pheno_file.loc[3, 'c84_0_1'] == '98'
+        assert pheno_file.loc[4, 'c84_0_1'] == '-37'
+        assert pheno_file.loc[5, 'c84_0_1'] == '36'
+
+        assert pheno_file.loc[1, 'c84_0_2'] == '999'
+        assert pheno_file.loc[2, 'c84_0_2'] == '152'
+        assert pheno_file.loc[3, 'c84_0_2'] == '-68'
+        assert pheno_file.loc[4, 'c84_0_2'] == 'NA'
+        assert pheno_file.loc[5, 'c84_0_2'] == '-445'

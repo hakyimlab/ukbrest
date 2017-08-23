@@ -379,7 +379,7 @@ class Pheno2SQL:
         reg_exp_columns = self._get_fields_from_reg_exp(ecolumns)
 
         # select needed tables to join
-        all_columns = ['eid'] + columns + reg_exp_columns
+        all_columns = ['eid'] + (columns if columns is not None else []) + reg_exp_columns
         tables_needed_df = self._get_needed_tables(all_columns)
 
         int_columns = \
