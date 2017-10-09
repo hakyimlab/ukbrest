@@ -22,8 +22,9 @@ class Pheno2SQL:
     _RE_FULL_COLUMN_NAME_RENAME_PATTERN = '^(?i)(?P<field>{})([ ]+([ ]*as[ ]+)?(?P<rename>[\w_]+))?$'.format(_RE_COLUMN_NAME_PATTERN)
     RE_FULL_COLUMN_NAME_RENAME = re.compile(_RE_FULL_COLUMN_NAME_RENAME_PATTERN)
 
-    def __init__(self, ukb_csvs, db_uri, table_prefix='ukb_pheno_', n_columns_per_table=sys.maxsize,
-                 loading_n_jobs=-1, tmpdir=tempfile.mkdtemp(prefix='ukbrest'), loading_chunksize=5000, sql_chunksize=None):
+    def __init__(self, ukb_csvs, db_uri, bgen_sample_file=None, table_prefix='ukb_pheno_',
+                 n_columns_per_table=sys.maxsize, loading_n_jobs=-1, tmpdir=tempfile.mkdtemp(prefix='ukbrest'),
+                 loading_chunksize=5000, sql_chunksize=None):
         """
         :param ukb_csvs:
         :param db_uri:
@@ -40,6 +41,8 @@ class Pheno2SQL:
             self.ukb_csvs = ukb_csvs
         else:
             self.ukb_csvs = (ukb_csvs,)
+
+        self.bgen_sample_file = bgen_sample_file
 
         self.db_uri = db_uri
         self.db_engine = None
@@ -322,6 +325,20 @@ class Pheno2SQL:
             for table_name, file_path in self.table_csvs:
                 self._load_single_csv(table_name, file_path)
 
+    def _load_bgen_samples(self):
+        if self.bgen_sample_file is None or not os.path.isfile(self.bgen_sample_file):
+            logger.warning('BGEN sample file not set or does not exist: {}'.format(self.bgen_sample_file))
+            return
+
+        logger.info('Loading BGEN sample file: {}'.format(self.bgen_sample_file))
+
+        samples_data = pd.read_table(self.bgen_sample_file, sep=' ', header=0, usecols=['ID_1', 'ID_2'], skiprows=[1])
+        samples_data.set_index(np.arange(1, samples_data.shape[0] + 1), inplace=True)
+        samples_data.drop('ID_2', axis=1, inplace=True)
+        samples_data.rename(columns={'ID_1': 'eid'}, inplace=True)
+
+        samples_data.to_sql('samples', self._get_db_engine(), if_exists='replace')
+
     def load_data(self):
         """
         Load self.ukb_csv into the database configured.
@@ -335,6 +352,8 @@ class Pheno2SQL:
             self._create_tables_schema(csv_file, csv_file_idx)
             self._create_temporary_csvs(csv_file, csv_file_idx)
             self._load_csv()
+
+            self._load_bgen_samples()
 
         # delete temporary variable
         del(self._loading_tmp)
