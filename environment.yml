@@ -20,3 +20,4 @@ dependencies:
 - numpy=1.12.0=py35_0
 - psycopg2=2.7.1=py35_0
 - sqlalchemy=1.1.6=py35_0
+- ruamel.yaml=0.15.34=py35_0
