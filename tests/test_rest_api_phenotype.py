@@ -25,7 +25,10 @@ class TestRestApiPhenotype(unittest.TestCase):
 
         db_engine = POSTGRESQL_ENGINE
 
-        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=2, **kwargs)
+        if 'n_columns_per_table' not in kwargs:
+            kwargs['n_columns_per_table'] = 2
+
+        p2sql = Pheno2SQL(csv_file, db_engine, **kwargs)
         if load_data:
             p2sql.load_data()
 
@@ -1184,3 +1187,370 @@ class TestRestApiPhenotype(unittest.TestCase):
         assert pheno_file.loc[3, 'c100_2_0'] == '-10'
         assert pheno_file.loc[4, 'c100_2_0'] == 'NA'
         assert pheno_file.loc[5, 'c100_2_0'] == 'NA'
+
+    def test_phenotype_query_yaml_get_covariates(self):
+        # Prepare
+        self.setUp('pheno2sql/example10/example10_diseases.csv', sql_chunksize=2)
+
+        yaml_data = b"""
+        covariates:
+          - field_name_34: c34_0_0 
+          - field_name_47: c47_0_0
+        
+        fields:
+          - instance0: c21_0_0
+          - instance1: c21_1_0 
+          - instance2: c21_2_0 
+        """
+
+        # Run
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+            {
+                'file': (io.BytesIO(yaml_data), 'data.yaml'),
+                'section': 'covariates',
+            })
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', index_col='FID', dtype=str,
+                                 na_values='', keep_default_na=False)
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (5, 2 + 1) # plus IID
+
+        assert pheno_file.index.name == 'FID'
+        assert all(x in pheno_file.index for x in (1000010, 1000020, 1000030, 1000040, 1000050))
+
+        expected_columns = ['IID'] + ['field_name_34', 'field_name_47']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+        # column order
+        assert pheno_file.columns.tolist()[0] == 'IID'
+
+        assert pheno_file.loc[1000010, 'IID'] == '1000010'
+        assert pheno_file.loc[1000010, 'field_name_34'] == '-33'
+        assert pheno_file.loc[1000010, 'field_name_47'] == '41.55312'
+
+        assert pheno_file.loc[1000020, 'IID'] == '1000020'
+        assert pheno_file.loc[1000020, 'field_name_34'] == '34'
+        assert pheno_file.loc[1000020, 'field_name_47'] == '-10.51461'
+
+        assert pheno_file.loc[1000030, 'IID'] == '1000030'
+        assert pheno_file.loc[1000030, 'field_name_34'] == '0'
+        assert pheno_file.loc[1000030, 'field_name_47'] == '-35.31471'
+
+        assert pheno_file.loc[1000040, 'IID'] == '1000040'
+        assert pheno_file.loc[1000040, 'field_name_34'] == '3'
+        assert pheno_file.loc[1000040, 'field_name_47'] == '5.20832'
+
+        assert pheno_file.loc[1000050, 'IID'] == '1000050'
+        assert pheno_file.loc[1000050, 'field_name_34'] == '-4'
+        assert pheno_file.loc[1000050, 'field_name_47'] == 'NA'
+
+    def test_phenotype_query_yaml_get_fields(self):
+        # Prepare
+        self.setUp('pheno2sql/example10/example10_diseases.csv', sql_chunksize=2)
+
+        yaml_data = b"""
+        covariates:
+          - field_name_34: c34_0_0 
+          - field_name_47: c47_0_0
+
+        fields:
+          - instance0: c21_0_0
+          - instance1: c21_1_0 
+          - instance2: c21_2_0 
+        """
+
+        # Run
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'fields',
+        })
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', index_col='FID', dtype=str,
+                                 na_values='', keep_default_na=False)
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (5, 3 + 1)  # plus IID
+
+        assert pheno_file.index.name == 'FID'
+        assert all(x in pheno_file.index for x in (1000010, 1000020, 1000030, 1000040, 1000050))
+
+        expected_columns = ['IID'] + ['instance0', 'instance1', 'instance2']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+        # column order
+        assert pheno_file.columns.tolist()[0] == 'IID'
+
+        assert pheno_file.loc[1000010, 'IID'] == '1000010'
+        assert pheno_file.loc[1000010, 'instance0'] == 'Option number 1'
+        assert pheno_file.loc[1000010, 'instance1'] == 'No response'
+        assert pheno_file.loc[1000010, 'instance2'] == 'Yes'
+
+        assert pheno_file.loc[1000040, 'IID'] == '1000040'
+        assert pheno_file.loc[1000040, 'instance0'] == 'Option number 4'
+        assert pheno_file.loc[1000040, 'instance1'] == "I don't know"
+        assert pheno_file.loc[1000040, 'instance2'] == 'NA'
+
+    def test_phenotype_query_yaml_filter_samples_with_include_only(self):
+        # Prepare
+        self.setUp('pheno2sql/example10/example10_diseases.csv', sql_chunksize=2, n_columns_per_table=2)
+
+        yaml_data = b"""
+        samples_include_only:
+          - c47_0_0  > 0
+        
+        covariates:
+          - field_name_34: c34_0_0 
+          - field_name_47: c47_0_0
+
+        fields:
+          - instance0: c21_0_0
+          - instance1: c21_1_0 
+          - instance2: c21_2_0 
+        """
+
+        N_EXPECTED_SAMPLES = 2
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'fields',
+        })
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', index_col='FID', dtype=str,
+                                 na_values='', keep_default_na=False)
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 3 + 1), pheno_file.shape # plus IID
+
+        assert pheno_file.index.name == 'FID'
+        assert all(x in pheno_file.index for x in (1000010, 1000040)), pheno_file.index.tolist()
+
+        expected_columns = ['IID'] + ['instance0', 'instance1', 'instance2']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+        # column order
+        assert pheno_file.columns.tolist()[0] == 'IID'
+
+        assert pheno_file.loc[1000010, 'IID'] == '1000010'
+        assert pheno_file.loc[1000010, 'instance0'] == 'Option number 1'
+        assert pheno_file.loc[1000010, 'instance1'] == 'No response'
+        assert pheno_file.loc[1000010, 'instance2'] == 'Yes'
+
+        assert pheno_file.loc[1000040, 'IID'] == '1000040'
+        assert pheno_file.loc[1000040, 'instance0'] == 'Option number 4'
+        assert pheno_file.loc[1000040, 'instance1'] == "I don't know"
+        assert pheno_file.loc[1000040, 'instance2'] == 'NA'
+
+        #
+        # Ask covariates
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+            {
+                'file': (io.BytesIO(yaml_data), 'data.yaml'),
+                'section': 'covariates',
+            })
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', index_col='FID', dtype=str,
+                                 na_values='', keep_default_na=False)
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 2 + 1) # plus IID
+
+        assert pheno_file.index.name == 'FID'
+        assert all(x in pheno_file.index for x in (1000010, 1000040))
+
+        expected_columns = ['IID'] + ['field_name_34', 'field_name_47']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+        # column order
+        assert pheno_file.columns.tolist()[0] == 'IID'
+
+        assert pheno_file.loc[1000010, 'IID'] == '1000010'
+        assert pheno_file.loc[1000010, 'field_name_34'] == '-33'
+        assert pheno_file.loc[1000010, 'field_name_47'] == '41.55312'
+
+        assert pheno_file.loc[1000040, 'IID'] == '1000040'
+        assert pheno_file.loc[1000040, 'field_name_34'] == '3'
+        assert pheno_file.loc[1000040, 'field_name_47'] == '5.20832'
+
+    def test_phenotype_query_yaml_specify_bgenie_format(self):
+        # Prepare
+        self.setUp('pheno2sql/example10/example10_diseases.csv', sql_chunksize=2, n_columns_per_table=2)
+
+        yaml_data = b"""
+        samples_include_only:
+          - c47_0_0  > 0
+
+        covariates:
+          - field_name_34: c34_0_0 
+          - field_name_47: c47_0_0
+
+        fields:
+          - instance0: c21_0_0
+          - instance1: c21_1_0 
+          - instance2: c21_2_0 
+        """
+
+        N_EXPECTED_SAMPLES = 5
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'fields',
+            'missing_code': '-999',
+        }, headers={'accept': 'text/bgenie'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_table(io.StringIO(response.data.decode('utf-8')), sep=' ', header=0,
+                                   dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 3), pheno_file.shape
+
+        expected_columns = ['instance0', 'instance1', 'instance2']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[0, 'instance0'] == '-999', pheno_file.loc[0, 'instance0']
+        assert pheno_file.loc[0, 'instance1'] == '-999'
+        assert pheno_file.loc[0, 'instance2'] == '-999'
+
+        assert pheno_file.loc[1, 'instance0'] == '-999'
+        assert pheno_file.loc[1, 'instance1'] == '-999'
+        assert pheno_file.loc[1, 'instance2'] == '-999'
+
+        assert pheno_file.loc[2, 'instance0'] == 'Option number 4'
+        assert pheno_file.loc[2, 'instance1'] == "I don't know"
+        assert pheno_file.loc[2, 'instance2'] == '-999'
+
+        assert pheno_file.loc[3, 'instance0'] == 'Option number 1'
+        assert pheno_file.loc[3, 'instance1'] == 'No response'
+        assert pheno_file.loc[3, 'instance2'] == 'Yes'
+
+        assert pheno_file.loc[4, 'instance0'] == '-999'
+        assert pheno_file.loc[4, 'instance1'] == '-999'
+        assert pheno_file.loc[4, 'instance2'] == '-999'
+
+        #
+        # Ask covariates
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+            {
+                'file': (io.BytesIO(yaml_data), 'data.yaml'),
+                'section': 'covariates',
+                'missing_code': '-999',
+            }, headers={'accept': 'text/bgenie'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_table(io.StringIO(response.data.decode('utf-8')), sep=' ', header=0,
+                                   dtype=str, na_values='', keep_default_na=False)
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 2)
+
+        expected_columns = ['field_name_34', 'field_name_47']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[0, 'field_name_34'] == '-999'
+        assert pheno_file.loc[0, 'field_name_47'] == '-999'
+
+        assert pheno_file.loc[1, 'field_name_34'] == '-999'
+        assert pheno_file.loc[1, 'field_name_47'] == '-999'
+
+        assert pheno_file.loc[2, 'field_name_34'] == '3'
+        assert pheno_file.loc[2, 'field_name_47'] == '5.20832'
+
+        assert pheno_file.loc[3, 'field_name_34'] == '-33'
+        assert pheno_file.loc[3, 'field_name_47'] == '41.55312'
+
+        assert pheno_file.loc[4, 'field_name_34'] == '-999'
+        assert pheno_file.loc[4, 'field_name_47'] == '-999'
+
+    def test_phenotype_query_yaml_specify_bgenie_format_default_missing_code(self):
+        # Prepare
+        self.setUp('pheno2sql/example10/example10_diseases.csv', sql_chunksize=2, n_columns_per_table=2)
+
+        yaml_data = b"""
+        samples_include_only:
+          - c47_0_0  > 0
+
+        covariates:
+          - field_name_34: c34_0_0 
+          - field_name_47: c47_0_0
+
+        fields:
+          - instance0: c21_0_0
+          - instance1: c21_1_0 
+          - instance2: c21_2_0 
+        """
+
+        N_EXPECTED_SAMPLES = 5
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'fields',
+        }, headers={'accept': 'text/bgenie'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_table(io.StringIO(response.data.decode('utf-8')), sep=' ', header=0,
+                                   dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 3), pheno_file.shape
+
+        expected_columns = ['instance0', 'instance1', 'instance2']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[0, 'instance0'] == 'NA'
+        assert pheno_file.loc[0, 'instance1'] == 'NA'
+        assert pheno_file.loc[0, 'instance2'] == 'NA'
+
+        assert pheno_file.loc[1, 'instance0'] == 'NA'
+        assert pheno_file.loc[1, 'instance1'] == 'NA'
+        assert pheno_file.loc[1, 'instance2'] == 'NA'
+
+        assert pheno_file.loc[2, 'instance0'] == 'Option number 4'
+        assert pheno_file.loc[2, 'instance1'] == "I don't know"
+        assert pheno_file.loc[2, 'instance2'] == 'NA'
+
+        assert pheno_file.loc[3, 'instance0'] == 'Option number 1'
+        assert pheno_file.loc[3, 'instance1'] == 'No response'
+        assert pheno_file.loc[3, 'instance2'] == 'Yes'
+
+        assert pheno_file.loc[4, 'instance0'] == 'NA'
+        assert pheno_file.loc[4, 'instance1'] == 'NA'
+        assert pheno_file.loc[4, 'instance2'] == 'NA'

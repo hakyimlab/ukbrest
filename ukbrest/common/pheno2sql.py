@@ -454,7 +454,7 @@ class Pheno2SQL:
 
         return int_columns
 
-    def query(self, columns=None, ecolumns=None, filterings=None):
+    def query(self, columns=None, ecolumns=None, filterings=None, order_by=None):
         # select needed tables to join
         columns_fields = self._get_fields_from_statements(columns)
         reg_exp_columns_fields = self._get_fields_from_reg_exp(ecolumns)
@@ -465,20 +465,54 @@ class Pheno2SQL:
         all_columns = ['eid'] + (columns if columns is not None else []) + reg_exp_columns_fields
         int_columns = self._get_integer_fields(all_columns)
 
+        base_sql = """
+            select {data_fields}
+            from {tables_join}
+            {where_statements}
+        """
+
+        if order_by is not None:
+            outer_sql = """
+                select {data_fields}
+                from {order_by} s left outer join (
+                    {base_sql}
+                ) u
+                using (eid)
+                order by s.index asc
+            """.format(order_by=order_by, base_sql=base_sql, data_fields='{data_fields}')
+
+            base_sql = outer_sql
+
         # FIXME: are parameters correctly escaped by the arg parser?
         results_iterator = pd.read_sql(
-            'select ' + ','.join(all_columns) +
-            ' from ' + self._create_joins(tables_needed_df) +
-            ((' where ' + ' and '.join(filterings)) if filterings is not None else ''),
-        self._get_db_engine(), index_col='eid', chunksize=self.sql_chunksize)
+            base_sql.format(
+                data_fields=','.join(all_columns),
+                tables_join=self._create_joins(tables_needed_df),
+                where_statements=((' where ' + ' and '.join(filterings)) if filterings is not None else ''),
+            ),
+            self._get_db_engine(), index_col='eid', chunksize=self.sql_chunksize
+        )
 
         if self.sql_chunksize is None:
             results_iterator = iter([results_iterator])
 
         for chunk in results_iterator:
             for col in int_columns:
-                chunk[col] = chunk[col].map(lambda x: np.nan if np.isnan(x) else '{:1.0f}'.format(x))
+                chunk[col] = chunk[col].map(lambda x: np.nan if pd.isnull(x) else '{:1.0f}'.format(x))
 
+            yield chunk
+
+    def query_yaml(self, yaml_file, section, order_by=None):
+        section = yaml_file[section]
+
+        include_only_stmts = None
+        if 'samples_include_only' in yaml_file:
+            include_only_stmts = yaml_file['samples_include_only']
+
+        section_field_statements = [v for x in section for k, v in x.items()]
+
+        for chunk in self.query(section_field_statements, filterings=include_only_stmts, order_by=order_by):
+            chunk = chunk.rename(columns={v:k for x in section for k, v in x.items()})
             yield chunk
 
 

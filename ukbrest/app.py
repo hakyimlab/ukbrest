@@ -6,7 +6,7 @@ from ukbrest.common.genoquery import GenoQuery
 from ukbrest.common.pheno2sql import Pheno2SQL
 from flask import Flask
 from flask_restful import Api
-from ukbrest.resources.phenotype import PhenotypeFieldsAPI, PhenotypeAPI, PhenotypeApiObject
+from ukbrest.resources.phenotype import PhenotypeFieldsAPI, PhenotypeAPI, QueryAPI, PhenotypeApiObject
 
 from ukbrest.resources.genotype import GenotypeApiObject
 from ukbrest.resources.genotype import GenotypePositionsAPI, GenotypeRsidsAPI
@@ -38,11 +38,19 @@ phenotype_api.add_resource(
 )
 
 # Phenotype Info API
-phenotype_info_api = Api(app, default_mediatype='application/json')
+phenotype_info_api = PhenotypeApiObject(app, default_mediatype='application/json')
 
 phenotype_info_api.add_resource(
     PhenotypeFieldsAPI,
     '/ukbrest/api/v1.0/phenotype/fields',
+)
+
+# Query API
+phenotype_api = PhenotypeApiObject(app)
+
+phenotype_api.add_resource(
+    QueryAPI,
+    '/ukbrest/api/v1.0/query',
 )
 
 @app.before_first_request
