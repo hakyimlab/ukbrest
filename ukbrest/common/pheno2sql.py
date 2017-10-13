@@ -1,9 +1,10 @@
-import os, sys
 import csv
-from urllib.parse import urlparse
-from subprocess import Popen, PIPE
-import tempfile
+import os
 import re
+import sys
+import tempfile
+from subprocess import Popen, PIPE
+from urllib.parse import urlparse
 
 import numpy as np
 import pandas as pd
@@ -387,9 +388,17 @@ class Pheno2SQL:
             raise Exception(stdout_data + b'\n' + stderr_data)
 
     def _load_events(self):
+        if self.db_type == 'sqlite':
+            logger.warning('Events loading is not supported in SQLite')
+            return
+
+        logger.info('Loading events table')
+
+        # create table
         db_engine = self._get_db_engine()
 
         create_events_table_sql = """
+            DROP TABLE IF EXISTS events;
             CREATE TABLE events
             (
                 eid bigint NOT NULL,
@@ -400,45 +409,47 @@ class Pheno2SQL:
             )
             WITH (
                 OIDS = FALSE
-            )
+            );
         """
+
         with db_engine.connect() as con:
             con.execute(create_events_table_sql)
 
-        sql_st = """
-            insert into events (eid, field_id, instance, event)
-            (
-                select *
-                from (
-                    select eid, 84, 0, unnest(array[c84_0_0,c84_0_1,c84_0_2,c84_0_3,c84_0_4]) as event
-                    from ukb_pheno_0_04 inner join ukb_pheno_0_05 using (eid) inner join ukb_pheno_0_06 using (eid) inner join ukb_pheno_0_07 using (eid) inner join ukb_pheno_0_08 using (eid)
-                ) t
-                where t.event is not null
-            )
-        """
-        with db_engine.connect() as con:
-            con.execute(sql_st)
+        # insert data of categorical multiple fields
+        categorical_variables = pd.read_sql("""
+            select column_name, field_id, inst, table_name
+            from fields
+            where type = 'Categorical (multiple)'
+        """, self._get_db_engine())
 
-        sql_st = """
-            insert into events (eid, field_id, instance, event)
-            (
-                select *
-                from (
-                    select eid, 84, 1, unnest(array[c84_1_0,c84_1_1,c84_1_2,c84_1_3,c84_1_4]) as event
-                    from ukb_pheno_0_04 inner join ukb_pheno_0_05 using (eid) inner join ukb_pheno_0_06 using (eid) inner join ukb_pheno_0_07 using (eid) inner join ukb_pheno_0_08 using (eid)
-                ) t
-                where t.event is not null
+        for (field_id, field_instance), field_data in categorical_variables.groupby(by=['field_id', 'inst']):
+            sql_st = """
+                insert into events (eid, field_id, instance, event)
+                (
+                    select *
+                    from (
+                        select eid, {field_id}, {field_instance}, unnest(array[{field_columns}]) as event
+                        from {tables}
+                    ) t
+                    where t.event is not null
+                )
+            """.format(
+                field_id=field_id,
+                field_instance=field_instance,
+                field_columns=', '.join([cn for cn in set(field_data['column_name'])]),
+                tables=self._create_joins(list(set(field_data['table_name'])), join_type='inner join'),
             )
-        """
-        with db_engine.connect() as con:
-            con.execute(sql_st)
+
+            with db_engine.connect() as con:
+                con.execute(sql_st)
 
     def _create_indexes(self):
         if self.db_type == 'sqlite':
+            logger.warning('Indexes are not supported for SQLite')
             return
 
         logger.info('Creating table indexes')
-        
+
         # fields table
         with self._get_db_engine().connect() as conn:
             for column in ('field_id', 'inst', 'arr', 'table_name', 'type'):
@@ -464,10 +475,8 @@ class Pheno2SQL:
             self._create_temporary_csvs(csv_file, csv_file_idx)
             self._load_csv()
 
-            self._load_bgen_samples()
-
-            # self._load_events()
-
+        self._load_bgen_samples()
+        self._load_events()
         self._create_indexes()
 
         # delete temporary variable

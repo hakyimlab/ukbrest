@@ -1662,7 +1662,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert table.iloc[0, 0]
 
         ## Check columns are correct
-        events_data = pd.read_sql('select * from events order by eid, instance, event', create_engine(db_engine))
+        events_data = pd.read_sql('select * from events order by eid, field_id, instance, event', create_engine(db_engine))
         expected_columns = ['eid', 'field_id', 'instance', 'event']
         assert len(events_data.columns) == len(expected_columns)
         assert all(x in events_data.columns for x in expected_columns)
@@ -1671,6 +1671,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert not events_data.empty
         assert events_data.shape[0] == 25
 
+        # 1000010
         cidx = 0
         assert events_data.loc[cidx, 'eid'] == 1000010
         assert events_data.loc[cidx, 'field_id'] == 84
@@ -1683,6 +1684,25 @@ class Pheno2SQLTest(unittest.TestCase):
         assert events_data.loc[cidx, 'instance'] == 1
         assert events_data.loc[cidx, 'event'] == 'Q750'
 
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000010
+        assert events_data.loc[cidx, 'field_id'] == 85
+        assert events_data.loc[cidx, 'instance'] == 0
+        assert events_data.loc[cidx, 'event'] == '1136'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000010
+        assert events_data.loc[cidx, 'field_id'] == 85
+        assert events_data.loc[cidx, 'instance'] == 0
+        assert events_data.loc[cidx, 'event'] == '1434'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000010
+        assert events_data.loc[cidx, 'field_id'] == 85
+        assert events_data.loc[cidx, 'instance'] == 2
+        assert events_data.loc[cidx, 'event'] == '1701'
+
+        # 1000020
         cidx += 1
         assert events_data.loc[cidx, 'eid'] == 1000020
         assert events_data.loc[cidx, 'field_id'] == 84
@@ -1702,6 +1722,25 @@ class Pheno2SQLTest(unittest.TestCase):
         assert events_data.loc[cidx, 'event'] == 'J32'
 
         cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000020
+        assert events_data.loc[cidx, 'field_id'] == 85
+        assert events_data.loc[cidx, 'instance'] == 0
+        assert events_data.loc[cidx, 'event'] == '1114'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000020
+        assert events_data.loc[cidx, 'field_id'] == 85
+        assert events_data.loc[cidx, 'instance'] == 0
+        assert events_data.loc[cidx, 'event'] == '1434'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000020
+        assert events_data.loc[cidx, 'field_id'] == 85
+        assert events_data.loc[cidx, 'instance'] == 1
+        assert events_data.loc[cidx, 'event'] == '1136'
+
+        # 1000030
+        cidx += 1
         assert events_data.loc[cidx, 'eid'] == 1000030
         assert events_data.loc[cidx, 'field_id'] == 84
         assert events_data.loc[cidx, 'instance'] == 0
@@ -1713,6 +1752,13 @@ class Pheno2SQLTest(unittest.TestCase):
         assert events_data.loc[cidx, 'instance'] == 1
         assert events_data.loc[cidx, 'event'] == 'Q750'
 
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000030
+        assert events_data.loc[cidx, 'field_id'] == 85
+        assert events_data.loc[cidx, 'instance'] == 1
+        assert events_data.loc[cidx, 'event'] == '1434'
+
+        # 1000040
         cidx += 1
         assert events_data.loc[cidx, 'eid'] == 1000040
         assert events_data.loc[cidx, 'field_id'] == 84
@@ -1731,8 +1777,52 @@ class Pheno2SQLTest(unittest.TestCase):
         assert events_data.loc[cidx, 'instance'] == 1
         assert events_data.loc[cidx, 'event'] == 'Q750'
 
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000040
+        assert events_data.loc[cidx, 'field_id'] == 85
+        assert events_data.loc[cidx, 'instance'] == 1
+        assert events_data.loc[cidx, 'event'] == '1114'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000040
+        assert events_data.loc[cidx, 'field_id'] == 85
+        assert events_data.loc[cidx, 'instance'] == 1
+        assert events_data.loc[cidx, 'event'] == '1136'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000040
+        assert events_data.loc[cidx, 'field_id'] == 85
+        assert events_data.loc[cidx, 'instance'] == 2
+        assert events_data.loc[cidx, 'event'] == '457'
+
+        # 1000050
         cidx += 1
         assert events_data.loc[cidx, 'eid'] == 1000050
         assert events_data.loc[cidx, 'field_id'] == 84
         assert events_data.loc[cidx, 'instance'] == 0
         assert events_data.loc[cidx, 'event'] == 'E103'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000050
+        assert events_data.loc[cidx, 'field_id'] == 85
+        assert events_data.loc[cidx, 'instance'] == 0
+        assert events_data.loc[cidx, 'event'] == '1434'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000050
+        assert events_data.loc[cidx, 'field_id'] == 85
+        assert events_data.loc[cidx, 'instance'] == 1
+        assert events_data.loc[cidx, 'event'] == '1114'
+
+        # 1000060
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000060
+        assert events_data.loc[cidx, 'field_id'] == 85
+        assert events_data.loc[cidx, 'instance'] == 2
+        assert events_data.loc[cidx, 'event'] == '1114'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000060
+        assert events_data.loc[cidx, 'field_id'] == 85
+        assert events_data.loc[cidx, 'instance'] == 2
+        assert events_data.loc[cidx, 'event'] == '1136'
