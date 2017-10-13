@@ -55,17 +55,18 @@ def _setup_db_uri():
         parser.error('No DB URI was specified. You have to set it using the environment variable UKBREST_DB_URI. For '
                      'example, for PostgreSQL, the format is: postgresql://user:pass@host:port/dbname')
 
-if args.load:
-    _setup_phenotype_path()
-    _setup_db_uri()
+if __name__ == '__main__':
+    if args.load:
+        _setup_phenotype_path()
+        _setup_db_uri()
 
-    commands = ('python', ['python', '/opt/ukbrest/load_data.py'])
+        commands = ('python', ['python', '/opt/ukbrest/load_data.py'])
 
-elif args.start:
-    _setup_genotype_path()
-    _setup_db_uri()
-    # TODO: check if data was loaded into PostgreSQL
+    elif args.start:
+        _setup_genotype_path()
+        _setup_db_uri()
+        # TODO: check if data was loaded into PostgreSQL
 
-    commands = ('gunicorn', ['gunicorn', 'ukbrest.wsgi:app'])
+        commands = ('gunicorn', ['gunicorn', 'ukbrest.wsgi:app'])
 
-execvp(*commands)
+    execvp(*commands)

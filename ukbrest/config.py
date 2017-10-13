@@ -1,10 +1,13 @@
-from os import environ
+from os import environ, path
 from tempfile import gettempdir
 import logging
 
 GENOTYPE_PATH_ENV='UKBREST_GENOTYPE_PATH'
+GENOTYPE_BGEN_SAMPLE='UKBREST_GENOTYPE_BGEN_SAMPLE_FILE'
+
 PHENOTYPE_PATH='UKBREST_PHENOTYPE_PATH'
 PHENOTYPE_CSV_ENV='UKBREST_PHENOTYPE_CSV'
+
 TABLE_PREFIX_ENV='UKBREST_TABLE_PREFIX'
 LOADING_CHUNKSIZE='UKBREST_LOADING_CHUNKSIZE'
 DB_URI_ENV='UKBREST_DB_URI'
@@ -16,6 +19,11 @@ LOADING_N_JOBS_ENV= 'UKBREST_LOADING_N_JOBS'
 
 
 genotype_path = environ.get(GENOTYPE_PATH_ENV, None)
+
+# bgen sample file is relative to genotype path
+bgen_sample_file = environ.get(GENOTYPE_BGEN_SAMPLE, None)
+if bgen_sample_file is not None:
+    bgen_sample_file = path.join(genotype_path, bgen_sample_file)
 
 phenotype_csv = environ.get(PHENOTYPE_CSV_ENV, None)
 if phenotype_csv is not None:
@@ -48,6 +56,7 @@ logger.addHandler(console_handler)
 def get_pheno2sql_parameters():
     return {
         'ukb_csvs': phenotype_csv,
+        'bgen_sample_file': bgen_sample_file,
         'db_uri': db_uri,
         'table_prefix': table_prefix,
         'n_columns_per_table': int(n_columns_per_table),
