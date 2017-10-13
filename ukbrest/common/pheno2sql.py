@@ -339,6 +339,64 @@ class Pheno2SQL:
 
         samples_data.to_sql('samples', self._get_db_engine(), if_exists='replace')
 
+    def _run_psql(self, sql_statement):
+        current_env = os.environ.copy()
+        current_env['PGPASSWORD'] = self.db_pass
+        p = Popen(['psql', '-w', '-h', self.db_host, '-p', str(self.db_port),
+                   '-U', self.db_user, '-d', self.db_name, '-c', sql_statement],
+                  stdout=PIPE, stderr=PIPE, env=current_env)
+        stdout_data, stderr_data = p.communicate()
+
+        if p.returncode != 0:
+            raise Exception(stdout_data + b'\n' + stderr_data)
+
+    def _load_events(self):
+        db_engine = self._get_db_engine()
+
+        create_events_table_sql = """
+            CREATE TABLE events
+            (
+                eid bigint NOT NULL,
+                field_id integer NOT NULL,
+                instance integer NOT NULL,
+                event text COLLATE pg_catalog."default" NOT NULL,
+                CONSTRAINT primary_keys PRIMARY KEY (eid, field_id, instance, event)
+            )
+            WITH (
+                OIDS = FALSE
+            )
+        """
+        with db_engine.connect() as con:
+            con.execute(create_events_table_sql)
+
+        sql_st = """
+            insert into events (eid, field_id, instance, event)
+            (
+                select *
+                from (
+                    select eid, 84, 0, unnest(array[c84_0_0,c84_0_1,c84_0_2,c84_0_3,c84_0_4]) as event
+                    from ukb_pheno_0_04 inner join ukb_pheno_0_05 using (eid) inner join ukb_pheno_0_06 using (eid) inner join ukb_pheno_0_07 using (eid) inner join ukb_pheno_0_08 using (eid)
+                ) t
+                where t.event is not null
+            )
+        """
+        with db_engine.connect() as con:
+            con.execute(sql_st)
+
+        sql_st = """
+            insert into events (eid, field_id, instance, event)
+            (
+                select *
+                from (
+                    select eid, 84, 1, unnest(array[c84_1_0,c84_1_1,c84_1_2,c84_1_3,c84_1_4]) as event
+                    from ukb_pheno_0_04 inner join ukb_pheno_0_05 using (eid) inner join ukb_pheno_0_06 using (eid) inner join ukb_pheno_0_07 using (eid) inner join ukb_pheno_0_08 using (eid)
+                ) t
+                where t.event is not null
+            )
+        """
+        with db_engine.connect() as con:
+            con.execute(sql_st)
+
     def load_data(self):
         """
         Load self.ukb_csv into the database configured.
@@ -354,6 +412,8 @@ class Pheno2SQL:
             self._load_csv()
 
             self._load_bgen_samples()
+
+            self._load_events()
 
         # delete temporary variable
         del(self._loading_tmp)

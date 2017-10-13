@@ -13,6 +13,18 @@ from ukbrest.common.pheno2sql import Pheno2SQL
 
 
 class Pheno2SQLTest(unittest.TestCase):
+    def setUp(self):
+        # wipe postgresql tables
+        sql_st = """
+        select 'drop table if exists "' || tablename || '" cascade;' from pg_tables where schemaname = 'public';
+        """
+        db_engine = create_engine(POSTGRESQL_ENGINE)
+        tables = pd.read_sql(sql_st, db_engine)
+
+        with db_engine.connect() as con:
+            for idx, drop_table_st in tables.iterrows():
+                con.execute(drop_table_st.iloc[0])
+
     def test_sqlite_default_values(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example01.csv')
@@ -1447,3 +1459,248 @@ class Pheno2SQLTest(unittest.TestCase):
         assert samples_data.loc[3, 'eid'] == 1000040
         assert samples_data.loc[4, 'eid'] == 1000010
         assert samples_data.loc[5, 'eid'] == 1000020
+
+    def test_postgresql_events_tables_only_one_instance_filled(self):
+        # Prepare
+        directory = get_repository_path('pheno2sql/example10')
+
+        csv_file = get_repository_path(os.path.join(directory, 'example10_diseases.csv'))
+        db_engine = POSTGRESQL_ENGINE
+
+        p2sql = Pheno2SQL(csv_file, db_engine, bgen_sample_file=os.path.join(directory, 'impv2.sample'),
+                          n_columns_per_table=2, loading_n_jobs=1)
+
+        # Run
+        p2sql.load_data()
+
+        # Validate
+        assert p2sql.db_type == 'postgresql'
+
+        ## Check samples table exists
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('events'), create_engine(db_engine))
+        assert table.iloc[0, 0]
+
+        ## Check columns are correct
+        events_data = pd.read_sql('select * from events order by eid, instance, event', create_engine(db_engine))
+        expected_columns = ['eid', 'field_id', 'instance', 'event']
+        assert len(events_data.columns) == len(expected_columns)
+        assert all(x in events_data.columns for x in expected_columns)
+
+        ## Check data is correct
+        assert not events_data.empty
+        assert events_data.shape[0] == 6
+        assert events_data.loc[0, 'eid'] == 1000020
+        assert events_data.loc[0, 'field_id'] == 84
+        assert events_data.loc[0, 'event'] == 'E103'
+
+        assert events_data.loc[1, 'eid'] == 1000020
+        assert events_data.loc[1, 'field_id'] == 84
+        assert events_data.loc[1, 'event'] == 'N308'
+
+        assert events_data.loc[2, 'eid'] == 1000020
+        assert events_data.loc[2, 'field_id'] == 84
+        assert events_data.loc[2, 'event'] == 'Q750'
+
+        assert events_data.loc[3, 'eid'] == 1000030
+        assert events_data.loc[3, 'field_id'] == 84
+        assert events_data.loc[3, 'event'] == 'N308'
+
+        assert events_data.loc[4, 'eid'] == 1000040
+        assert events_data.loc[4, 'field_id'] == 84
+        assert events_data.loc[4, 'event'] == 'N308'
+
+        assert events_data.loc[5, 'eid'] == 1000050
+        assert events_data.loc[5, 'field_id'] == 84
+        assert events_data.loc[5, 'event'] == 'E103'
+
+    def test_postgresql_events_tables_only_two_instances_filled(self):
+        # Prepare
+        directory = get_repository_path('pheno2sql/example11')
+
+        csv_file = get_repository_path(os.path.join(directory, 'example11_diseases.csv'))
+        db_engine = POSTGRESQL_ENGINE
+
+        p2sql = Pheno2SQL(csv_file, db_engine, bgen_sample_file=os.path.join(directory, 'impv2.sample'),
+                          n_columns_per_table=2, loading_n_jobs=1)
+
+        # Run
+        p2sql.load_data()
+
+        # Validate
+        assert p2sql.db_type == 'postgresql'
+
+        ## Check samples table exists
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('events'), create_engine(db_engine))
+        assert table.iloc[0, 0]
+
+        ## Check columns are correct
+        events_data = pd.read_sql('select * from events order by eid, instance, event', create_engine(db_engine))
+        expected_columns = ['eid', 'field_id', 'instance', 'event']
+        assert len(events_data.columns) == len(expected_columns)
+        assert all(x in events_data.columns for x in expected_columns)
+
+        ## Check data is correct
+        assert not events_data.empty
+        assert events_data.shape[0] == 11
+
+        cidx = 0
+        assert events_data.loc[cidx, 'eid'] == 1000010
+        assert events_data.loc[cidx, 'field_id'] == 84
+        assert events_data.loc[cidx, 'instance'] == 1
+        assert events_data.loc[cidx, 'event'] == 'E103'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000010
+        assert events_data.loc[cidx, 'field_id'] == 84
+        assert events_data.loc[cidx, 'instance'] == 1
+        assert events_data.loc[cidx, 'event'] == 'Q750'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000020
+        assert events_data.loc[cidx, 'field_id'] == 84
+        assert events_data.loc[cidx, 'instance'] == 0
+        assert events_data.loc[cidx, 'event'] == 'E103'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000020
+        assert events_data.loc[cidx, 'field_id'] == 84
+        assert events_data.loc[cidx, 'instance'] == 0
+        assert events_data.loc[cidx, 'event'] == 'N308'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000020
+        assert events_data.loc[cidx, 'field_id'] == 84
+        assert events_data.loc[cidx, 'instance'] == 1
+        assert events_data.loc[cidx, 'event'] == 'J32'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000030
+        assert events_data.loc[cidx, 'field_id'] == 84
+        assert events_data.loc[cidx, 'instance'] == 0
+        assert events_data.loc[cidx, 'event'] == 'N308'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000030
+        assert events_data.loc[cidx, 'field_id'] == 84
+        assert events_data.loc[cidx, 'instance'] == 1
+        assert events_data.loc[cidx, 'event'] == 'Q750'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000040
+        assert events_data.loc[cidx, 'field_id'] == 84
+        assert events_data.loc[cidx, 'instance'] == 0
+        assert events_data.loc[cidx, 'event'] == 'N308'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000040
+        assert events_data.loc[cidx, 'field_id'] == 84
+        assert events_data.loc[cidx, 'instance'] == 1
+        assert events_data.loc[cidx, 'event'] == 'E103'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000040
+        assert events_data.loc[cidx, 'field_id'] == 84
+        assert events_data.loc[cidx, 'instance'] == 1
+        assert events_data.loc[cidx, 'event'] == 'Q750'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000050
+        assert events_data.loc[cidx, 'field_id'] == 84
+        assert events_data.loc[cidx, 'instance'] == 0
+        assert events_data.loc[cidx, 'event'] == 'E103'
+
+    def test_postgresql_events_tables_two_categorical_fields_and_two_instances_each(self):
+        # Prepare
+        directory = get_repository_path('pheno2sql/example12')
+
+        csv_file = get_repository_path(os.path.join(directory, 'example12_diseases.csv'))
+        db_engine = POSTGRESQL_ENGINE
+
+        p2sql = Pheno2SQL(csv_file, db_engine, bgen_sample_file=os.path.join(directory, 'impv2.sample'),
+                          n_columns_per_table=2, loading_n_jobs=1)
+
+        # Run
+        p2sql.load_data()
+
+        # Validate
+        assert p2sql.db_type == 'postgresql'
+
+        ## Check samples table exists
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('events'), create_engine(db_engine))
+        assert table.iloc[0, 0]
+
+        ## Check columns are correct
+        events_data = pd.read_sql('select * from events order by eid, instance, event', create_engine(db_engine))
+        expected_columns = ['eid', 'field_id', 'instance', 'event']
+        assert len(events_data.columns) == len(expected_columns)
+        assert all(x in events_data.columns for x in expected_columns)
+
+        ## Check data is correct
+        assert not events_data.empty
+        assert events_data.shape[0] == 11
+
+        cidx = 0
+        assert events_data.loc[cidx, 'eid'] == 1000010
+        assert events_data.loc[cidx, 'field_id'] == 84
+        assert events_data.loc[cidx, 'instance'] == 1
+        assert events_data.loc[cidx, 'event'] == 'E103'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000010
+        assert events_data.loc[cidx, 'field_id'] == 84
+        assert events_data.loc[cidx, 'instance'] == 1
+        assert events_data.loc[cidx, 'event'] == 'Q750'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000020
+        assert events_data.loc[cidx, 'field_id'] == 84
+        assert events_data.loc[cidx, 'instance'] == 0
+        assert events_data.loc[cidx, 'event'] == 'E103'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000020
+        assert events_data.loc[cidx, 'field_id'] == 84
+        assert events_data.loc[cidx, 'instance'] == 0
+        assert events_data.loc[cidx, 'event'] == 'N308'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000020
+        assert events_data.loc[cidx, 'field_id'] == 84
+        assert events_data.loc[cidx, 'instance'] == 1
+        assert events_data.loc[cidx, 'event'] == 'J32'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000030
+        assert events_data.loc[cidx, 'field_id'] == 84
+        assert events_data.loc[cidx, 'instance'] == 0
+        assert events_data.loc[cidx, 'event'] == 'N308'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000030
+        assert events_data.loc[cidx, 'field_id'] == 84
+        assert events_data.loc[cidx, 'instance'] == 1
+        assert events_data.loc[cidx, 'event'] == 'Q750'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000040
+        assert events_data.loc[cidx, 'field_id'] == 84
+        assert events_data.loc[cidx, 'instance'] == 0
+        assert events_data.loc[cidx, 'event'] == 'N308'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000040
+        assert events_data.loc[cidx, 'field_id'] == 84
+        assert events_data.loc[cidx, 'instance'] == 1
+        assert events_data.loc[cidx, 'event'] == 'E103'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000040
+        assert events_data.loc[cidx, 'field_id'] == 84
+        assert events_data.loc[cidx, 'instance'] == 1
+        assert events_data.loc[cidx, 'event'] == 'Q750'
+
+        cidx += 1
+        assert events_data.loc[cidx, 'eid'] == 1000050
+        assert events_data.loc[cidx, 'field_id'] == 84
+        assert events_data.loc[cidx, 'instance'] == 0
+        assert events_data.loc[cidx, 'event'] == 'E103'
