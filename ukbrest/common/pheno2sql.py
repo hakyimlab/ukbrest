@@ -19,6 +19,12 @@ class Pheno2SQL:
     _RE_COLUMN_NAME_PATTERN = '(?i)c[0-9a-z_]+_[0-9]+_[0-9]+'
     RE_COLUMN_NAME = re.compile('({})'.format(_RE_COLUMN_NAME_PATTERN))
 
+    _RE_FIELD_INFO_PATTERN = '(?i)c(?P<field_id>[0-9a-z_]+)_(?P<instance>[0-9]+)_(?P<array>[0-9]+)'
+    RE_FIELD_INFO = re.compile(_RE_FIELD_INFO_PATTERN)
+
+    _RE_FIELD_CODING_PATTERN = '(?i)Uses data-coding (?P<coding>[0-9]+) '
+    RE_FIELD_CODING = re.compile(_RE_FIELD_CODING_PATTERN)
+
     _RE_FULL_COLUMN_NAME_RENAME_PATTERN = '^(?i)(?P<field>{})([ ]+([ ]*as[ ]+)?(?P<rename>[\w_]+))?$'.format(_RE_COLUMN_NAME_PATTERN)
     RE_FULL_COLUMN_NAME_RENAME = re.compile(_RE_FULL_COLUMN_NAME_RENAME_PATTERN)
 
@@ -138,6 +144,7 @@ class Pheno2SQL:
         db_column_types = {}
         column_types = {}
         column_descriptions = {}
+        column_codings = {}
 
         # open just to get columns
         csv_df = pd.read_csv(ukbcsv_file, index_col=0, header=0, nrows=1)
@@ -162,7 +169,12 @@ class Pheno2SQL:
             column_types[self._rename_columns(col)] = col_type
             column_descriptions[self._rename_columns(col)] = df_descriptions[col].split('Uses data-coding ')[0]
 
-        return db_column_types, column_types, column_descriptions
+            # search for column coding
+            coding_matches = re.search(Pheno2SQL.RE_FIELD_CODING, df_descriptions[col])
+            if coding_matches is not None:
+                column_codings[self._rename_columns(col)] = int(coding_matches.group('coding'))
+
+        return db_column_types, column_types, column_descriptions, column_codings
 
     def _rename_columns(self, column_name):
         if column_name == 'eid':
@@ -190,7 +202,7 @@ class Pheno2SQL:
              for col_idx, col_names in self._loading_tmp['chunked_column_names']}
 
         # get columns dtypes (for PostgreSQL and standard ones)
-        db_types_old_column_names, all_fields_dtypes, all_fields_description = self._get_db_columns_dtypes(csv_file)
+        db_types_old_column_names, all_fields_dtypes, all_fields_description, all_fields_coding = self._get_db_columns_dtypes(csv_file)
         db_dtypes = {self._rename_columns(k): v for k, v in db_types_old_column_names.items()}
         self._fields_dtypes.update(all_fields_dtypes)
 
@@ -207,8 +219,29 @@ class Pheno2SQL:
         current_stop = 0
         for column_names_idx, column_names in self._loading_tmp['chunked_column_names']:
             new_columns_names = [x[1] for x in column_names]
-            fields_dtypes = [all_fields_dtypes[x] for x in new_columns_names]
-            fields_description = [all_fields_description[x] for x in new_columns_names]
+
+            fields_ids = []
+            instances = []
+            arrays = []
+            fields_dtypes = []
+            fields_descriptions = []
+            fields_codings = []
+
+            for col_name in new_columns_names:
+                match = re.match(Pheno2SQL.RE_FIELD_INFO, col_name)
+
+                fields_ids.append(match.group('field_id'))
+                instances.append(int(match.group('instance')))
+                arrays.append(int(match.group('array')))
+
+                fields_dtypes.append(all_fields_dtypes[col_name])
+                fields_descriptions.append(all_fields_description[col_name])
+
+                if col_name in all_fields_coding:
+                    fields_codings.append(all_fields_coding[col_name])
+                else:
+                    fields_codings.append(np.nan)
+
 
             # Create main table structure
             table_name = self._get_table_name(column_names_idx, csv_file_idx)
@@ -221,14 +254,17 @@ class Pheno2SQL:
             current_stop = current_start + n_column_names
 
             aux_table = pd.DataFrame({
-                'field': new_columns_names,
+                'column_name': new_columns_names,
+                'field_id': fields_ids,
+                'inst': instances,
+                'arr': arrays,
+                'coding': fields_codings,
                 'table_name': table_name,
                 'type': fields_dtypes,
-                'description': fields_description
+                'description': fields_descriptions
             })
-            aux_table = aux_table.set_index('field')
+            aux_table = aux_table.set_index('column_name')
             aux_table.to_sql('fields', self._get_db_engine(), if_exists=fields_table_if_exist[column_names_idx])
-
 
     def _save_column_range(self, csv_file, csv_file_idx, column_names_idx, column_names):
         table_name = self._get_table_name(column_names_idx, csv_file_idx)
@@ -397,6 +433,23 @@ class Pheno2SQL:
         with db_engine.connect() as con:
             con.execute(sql_st)
 
+    def _create_indexes(self):
+        if self.db_type == 'sqlite':
+            return
+
+        logger.info('Creating table indexes')
+        
+        # fields table
+        with self._get_db_engine().connect() as conn:
+            for column in ('field_id', 'inst', 'arr', 'table_name', 'type'):
+                index_sql = """
+                    CREATE INDEX ix_fields_{column_name}
+                    ON fields USING btree
+                    ({column_name})
+                """.format(column_name=column)
+
+                conn.execute(index_sql)
+
     def load_data(self):
         """
         Load self.ukb_csv into the database configured.
@@ -413,7 +466,9 @@ class Pheno2SQL:
 
             self._load_bgen_samples()
 
-            self._load_events()
+            # self._load_events()
+
+        self._create_indexes()
 
         # delete temporary variable
         del(self._loading_tmp)
@@ -441,7 +496,7 @@ class Pheno2SQL:
         tables_needed_df = pd.read_sql(
             'select distinct table_name '
             'from fields '
-            'where field in (' + ','.join(all_columns_quoted) + ')',
+            'where column_name in (' + ','.join(all_columns_quoted) + ')',
         self._get_db_engine()).loc[:, 'table_name'].tolist()
 
         if len(tables_needed_df) == 0:
@@ -457,12 +512,12 @@ class Pheno2SQL:
 
         # initialize dbtypes for all fields
         field_type = pd.read_sql(
-            'select distinct field, type '
+            'select distinct column_name, type '
             'from fields',
         self._get_db_engine())
 
         for row in field_type.itertuples():
-            self._fields_dtypes[row.field] = row.type
+            self._fields_dtypes[row.column_name] = row.type
 
         return self._fields_dtypes[field] if field in self._fields_dtypes else None
 
@@ -471,15 +526,15 @@ class Pheno2SQL:
         if ecolumns is None:
             return []
 
-        where_st = ["field ~ '{}'".format(ecol) for ecol in ecolumns]
+        where_st = ["column_name ~ '{}'".format(ecol) for ecol in ecolumns]
         select_st = """
-            select distinct field
+            select distinct column_name
             from fields
             where {}
-            order by field
+            order by column_name
         """.format(' or '.join(where_st))
 
-        return pd.read_sql(select_st, self._get_db_engine()).loc[:, 'field'].tolist()
+        return pd.read_sql(select_st, self._get_db_engine()).loc[:, 'column_name'].tolist()
 
     def _get_fields_from_statements(self, statement):
         """This method gets all fields mentioned in the statements."""

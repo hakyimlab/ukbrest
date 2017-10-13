@@ -354,12 +354,12 @@ class Pheno2SQLTest(unittest.TestCase):
 
         ## Check columns are correct
         tmp = pd.read_sql('select * from fields', create_engine(db_engine))
-        expected_columns = ["field", "table_name"]
+        expected_columns = ["column_name", "table_name"]
         assert len(tmp.columns) >= len(expected_columns)
         assert all(x in tmp.columns for x in expected_columns)
 
         ## Check data is correct
-        tmp = pd.read_sql('select * from fields', create_engine(db_engine), index_col='field')
+        tmp = pd.read_sql('select * from fields', create_engine(db_engine), index_col='column_name')
         assert not tmp.empty
         assert tmp.shape[0] == 8
         assert tmp.loc['c21_0_0', 'table_name'] == 'ukb_pheno_0_00'
@@ -416,12 +416,12 @@ class Pheno2SQLTest(unittest.TestCase):
 
         ## Check columns are correct
         tmp = pd.read_sql('select * from fields', create_engine(db_engine))
-        expected_columns = ["field", "table_name"]
+        expected_columns = ["column_name", "table_name"]
         assert len(tmp.columns) >= len(expected_columns)
         assert all(x in tmp.columns for x in expected_columns)
 
         ## Check data is correct
-        tmp = pd.read_sql('select * from fields', create_engine(db_engine), index_col='field')
+        tmp = pd.read_sql('select * from fields', create_engine(db_engine), index_col='column_name')
         assert not tmp.empty
         assert tmp.shape[0] == 8
         assert tmp.loc['c21_0_0', 'table_name'] == 'ukb_pheno_0_00'
@@ -462,42 +462,74 @@ class Pheno2SQLTest(unittest.TestCase):
 
         ## Check columns are correct
         tmp = pd.read_sql('select * from fields', create_engine(db_engine))
-        expected_columns = ["field", "table_name", "type", "description"]
+        expected_columns = ["column_name", "field_id", "inst", "arr", "coding", "table_name", "type", "description"]
         assert len(tmp.columns) == len(expected_columns), len(tmp.columns)
         assert all(x in expected_columns for x in tmp.columns)
 
         ## Check data is correct
-        tmp = pd.read_sql('select * from fields', create_engine(db_engine), index_col='field')
+        tmp = pd.read_sql('select * from fields', create_engine(db_engine), index_col='column_name')
         assert not tmp.empty
         assert tmp.shape[0] == 8
+        assert tmp.loc['c21_0_0', 'field_id'] == '21'
+        assert tmp.loc['c21_0_0', 'inst'] == 0
+        assert tmp.loc['c21_0_0', 'arr'] == 0
+        assert tmp.loc['c21_0_0', 'coding'] == 100261
         assert tmp.loc['c21_0_0', 'table_name'] == 'ukb_pheno_0_00'
         assert tmp.loc['c21_0_0', 'type'] == 'Categorical (single)'
         assert tmp.loc['c21_0_0', 'description'] == 'An string value'
 
+        assert tmp.loc['c21_1_0', 'field_id'] == '21'
+        assert tmp.loc['c21_1_0', 'inst'] == 1
+        assert tmp.loc['c21_1_0', 'arr'] == 0
+        assert tmp.loc['c21_1_0', 'coding'] == 100261
         assert tmp.loc['c21_1_0', 'table_name'] == 'ukb_pheno_0_00'
         assert tmp.loc['c21_1_0', 'type'] == 'Categorical (single)'
         assert tmp.loc['c21_1_0', 'description'] == 'An string value'
 
+        assert tmp.loc['c21_2_0', 'field_id'] == '21'
+        assert tmp.loc['c21_2_0', 'inst'] == 2
+        assert tmp.loc['c21_2_0', 'arr'] == 0
+        assert tmp.loc['c21_2_0', 'coding'] == 100261
         assert tmp.loc['c21_2_0', 'table_name'] == 'ukb_pheno_0_00'
         assert tmp.loc['c21_2_0', 'type'] == 'Categorical (single)'
         assert tmp.loc['c21_2_0', 'description'] == 'An string value'
 
+        assert tmp.loc['c31_0_0', 'field_id'] == '31'
+        assert tmp.loc['c31_0_0', 'inst'] == 0
+        assert tmp.loc['c31_0_0', 'arr'] == 0
+        assert pd.isnull(tmp.loc['c31_0_0', 'coding'])
         assert tmp.loc['c31_0_0', 'table_name'] == 'ukb_pheno_0_01'
         assert tmp.loc['c31_0_0', 'type'] == 'Date'
         assert tmp.loc['c31_0_0', 'description'] == 'A date'
 
+        assert tmp.loc['c34_0_0', 'field_id'] == '34'
+        assert tmp.loc['c34_0_0', 'inst'] == 0
+        assert tmp.loc['c34_0_0', 'arr'] == 0
+        assert tmp.loc['c34_0_0', 'coding'] == 9
         assert tmp.loc['c34_0_0', 'table_name'] == 'ukb_pheno_0_01'
         assert tmp.loc['c34_0_0', 'type'] == 'Integer'
         assert tmp.loc['c34_0_0', 'description'] == 'Some integer'
 
+        assert tmp.loc['c46_0_0', 'field_id'] == '46'
+        assert tmp.loc['c46_0_0', 'inst'] == 0
+        assert tmp.loc['c46_0_0', 'arr'] == 0
+        assert pd.isnull(tmp.loc['c46_0_0', 'coding'])
         assert tmp.loc['c46_0_0', 'table_name'] == 'ukb_pheno_0_01'
         assert tmp.loc['c46_0_0', 'type'] == 'Integer'
         assert tmp.loc['c46_0_0', 'description'] == 'Some another integer'
 
+        assert tmp.loc['c47_0_0', 'field_id'] == '47'
+        assert tmp.loc['c47_0_0', 'inst'] == 0
+        assert tmp.loc['c47_0_0', 'arr'] == 0
+        assert pd.isnull(tmp.loc['c47_0_0', 'coding'])
         assert tmp.loc['c47_0_0', 'table_name'] == 'ukb_pheno_0_02'
         assert tmp.loc['c47_0_0', 'type'] == 'Continuous'
         assert tmp.loc['c47_0_0', 'description'] == 'Some continuous value'
 
+        assert tmp.loc['c48_0_0', 'field_id'] == '48'
+        assert tmp.loc['c48_0_0', 'inst'] == 0
+        assert tmp.loc['c48_0_0', 'arr'] == 0
+        assert pd.isnull(tmp.loc['c48_0_0', 'coding'])
         assert tmp.loc['c48_0_0', 'table_name'] == 'ukb_pheno_0_02'
         assert tmp.loc['c48_0_0', 'type'] == 'Time'
         assert tmp.loc['c48_0_0', 'description'] == 'Some time'
@@ -1609,7 +1641,7 @@ class Pheno2SQLTest(unittest.TestCase):
         assert events_data.loc[cidx, 'instance'] == 0
         assert events_data.loc[cidx, 'event'] == 'E103'
 
-    def test_postgresql_events_tables_two_categorical_fields_and_two_instances_each(self):
+    def test_postgresql_events_tables_two_categorical_fields_and_two_and_three_instances(self):
         # Prepare
         directory = get_repository_path('pheno2sql/example12')
 
@@ -1635,9 +1667,9 @@ class Pheno2SQLTest(unittest.TestCase):
         assert len(events_data.columns) == len(expected_columns)
         assert all(x in events_data.columns for x in expected_columns)
 
-        ## Check data is correct
+        ## Check total data
         assert not events_data.empty
-        assert events_data.shape[0] == 11
+        assert events_data.shape[0] == 25
 
         cidx = 0
         assert events_data.loc[cidx, 'eid'] == 1000010
