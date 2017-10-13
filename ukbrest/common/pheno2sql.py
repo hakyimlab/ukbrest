@@ -264,8 +264,8 @@ class Pheno2SQL:
                 'type': fields_dtypes,
                 'description': fields_descriptions
             })
-            aux_table = aux_table.set_index('column_name')
-            aux_table.to_sql('fields', self._get_db_engine(), if_exists=fields_table_if_exist[column_names_idx])
+            # aux_table = aux_table.set_index('column_name')
+            aux_table.to_sql('fields', self._get_db_engine(), index=False, if_exists=fields_table_if_exist[column_names_idx])
 
     def _save_column_range(self, csv_file, csv_file_idx, column_names_idx, column_names):
         table_name = self._get_table_name(column_names_idx, csv_file_idx)
@@ -405,7 +405,7 @@ class Pheno2SQL:
                 field_id integer NOT NULL,
                 instance integer NOT NULL,
                 event text COLLATE pg_catalog."default" NOT NULL,
-                CONSTRAINT primary_keys PRIMARY KEY (eid, field_id, instance, event)
+                CONSTRAINT pk_events PRIMARY KEY (eid, field_id, instance, event)
             )
             WITH (
                 OIDS = FALSE
@@ -443,16 +443,21 @@ class Pheno2SQL:
             with db_engine.connect() as con:
                 con.execute(sql_st)
 
-    def _create_indexes(self):
+    def _create_constraints(self):
         if self.db_type == 'sqlite':
             logger.warning('Indexes are not supported for SQLite')
             return
 
-        logger.info('Creating table indexes')
+        logger.info('Creating table constraints (indexes, primary keys, etc)')
 
         # fields table
         with self._get_db_engine().connect() as conn:
-            for column in ('field_id', 'inst', 'arr', 'table_name', 'type'):
+            pk_sql = """
+                ALTER TABLE fields ADD CONSTRAINT pk_fields PRIMARY KEY (column_name);
+            """
+            conn.execute(pk_sql)
+
+            for column in ('field_id', 'inst', 'arr', 'table_name', 'type', 'coding'):
                 index_sql = """
                     CREATE INDEX ix_fields_{column_name}
                     ON fields USING btree
@@ -460,6 +465,16 @@ class Pheno2SQL:
                 """.format(column_name=column)
 
                 conn.execute(index_sql)
+
+        # events table
+        with self._get_db_engine().connect() as conn:
+            index_sql = """
+                CREATE INDEX ix_events_event
+                ON events USING btree
+                (event)
+            """
+
+            conn.execute(index_sql)
 
     def load_data(self):
         """
@@ -477,7 +492,7 @@ class Pheno2SQL:
 
         self._load_bgen_samples()
         self._load_events()
-        self._create_indexes()
+        self._create_constraints()
 
         # delete temporary variable
         del(self._loading_tmp)

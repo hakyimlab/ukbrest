@@ -25,6 +25,23 @@ class Pheno2SQLTest(unittest.TestCase):
             for idx, drop_table_st in tables.iterrows():
                 con.execute(drop_table_st.iloc[0])
 
+    def _get_table_contrains(self, table_name, column_query='%%', relationship_query='%%'):
+        return """
+        select t.relname as table_name, i.relname as index_name, a.attname as column_name
+        from pg_class t, pg_class i, pg_index ix, pg_attribute a
+        where
+            t.oid = ix.indrelid
+            and i.oid = ix.indexrelid
+            and a.attrelid = t.oid
+            and a.attnum = ANY(ix.indkey)
+            and t.relkind = 'r'
+            and t.relname = '{table_name}' and a.attname like '{column_query}' and i.relname like '{relationship_query}'
+        """.format(
+                table_name=table_name,
+                column_query=column_query,
+                relationship_query=relationship_query,
+            )
+
     def test_sqlite_default_values(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example01.csv')
@@ -533,6 +550,43 @@ class Pheno2SQLTest(unittest.TestCase):
         assert tmp.loc['c48_0_0', 'table_name'] == 'ukb_pheno_0_02'
         assert tmp.loc['c48_0_0', 'type'] == 'Time'
         assert tmp.loc['c48_0_0', 'description'] == 'Some time'
+
+    def test_postgresql_auxiliary_table_constraints(self):
+        # Prepare
+        csv_file = get_repository_path('pheno2sql/example01.csv')
+        db_engine = POSTGRESQL_ENGINE
+
+        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, loading_n_jobs=1)
+
+        # Run
+        p2sql.load_data()
+
+        # Validate
+        assert p2sql.db_type == 'postgresql'
+
+        ## Check auxiliary table existance
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('fields'), create_engine(db_engine))
+        assert table.iloc[0, 0]
+
+        # primary key
+        constraint_sql = self._get_table_contrains('fields', column_query='column_name', relationship_query='pk_%%')
+        constraints_results = pd.read_sql(constraint_sql, create_engine(db_engine))
+        assert constraints_results is not None
+        assert not constraints_results.empty
+
+        # index on 'event' column
+        constraint_sql = self._get_table_contrains('fields', relationship_query='ix_%%')
+        constraints_results = pd.read_sql(constraint_sql, create_engine(db_engine))
+        assert constraints_results is not None
+        assert not constraints_results.empty
+        columns = constraints_results['column_name'].tolist()
+        assert len(columns) == 6
+        assert 'arr' in columns
+        assert 'field_id' in columns
+        assert 'inst' in columns
+        assert 'table_name' in columns
+        assert 'type' in columns
+        assert 'coding' in columns
 
     def test_postgresql_two_csv_files(self):
         # Prepare
@@ -1826,3 +1880,43 @@ class Pheno2SQLTest(unittest.TestCase):
         assert events_data.loc[cidx, 'field_id'] == 85
         assert events_data.loc[cidx, 'instance'] == 2
         assert events_data.loc[cidx, 'event'] == '1136'
+
+    def test_postgresql_events_tables_check_constrains_exist(self):
+        # Prepare
+        directory = get_repository_path('pheno2sql/example12')
+
+        csv_file = get_repository_path(os.path.join(directory, 'example12_diseases.csv'))
+        db_engine = POSTGRESQL_ENGINE
+
+        p2sql = Pheno2SQL(csv_file, db_engine, bgen_sample_file=os.path.join(directory, 'impv2.sample'),
+                          n_columns_per_table=2, loading_n_jobs=1)
+
+        # Run
+        p2sql.load_data()
+
+        # Validate
+        assert p2sql.db_type == 'postgresql'
+
+        ## Check samples table exists
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('events'), create_engine(db_engine))
+        assert table.iloc[0, 0]
+
+        # primary key
+        constraint_sql = self._get_table_contrains('events', relationship_query='pk_%%')
+        constraints_results = pd.read_sql(constraint_sql, create_engine(db_engine))
+        assert constraints_results is not None
+        assert not constraints_results.empty
+        columns = constraints_results['column_name'].tolist()
+        assert len(columns) == 4
+        assert 'eid' in columns
+        assert 'field_id' in columns
+        assert 'instance' in columns
+        assert 'event' in columns
+
+        # index on 'event' column
+        constraint_sql = self._get_table_contrains('events', column_query='event', relationship_query='ix_%%')
+        constraints_results = pd.read_sql(constraint_sql, create_engine(db_engine))
+        assert constraints_results is not None
+        assert not constraints_results.empty
+
+
