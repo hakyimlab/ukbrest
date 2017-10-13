@@ -368,11 +368,11 @@ class Pheno2SQL:
 
         logger.info('Initialization finished!')
 
-    def _create_joins(self, tables):
+    def _create_joins(self, tables, join_type='inner join'):
         if len(tables) == 1:
             return tables[0]
 
-        return tables[0] + ' ' + ' '.join(['full outer join {} using (eid) '.format(t) for t in tables[1:]])
+        return tables[0] + ' ' + ' '.join(['{join_type} {table} using (eid) '.format(join_type=join_type, table=t) for t in tables[1:]])
 
     def _get_needed_tables(self, all_columns):
         all_columns_quoted = ["'{}'".format(x.replace("'", "''")) for x in all_columns]
@@ -487,7 +487,7 @@ class Pheno2SQL:
         results_iterator = pd.read_sql(
             base_sql.format(
                 data_fields=','.join(all_columns),
-                tables_join=self._create_joins(tables_needed_df),
+                tables_join=self._create_joins(tables_needed_df, join_type='full outer join'),
                 where_statements=((' where ' + ' and '.join(filterings)) if filterings is not None else ''),
             ),
             self._get_db_engine(), index_col='eid', chunksize=self.sql_chunksize
@@ -502,31 +502,40 @@ class Pheno2SQL:
 
             yield chunk
 
-    def query_yaml(self, yaml_file, section, order_by=None):
-        section = yaml_file[section]
+    def query_yaml_fields(self, yaml_file, section, order_by=None):
+        section_data = yaml_file[section]
 
         include_only_stmts = None
         if 'samples_include_only' in yaml_file:
             include_only_stmts = yaml_file['samples_include_only']
 
-        section_field_statements = [v for x in section for k, v in x.items()]
+        section_field_statements = [v for x in section_data for k, v in x.items()]
 
         for chunk in self.query(section_field_statements, filterings=include_only_stmts, order_by=order_by):
-            chunk = chunk.rename(columns={v:k for x in section for k, v in x.items()})
+            chunk = chunk.rename(columns={v:k for x in section_data for k, v in x.items()})
             yield chunk
 
+    def query_yaml_case_control(self, yaml_file, section, order_by=None):
+        section_data = yaml_file[section]
 
-if __name__ == '__main__':
-    import argparse
+        for column_data in section_data:
+            for column_name, column_fields_data in column_data.items():
+                for field_data in column_fields_data:
+                    for field_name, field_conditions in field_data.items():
+                        base_query = "select eid from {0} where event in ({1}) group by eid"
 
-    parser = argparse.ArgumentParser(description='UKBREST.')
-    parser.add_argument('ukbcsv', metavar='ukbXXXX.csv', type=str, help='UKB csv file')
-    parser.add_argument('db_engine', metavar='SQL_conn_string', type=str, help='SQL connection string. For example: postgresql://test:test@localhost:5432/ukb')
-    parser.add_argument('--tmpdir', required=False, type=str, dest='tmpdir', default='/tmp/ukbrest')
-    parser.add_argument('--chunksize', required=False, type=int, dest='chunksize', default=20000)
-    parser.add_argument('--n_jobs', required=False, type=int, dest='n_jobs', default=-1)
+                        sql_cases_st = """
+                            select s.index, et.eid, 1 as iscase
+                            from events_84 inner join samples s on (s.id = eid)
+                            group by s.index, eid
+                        """
 
-    args = parser.parse_args()
+                        yield pd.DataFrame({'hello': [1,2,3], 'now': ['one', 'two', 'three']})
 
-    with Pheno2SQL(args.ukbcsv, args.db_engine) as p2sql:
-        p2sql.load_data()
+    def query_yaml(self, yaml_file, section, order_by=None):
+        if section in ('fields', 'covariates'):
+            return self.query_yaml_fields(yaml_file, section, order_by)
+        elif section == 'case_control':
+            return self.query_yaml_case_control(yaml_file, section, order_by)
+        else:
+            raise ValueError('Invalid section value')
