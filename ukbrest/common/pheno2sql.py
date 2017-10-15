@@ -426,7 +426,7 @@ class Pheno2SQL:
             sql_st = """
                 insert into events (eid, field_id, instance, event)
                 (
-                    select *
+                    select distinct *
                     from (
                         select eid, {field_id}, {field_instance}, unnest(array[{field_columns}]) as event
                         from {tables}
