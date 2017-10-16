@@ -4,20 +4,12 @@ from glob import glob
 import pandas as pd
 from sqlalchemy import create_engine
 
-from ukbrest.common.utils.db import create_table, create_indexes
+from ukbrest.common.utils.db import create_table, create_indexes, DBAccess
 
 
-class Postloader():
+class Postloader(DBAccess):
     def __init__(self, db_uri):
-        self._db_uri = db_uri
-        self.db_engine = None
-
-    def _get_db_engine(self):
-        if self.db_engine is None:
-            kargs = {'pool_size': 10}
-            self.db_engine = create_engine(self._db_uri, **kargs)
-
-        return self.db_engine
+        super(Postloader, self).__init__(db_uri)
 
     def load_codings(self, codings_dir):
         db_engine = self._get_db_engine()
@@ -46,3 +38,5 @@ class Postloader():
             data.to_sql('codings', db_engine, if_exists='append', index=False)
 
         create_indexes('codings', ['data_coding', 'coding', 'node_id', 'parent_id', 'selectable'], db_engine=db_engine)
+
+        self._vacuum('codings')

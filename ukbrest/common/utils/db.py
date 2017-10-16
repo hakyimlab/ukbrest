@@ -35,3 +35,28 @@ def create_indexes(table_name, columns, db_engine):
             """.format(table_name=table_name, column_name=column)
 
             conn.execute(index_sql)
+
+
+class DBAccess():
+    def __init__(self, db_uri):
+        self.db_uri = db_uri
+        self.db_engine = None
+
+    def _close_db_engine(self):
+        if self.db_engine is not None:
+            self.db_engine.dispose()
+            del(self.db_engine)
+            self.db_engine = None
+
+    def _get_db_engine(self):
+        if self.db_engine is None:
+            kargs = {'pool_size': 10}
+            self.db_engine = create_engine(self.db_uri, **kargs)
+
+        return self.db_engine
+
+    def _vacuum(self, table_name):
+        with self._get_db_engine().connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+            conn.execute("""
+                vacuum analyze {table_name}
+            """.format(table_name=table_name))

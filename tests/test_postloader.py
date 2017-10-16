@@ -230,3 +230,40 @@ class PostloaderTest(DBTest):
         assert 'node_id' in columns
         assert 'parent_id' in columns
         assert 'selectable' in columns
+
+    def test_postload_codings_vacuum(self):
+        # prepare
+        directory = get_repository_path('postloader/codings03_tree')
+
+        # run
+        pl = Postloader(POSTGRESQL_ENGINE)
+        pl.load_codings(directory)
+
+        # Validate
+        db_engine = create_engine(POSTGRESQL_ENGINE)
+
+        ## Check samples table exists
+        table = pd.read_sql("""
+            SELECT EXISTS (
+                SELECT 1 FROM pg_tables
+                WHERE schemaname = 'public' AND tablename = '{}'
+            )""".format('codings'), db_engine)
+
+        assert table.iloc[0, 0]
+
+        vacuum_data = pd.DataFrame()
+        query_count = 0
+
+        # FIXME waits for vacuum to finish
+        while vacuum_data.empty and query_count < 150:
+            vacuum_data = pd.read_sql("""
+                select relname, last_vacuum, last_analyze
+                from pg_stat_user_tables
+                where schemaname = 'public' and last_vacuum is not null and last_analyze is not null
+            """, db_engine)
+            query_count += 1
+
+        assert vacuum_data is not None
+        assert not vacuum_data.empty
+        tables = vacuum_data['relname'].tolist()
+        assert 'codings' in tables

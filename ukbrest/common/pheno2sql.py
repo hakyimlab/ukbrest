@@ -12,12 +12,12 @@ from joblib import Parallel, delayed
 from sqlalchemy import create_engine
 from sqlalchemy.types import TEXT, FLOAT, TIMESTAMP, INT
 
-from ukbrest.common.utils.db import create_table, create_indexes
+from ukbrest.common.utils.db import create_table, create_indexes, DBAccess
 from ukbrest.common.utils.datagen import get_tmpdir
 from ukbrest.config import logger, SQL_CHUNKSIZE_ENV
 
 
-class Pheno2SQL:
+class Pheno2SQL(DBAccess):
     _RE_COLUMN_NAME_PATTERN = '(?i)c[0-9a-z_]+_[0-9]+_[0-9]+'
     RE_COLUMN_NAME = re.compile('({})'.format(_RE_COLUMN_NAME_PATTERN))
 
@@ -45,15 +45,14 @@ class Pheno2SQL:
         chunksize (number of rows).
         """
 
+        super(Pheno2SQL, self).__init__(db_uri)
+
         if isinstance(ukb_csvs, (tuple, list)):
             self.ukb_csvs = ukb_csvs
         else:
             self.ukb_csvs = (ukb_csvs,)
 
         self.bgen_sample_file = bgen_sample_file
-
-        self.db_uri = db_uri
-        self.db_engine = None
 
         parse_result = urlparse(self.db_uri)
         self.db_type = parse_result.scheme
@@ -90,22 +89,6 @@ class Pheno2SQL:
     def __exit__(self, exc_type, exc_val, exc_tb):
         for f in os.listdir(self.tmpdir):
             os.remove(os.path.join(self.tmpdir, f))
-
-    def _get_db_engine(self):
-        if self.db_engine is None:
-            if self.db_type != 'sqlite':
-                kargs = {'pool_size': 10}
-            else:
-                kargs = {}
-
-            self.db_engine = create_engine(self.db_uri, **kargs)
-
-        return self.db_engine
-
-    def _close_db_engine(self):
-        if self.db_engine is not None:
-            del(self.db_engine)
-            self.db_engine = None
 
     def _get_table_name(self, column_range_index, csv_file_idx):
         return '{}{}_{:02d}'.format(self.table_prefix, csv_file_idx, column_range_index)
@@ -483,8 +466,8 @@ class Pheno2SQL:
     def _vacuum(self):
         logger.info('Vacuuming')
 
-        with self._get_db_engine().connect() as conn:
-            conn.execution_options(isolation_level="AUTOCOMMIT").execute("""
+        with self._get_db_engine().connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+            conn.execute("""
                 vacuum analyze;
             """)
 
