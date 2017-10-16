@@ -211,12 +211,25 @@ class Pheno2SQL:
         data_sample = pd.read_csv(csv_file, index_col=0, header=0, nrows=1, dtype=str)
         data_sample = data_sample.rename(columns=self._rename_columns)
 
-        data_table_if_exist = 'replace'
-
+        # create fields table
         if csv_file_idx == 0:
-            fields_table_if_exist = ['replace'] + ['append'] * (len(self._loading_tmp['chunked_column_names']) - 1)
-        else:
-            fields_table_if_exist = ['append'] * (len(self._loading_tmp['chunked_column_names']))
+            create_table('fields',
+                columns=[
+                    'column_name text NOT NULL',
+                    'table_name text',
+                    'field_id text NOT NULL',
+                    'description text',
+                    'coding bigint',
+                    'inst bigint',
+                    'arr bigint',
+                    'type text NOT NULL',
+                ],
+                 constraints=[
+                     'pk_fields PRIMARY KEY (column_name)'
+                 ],
+                 db_engine=self._get_db_engine(),
+                 drop_if_exists=True
+             )
 
         current_stop = 0
         for column_names_idx, column_names in self._loading_tmp['chunked_column_names']:
@@ -244,11 +257,10 @@ class Pheno2SQL:
                 else:
                     fields_codings.append(np.nan)
 
-
             # Create main table structure
             table_name = self._get_table_name(column_names_idx, csv_file_idx)
             logger.info('Table {} ({} columns)'.format(table_name, len(new_columns_names)))
-            data_sample.loc[[], new_columns_names].to_sql(table_name, self._get_db_engine(), if_exists=data_table_if_exist, dtype=db_dtypes)
+            data_sample.loc[[], new_columns_names].to_sql(table_name, self._get_db_engine(), if_exists='replace', dtype=db_dtypes)
 
             # Create auxiliary table
             n_column_names = len(new_columns_names)
@@ -266,7 +278,7 @@ class Pheno2SQL:
                 'description': fields_descriptions
             })
             # aux_table = aux_table.set_index('column_name')
-            aux_table.to_sql('fields', self._get_db_engine(), index=False, if_exists=fields_table_if_exist[column_names_idx])
+            aux_table.to_sql('fields', self._get_db_engine(), index=False, if_exists='append')
 
     def _save_column_range(self, csv_file, csv_file_idx, column_names_idx, column_names):
         table_name = self._get_table_name(column_names_idx, csv_file_idx)
@@ -447,12 +459,6 @@ class Pheno2SQL:
         logger.info('Creating table constraints (indexes, primary keys, etc)')
 
         # fields table
-        with self._get_db_engine().connect() as conn:
-            pk_sql = """
-                ALTER TABLE fields ADD CONSTRAINT pk_fields PRIMARY KEY (column_name);
-            """
-            conn.execute(pk_sql)
-
         create_indexes('fields', ('field_id', 'inst', 'arr', 'table_name', 'type', 'coding'),
                        db_engine=self._get_db_engine())
 

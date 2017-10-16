@@ -5,7 +5,7 @@ def create_table(table_name, columns, constraints, db_engine, drop_if_exists=Tru
     with db_engine.connect() as conn:
         sql_st = """
             {drop_st}
-            CREATE TABLE {table_name}
+            CREATE TABLE {create_if_not_exists} {table_name}
             (
                 {columns},
                 CONSTRAINT {constraints}
@@ -15,6 +15,7 @@ def create_table(table_name, columns, constraints, db_engine, drop_if_exists=Tru
             );
         """.format(
             drop_st='DROP TABLE IF EXISTS {0};'.format(table_name) if drop_if_exists else '',
+            create_if_not_exists='if not exists' if not drop_if_exists else '',
             table_name=table_name,
             columns=',\n'.join(columns),
             # FIXME support for more than one constraint

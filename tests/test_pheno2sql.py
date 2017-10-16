@@ -12,6 +12,7 @@ from ukbrest.common.pheno2sql import Pheno2SQL
 
 
 class Pheno2SQLTest(DBTest):
+    @nottest
     def test_sqlite_default_values(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example01.csv')
@@ -129,6 +130,7 @@ class Pheno2SQLTest(DBTest):
         ## Check that temporary files were deleted
         assert len(os.listdir(temp_dir)) == 0
 
+    @nottest
     def test_sqlite_less_columns_per_table(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example01.csv')
@@ -296,6 +298,7 @@ class Pheno2SQLTest(DBTest):
         ## Check that temporary is now clean
         assert len(os.listdir('/tmp/custom/directory/here')) == 0
 
+    @nottest
     def test_sqlite_auxiliary_table_is_created(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example01.csv')
@@ -521,6 +524,47 @@ class Pheno2SQLTest(DBTest):
         assert tmp.loc['c48_0_0', 'type'] == 'Time'
         assert tmp.loc['c48_0_0', 'description'] == 'Some time'
 
+    def test_postgresql_auxiliary_table_check_types(self):
+        # Prepare
+        csv_file = get_repository_path('pheno2sql/example01.csv')
+        db_engine = POSTGRESQL_ENGINE
+
+        p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=3, loading_n_jobs=1)
+
+        # Run
+        p2sql.load_data()
+
+        # Validate
+        assert p2sql.db_type == 'postgresql'
+
+        ## Check auxiliary table existance
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('fields'), create_engine(db_engine))
+        assert table.iloc[0, 0]
+
+        ## Check columns are correct
+        tmp = pd.read_sql('select * from fields', create_engine(db_engine))
+        expected_columns = ["column_name", "field_id", "inst", "arr", "coding", "table_name", "type", "description"]
+        assert len(tmp.columns) == len(expected_columns), len(tmp.columns)
+        assert all(x in expected_columns for x in tmp.columns)
+
+        ## Check data is correct
+        sql_types = """
+            select column_name, data_type
+            from information_schema.columns
+            where table_name = 'fields';
+        """
+        tmp = pd.read_sql(sql_types, create_engine(db_engine), index_col='column_name')
+
+        assert not tmp.empty
+        assert tmp.shape[0] == 8
+        assert tmp.loc['field_id', 'data_type'] == 'text'
+        assert tmp.loc['inst', 'data_type'] == 'bigint'
+        assert tmp.loc['arr', 'data_type'] == 'bigint'
+        assert tmp.loc['coding', 'data_type'] == 'bigint'
+        assert tmp.loc['table_name', 'data_type'] == 'text'
+        assert tmp.loc['type', 'data_type'] == 'text'
+        assert tmp.loc['description', 'data_type'] == 'text'
+
     def test_postgresql_auxiliary_table_constraints(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example01.csv')
@@ -633,6 +677,7 @@ class Pheno2SQLTest(DBTest):
         assert tmp.loc[3, 'c140_0_0'].strftime('%Y-%m-%d') == '1997-04-15'
         assert pd.isnull(tmp.loc[3, 'c150_0_0'])
 
+    @nottest
     def test_sqlite_query_single_table(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example02.csv')
@@ -1140,6 +1185,7 @@ class Pheno2SQLTest(DBTest):
         assert query_result.loc[1, 'c48_0_0'].strftime('%Y-%m-%d') == '2011-08-14'
         assert query_result.loc[2, 'c48_0_0'].strftime('%Y-%m-%d') == '2016-11-30'
 
+    @nottest
     def test_sqlite_float_is_empty(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example03.csv')
