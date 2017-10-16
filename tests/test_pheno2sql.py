@@ -1982,4 +1982,24 @@ class Pheno2SQLTest(DBTest):
         assert 'instance' in columns
         assert 'event' in columns
 
+    def test_postgresql_vacuum(self):
+        # Prepare
+        directory = get_repository_path('pheno2sql/example12')
 
+        csv_file = get_repository_path(os.path.join(directory, 'example12_diseases.csv'))
+        db_engine = POSTGRESQL_ENGINE
+
+        p2sql = Pheno2SQL(csv_file, db_engine, bgen_sample_file=os.path.join(directory, 'impv2.sample'),
+                          n_columns_per_table=2, loading_n_jobs=1)
+
+        # Run
+        p2sql.load_data(vacuum=True)
+
+        # Validate
+        vacuum_data = pd.read_sql("""
+            select relname, last_vacuum, last_analyze
+            from pg_stat_user_tables
+            where schemaname = 'public' and  last_vacuum is not null and last_analyze is not null
+        """, create_engine(db_engine))
+        assert vacuum_data is not None
+        assert not vacuum_data.empty

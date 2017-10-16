@@ -23,4 +23,4 @@ if __name__ == '__main__':
     # args = parser.parse_args()
 
     p2sql = Pheno2SQL(**config.get_pheno2sql_parameters())
-    p2sql.load_data()
+    p2sql.load_data(**config.get_pheno2sql_load_parameters())

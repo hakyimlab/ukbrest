@@ -17,6 +17,8 @@ DEBUG_ENV='UKBREST_DEBUG'
 SQL_CHUNKSIZE_ENV='UKBREST_SQL_CHUNKSIZE'
 LOADING_N_JOBS_ENV= 'UKBREST_LOADING_N_JOBS'
 
+LOAD_DATA_VACUUM = 'UKBREST_VACUUM'
+
 
 genotype_path = environ.get(GENOTYPE_PATH_ENV, None)
 
@@ -42,6 +44,8 @@ loading_chunksize = environ.get(LOADING_CHUNKSIZE, 5000)
 
 loading_n_jobs = environ.get(LOADING_N_JOBS_ENV, -1)
 
+load_data_vacuum = environ.get(LOAD_DATA_VACUUM, True)
+
 # logger
 logger = logging.getLogger('ukbrest')
 logger.setLevel(logging.INFO)
@@ -64,4 +68,9 @@ def get_pheno2sql_parameters():
         'tmpdir': tmpdir,
         'loading_chunksize': int(loading_chunksize),
         'sql_chunksize': int(sql_chunksize) if sql_chunksize is not None else None,
+    }
+
+def get_pheno2sql_load_parameters():
+    return {
+        'vacuum': load_data_vacuum
     }

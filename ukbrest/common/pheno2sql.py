@@ -480,7 +480,15 @@ class Pheno2SQL:
         # events table
         create_indexes('events', ('eid', 'field_id', 'instance', 'event'), db_engine=self._get_db_engine())
 
-    def load_data(self):
+    def _vacuum(self):
+        logger.info('Vacuuming')
+
+        with self._get_db_engine().connect() as conn:
+            conn.execution_options(isolation_level="AUTOCOMMIT").execute("""
+                vacuum analyze;
+            """)
+
+    def load_data(self, vacuum=False):
         """
         Load self.ukb_csv into the database configured.
         :return:
@@ -497,6 +505,9 @@ class Pheno2SQL:
         self._load_bgen_samples()
         self._load_events()
         self._create_constraints()
+
+        if vacuum:
+            self._vacuum()
 
         # delete temporary variable
         del(self._loading_tmp)
