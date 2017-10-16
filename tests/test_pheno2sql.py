@@ -1,5 +1,4 @@
 import os
-import unittest
 import tempfile
 
 import numpy as np
@@ -8,40 +7,11 @@ from nose.tools import nottest
 from sqlalchemy import create_engine
 
 from tests.settings import POSTGRESQL_ENGINE, SQLITE_ENGINE
-from tests.utils import get_repository_path
+from tests.utils import get_repository_path, DBTest
 from ukbrest.common.pheno2sql import Pheno2SQL
 
 
-class Pheno2SQLTest(unittest.TestCase):
-    def setUp(self):
-        # wipe postgresql tables
-        sql_st = """
-        select 'drop table if exists "' || tablename || '" cascade;' from pg_tables where schemaname = 'public';
-        """
-        db_engine = create_engine(POSTGRESQL_ENGINE)
-        tables = pd.read_sql(sql_st, db_engine)
-
-        with db_engine.connect() as con:
-            for idx, drop_table_st in tables.iterrows():
-                con.execute(drop_table_st.iloc[0])
-
-    def _get_table_contrains(self, table_name, column_query='%%', relationship_query='%%'):
-        return """
-        select t.relname as table_name, i.relname as index_name, a.attname as column_name
-        from pg_class t, pg_class i, pg_index ix, pg_attribute a
-        where
-            t.oid = ix.indrelid
-            and i.oid = ix.indexrelid
-            and a.attrelid = t.oid
-            and a.attnum = ANY(ix.indkey)
-            and t.relkind = 'r'
-            and t.relname = '{table_name}' and a.attname like '{column_query}' and i.relname like '{relationship_query}'
-        """.format(
-                table_name=table_name,
-                column_query=column_query,
-                relationship_query=relationship_query,
-            )
-
+class Pheno2SQLTest(DBTest):
     def test_sqlite_default_values(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example01.csv')

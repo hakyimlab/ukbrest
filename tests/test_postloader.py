@@ -1,29 +1,13 @@
-import unittest
-
 import numpy as np
 import pandas as pd
 from sqlalchemy import create_engine
 
 from ukbrest.common.postloader import Postloader
 from tests.settings import POSTGRESQL_ENGINE
-from tests.utils import get_repository_path
+from tests.utils import get_repository_path, DBTest
 
 
-class PostloaderTest(unittest.TestCase):
-    def setUp(self):
-        super(PostloaderTest, self).setUp()
-
-        # wipe postgresql tables
-        sql_st = """
-        select 'drop table if exists "' || tablename || '" cascade;' from pg_tables where schemaname = 'public';
-        """
-        db_engine = create_engine(POSTGRESQL_ENGINE)
-        tables = pd.read_sql(sql_st, db_engine)
-
-        with db_engine.connect() as con:
-            for idx, drop_table_st in tables.iterrows():
-                con.execute(drop_table_st.iloc[0])
-
+class PostloaderTest(DBTest):
     def test_postload_codings_table_basic(self):
         # prepare
         directory = get_repository_path('postloader/codings01')
@@ -136,11 +120,12 @@ class PostloaderTest(unittest.TestCase):
         assert all(x in codings.columns for x in expected_columns)
 
         assert not codings.empty
-        assert codings.shape[0] == 474
+        assert codings.shape[0] == 474 + 2
 
-        assert np.unique(codings.loc[:, 'data_coding']) == 6
+        assert set(np.unique(codings.loc[:, 'data_coding'])) == {6, 7}
 
         cidx = 0
+        assert codings.loc[cidx, 'data_coding'] == 6
         assert codings.loc[cidx, 'coding'] == '-1'
         assert codings.loc[cidx, 'meaning'] == 'cardiovascular'
         assert codings.loc[cidx, 'node_id'] == 1071
@@ -148,6 +133,7 @@ class PostloaderTest(unittest.TestCase):
         assert codings.loc[cidx, 'selectable'] == False
 
         cidx += 1
+        assert codings.loc[cidx, 'data_coding'] == 6
         assert codings.loc[cidx, 'coding'] == '-1'
         assert codings.loc[cidx, 'meaning'] == 'respiratory/ent'
         assert codings.loc[cidx, 'node_id'] == 1072
@@ -155,6 +141,7 @@ class PostloaderTest(unittest.TestCase):
         assert codings.loc[cidx, 'selectable'] == False
 
         cidx = 10
+        assert codings.loc[cidx, 'data_coding'] == 6
         assert codings.loc[cidx, 'coding'] == '-1'
         assert codings.loc[cidx, 'meaning'] == 'cerebrovascular disease'
         assert codings.loc[cidx, 'node_id'] == 1083
@@ -162,6 +149,7 @@ class PostloaderTest(unittest.TestCase):
         assert codings.loc[cidx, 'selectable'] == False
 
         cidx = 28
+        assert codings.loc[cidx, 'data_coding'] == 6
         assert codings.loc[cidx, 'coding'] == '1065'
         assert codings.loc[cidx, 'meaning'] == 'hypertension'
         assert codings.loc[cidx, 'node_id'] == 1081
@@ -169,6 +157,7 @@ class PostloaderTest(unittest.TestCase):
         assert codings.loc[cidx, 'selectable'] == True
 
         cidx = 277
+        assert codings.loc[cidx, 'data_coding'] == 6
         assert codings.loc[cidx, 'coding'] == '1478'
         assert codings.loc[cidx, 'meaning'] == 'cervical spondylosis'
         assert codings.loc[cidx, 'node_id'] == 1541
@@ -176,12 +165,30 @@ class PostloaderTest(unittest.TestCase):
         assert codings.loc[cidx, 'selectable'] == True
 
         cidx = 473
+        assert codings.loc[cidx, 'data_coding'] == 6
         assert codings.loc[cidx, 'coding'] == '99999'
         assert codings.loc[cidx, 'meaning'] == 'unclassifiable'
         assert codings.loc[cidx, 'node_id'] == 99999
         assert codings.loc[cidx, 'parent_id'] == 0
         assert codings.loc[cidx, 'selectable'] == False
 
-# TODO load tree-structured data
+        cidx = 474
+        assert codings.loc[cidx, 'data_coding'] == 7
+        assert codings.loc[cidx, 'coding'] == '0'
+        assert codings.loc[cidx, 'meaning'] == 'No'
+        assert pd.isnull(codings.loc[cidx, 'node_id'])
+        assert pd.isnull(codings.loc[cidx, 'parent_id'])
+        assert pd.isnull(codings.loc[cidx, 'selectable'])
+
+        cidx = 475
+        assert codings.loc[cidx, 'data_coding'] == 7
+        assert codings.loc[cidx, 'coding'] == '1'
+        assert codings.loc[cidx, 'meaning'] == 'Yes'
+        assert pd.isnull(codings.loc[cidx, 'node_id'])
+        assert pd.isnull(codings.loc[cidx, 'parent_id'])
+        assert pd.isnull(codings.loc[cidx, 'selectable'])
+
+
+
 # TODO check primary keys
 # TODO check indexes
