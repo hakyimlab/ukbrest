@@ -188,7 +188,45 @@ class PostloaderTest(DBTest):
         assert pd.isnull(codings.loc[cidx, 'parent_id'])
         assert pd.isnull(codings.loc[cidx, 'selectable'])
 
+    def test_postload_codings_check_constrains_exist(self):
+        # prepare
+        directory = get_repository_path('postloader/codings03_tree')
 
+        # run
+        pl = Postloader(POSTGRESQL_ENGINE)
+        pl.load_codings(directory)
 
-# TODO check primary keys
-# TODO check indexes
+        # Validate
+        ## Check samples table exists
+        table = pd.read_sql("""
+            SELECT EXISTS (
+                SELECT 1 FROM pg_tables
+                WHERE schemaname = 'public' AND tablename = '{}'
+            )""".format('codings'),
+            create_engine(POSTGRESQL_ENGINE))
+
+        assert table.iloc[0, 0]
+
+        # primary key
+        constraint_sql = self._get_table_contrains('codings', relationship_query='pk_%%')
+        constraints_results = pd.read_sql(constraint_sql, create_engine(POSTGRESQL_ENGINE))
+        assert constraints_results is not None
+        assert not constraints_results.empty
+        columns = constraints_results['column_name'].tolist()
+        assert len(columns) == 3
+        assert 'data_coding' in columns
+        assert 'coding' in columns
+        assert 'meaning' in columns
+
+        # index on 'event' column
+        constraint_sql = self._get_table_contrains('codings', relationship_query='ix_%%')
+        constraints_results = pd.read_sql(constraint_sql, create_engine(POSTGRESQL_ENGINE))
+        assert constraints_results is not None
+        assert not constraints_results.empty
+        columns = constraints_results['column_name'].tolist()
+        assert len(columns) == 5
+        assert 'data_coding' in columns
+        assert 'coding' in columns
+        assert 'node_id' in columns
+        assert 'parent_id' in columns
+        assert 'selectable' in columns

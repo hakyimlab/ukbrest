@@ -25,11 +25,12 @@ class Postloader():
                 CREATE TABLE codings
                 (
                     data_coding bigint NOT NULL,
-                    coding text NULL,
+                    coding text NOT NULL,
                     meaning text NOT NULL,
                     node_id bigint NULL,
                     parent_id bigint NULL,
-                    selectable boolean NULL
+                    selectable boolean NULL,
+                    CONSTRAINT pk_codings PRIMARY KEY (data_coding, coding, meaning)
                 );
             """)
 
@@ -40,3 +41,13 @@ class Postloader():
             data['data_coding'] = data_coding
 
             data.to_sql('codings', db_engine, if_exists='append', index=False)
+
+        with db_engine.connect() as con:
+            for column in ('data_coding', 'coding', 'node_id', 'parent_id', 'selectable'):
+                index_sql = """
+                    CREATE INDEX ix_codings_{column_name}
+                    ON codings USING btree
+                    ({column_name})
+                """.format(column_name=column)
+
+                con.execute(index_sql)
