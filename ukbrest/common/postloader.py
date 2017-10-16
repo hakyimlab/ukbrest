@@ -24,14 +24,19 @@ class Postloader():
             con.execute("""
                 CREATE TABLE codings
                 (
-                    field_id bigint NOT NULL,
+                    data_coding bigint NOT NULL,
                     coding text NULL,
-                    meaning text NOT NULL
+                    meaning text NOT NULL,
+                    node_id bigint NULL,
+                    parent_id bigint NULL,
+                    selectable boolean NULL
                 );
             """)
 
         for afile in glob(join(codings_dir, '*.tsv')):
             data = pd.read_table(afile)
-            field_id = int(splitext(basename(afile))[0].split('_')[1])
-            data['field_id'] = field_id
+
+            data_coding = int(splitext(basename(afile))[0].split('_')[1])
+            data['data_coding'] = data_coding
+
             data.to_sql('codings', db_engine, if_exists='append', index=False)
