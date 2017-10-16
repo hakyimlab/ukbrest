@@ -463,7 +463,7 @@ class Pheno2SQL:
                        db_engine=self._get_db_engine())
 
         # events table
-        create_indexes('events', ('event', ), db_engine=self._get_db_engine())
+        create_indexes('events', ('eid', 'field_id', 'instance', 'event'), db_engine=self._get_db_engine())
 
     def load_data(self):
         """

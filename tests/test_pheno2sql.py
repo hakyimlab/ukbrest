@@ -1930,9 +1930,15 @@ class Pheno2SQLTest(DBTest):
         assert 'event' in columns
 
         # index on 'event' column
-        constraint_sql = self._get_table_contrains('events', column_query='event', relationship_query='ix_%%')
+        constraint_sql = self._get_table_contrains('events', relationship_query='ix_%%')
         constraints_results = pd.read_sql(constraint_sql, create_engine(db_engine))
         assert constraints_results is not None
         assert not constraints_results.empty
+        columns = constraints_results['column_name'].tolist()
+        assert len(columns) == 4
+        assert 'eid' in columns
+        assert 'field_id' in columns
+        assert 'instance' in columns
+        assert 'event' in columns
 
 
