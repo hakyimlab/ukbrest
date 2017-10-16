@@ -1562,6 +1562,47 @@ class Pheno2SQLTest(DBTest):
         assert samples_data.loc[4, 'eid'] == 1000010
         assert samples_data.loc[5, 'eid'] == 1000020
 
+    def test_postgresql_samples_constraints(self):
+        # Prepare
+        directory = get_repository_path('pheno2sql/example10')
+
+        csv_file = get_repository_path(os.path.join(directory, 'example10_diseases.csv'))
+        db_engine = POSTGRESQL_ENGINE
+
+        p2sql = Pheno2SQL(csv_file, db_engine, bgen_sample_file=os.path.join(directory, 'impv2.sample'),
+                          n_columns_per_table=2, loading_n_jobs=1)
+
+        # Run
+        p2sql.load_data()
+
+        # Validate
+        assert p2sql.db_type == 'postgresql'
+
+        ## Check samples table exists
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('samples'), create_engine(db_engine))
+        assert table.iloc[0, 0]
+
+        # primary key
+        constraint_sql = self._get_table_contrains('samples', relationship_query='pk_%%')
+        constraints_results = pd.read_sql(constraint_sql, create_engine(db_engine))
+        assert constraints_results is not None
+        assert not constraints_results.empty
+        columns = constraints_results['column_name'].tolist()
+        assert len(columns) == 2
+        assert 'eid' in columns
+        assert 'index' in columns
+
+        # indexes
+        constraint_sql = self._get_table_contrains('samples', relationship_query='ix_%%')
+        constraints_results = pd.read_sql(constraint_sql, create_engine(db_engine))
+        assert constraints_results is not None
+        assert not constraints_results.empty
+        columns = constraints_results['column_name'].tolist()
+        assert len(columns) == 2
+        assert 'eid' in columns
+        assert 'index' in columns
+
+
     def test_postgresql_events_tables_only_one_instance_filled(self):
         # Prepare
         directory = get_repository_path('pheno2sql/example10')

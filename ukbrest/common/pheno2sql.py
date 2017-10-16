@@ -382,12 +382,23 @@ class Pheno2SQL:
 
         logger.info('Loading BGEN sample file: {}'.format(self.bgen_sample_file))
 
+        create_table('samples',
+            columns=[
+                'index bigint NOT NULL',
+                'eid bigint NOT NULL',
+            ],
+            constraints=[
+                'pk_samples PRIMARY KEY (index, eid)'
+            ],
+            db_engine=self._get_db_engine()
+         )
+
         samples_data = pd.read_table(self.bgen_sample_file, sep=' ', header=0, usecols=['ID_1', 'ID_2'], skiprows=[1])
         samples_data.set_index(np.arange(1, samples_data.shape[0] + 1), inplace=True)
         samples_data.drop('ID_2', axis=1, inplace=True)
         samples_data.rename(columns={'ID_1': 'eid'}, inplace=True)
 
-        samples_data.to_sql('samples', self._get_db_engine(), if_exists='replace')
+        samples_data.to_sql('samples', self._get_db_engine(), if_exists='append')
 
     def _run_psql(self, sql_statement):
         current_env = os.environ.copy()
@@ -457,6 +468,10 @@ class Pheno2SQL:
             return
 
         logger.info('Creating table constraints (indexes, primary keys, etc)')
+
+        # samples table
+        if self.bgen_sample_file is not None:
+            create_indexes('samples', ('index', 'eid'), db_engine=self._get_db_engine())
 
         # fields table
         create_indexes('fields', ('field_id', 'inst', 'arr', 'table_name', 'type', 'coding'),
