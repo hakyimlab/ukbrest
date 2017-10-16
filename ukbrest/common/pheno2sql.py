@@ -12,6 +12,7 @@ from joblib import Parallel, delayed
 from sqlalchemy import create_engine
 from sqlalchemy.types import TEXT, FLOAT, TIMESTAMP, INT
 
+from ukbrest.common.utils.db import create_table, create_indexes
 from ukbrest.common.utils.datagen import get_tmpdir
 from ukbrest.config import logger, SQL_CHUNKSIZE_ENV
 
@@ -397,23 +398,18 @@ class Pheno2SQL:
         # create table
         db_engine = self._get_db_engine()
 
-        create_events_table_sql = """
-            DROP TABLE IF EXISTS events;
-            CREATE TABLE events
-            (
-                eid bigint NOT NULL,
-                field_id integer NOT NULL,
-                instance integer NOT NULL,
-                event text COLLATE pg_catalog."default" NOT NULL,
-                CONSTRAINT pk_events PRIMARY KEY (eid, field_id, instance, event)
-            )
-            WITH (
-                OIDS = FALSE
-            );
-        """
-
-        with db_engine.connect() as con:
-            con.execute(create_events_table_sql)
+        create_table('events',
+            columns=[
+                'eid bigint NOT NULL',
+                'field_id integer NOT NULL',
+                'instance integer NOT NULL',
+                'event text NOT NULL',
+            ],
+            constraints=[
+                'pk_events PRIMARY KEY (eid, field_id, instance, event)'
+            ],
+            db_engine=db_engine
+         )
 
         # insert data of categorical multiple fields
         categorical_variables = pd.read_sql("""
@@ -457,24 +453,11 @@ class Pheno2SQL:
             """
             conn.execute(pk_sql)
 
-            for column in ('field_id', 'inst', 'arr', 'table_name', 'type', 'coding'):
-                index_sql = """
-                    CREATE INDEX ix_fields_{column_name}
-                    ON fields USING btree
-                    ({column_name})
-                """.format(column_name=column)
-
-                conn.execute(index_sql)
+        create_indexes('fields', ('field_id', 'inst', 'arr', 'table_name', 'type', 'coding'),
+                       db_engine=self._get_db_engine())
 
         # events table
-        with self._get_db_engine().connect() as conn:
-            index_sql = """
-                CREATE INDEX ix_events_event
-                ON events USING btree
-                (event)
-            """
-
-            conn.execute(index_sql)
+        create_indexes('events', ('event', ), db_engine=self._get_db_engine())
 
     def load_data(self):
         """
