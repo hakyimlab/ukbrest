@@ -7,6 +7,7 @@ GENOTYPE_BGEN_SAMPLE='UKBREST_GENOTYPE_BGEN_SAMPLE_FILE'
 
 PHENOTYPE_PATH='UKBREST_PHENOTYPE_PATH'
 PHENOTYPE_CSV_ENV='UKBREST_PHENOTYPE_CSV'
+CODINGS_PATH='UKBREST_CODINGS_PATH'
 
 TABLE_PREFIX_ENV='UKBREST_TABLE_PREFIX'
 LOADING_CHUNKSIZE='UKBREST_LOADING_CHUNKSIZE'
@@ -30,6 +31,10 @@ if bgen_sample_file is not None:
 phenotype_csv = environ.get(PHENOTYPE_CSV_ENV, None)
 if phenotype_csv is not None:
     phenotype_csv = phenotype_csv.split(';')
+
+codings_path = environ.get(CODINGS_PATH, None)
+if codings_path is not None:
+    codings_path = path.join(PHENOTYPE_PATH, codings_path)
 
 db_uri = environ.get(DB_URI_ENV, None)
 table_prefix = environ.get(TABLE_PREFIX_ENV, 'ukb_pheno_')
@@ -56,6 +61,18 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 console_handler.setFormatter(formatter)
 
 logger.addHandler(console_handler)
+
+
+def get_postloader_parameters():
+    return {
+        'db_uri': db_uri,
+    }
+
+
+def get_postloader_codings_parameters():
+    return {
+        'codings_dir': codings_path,
+    }
 
 def get_pheno2sql_parameters():
     return {

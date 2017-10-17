@@ -5,12 +5,13 @@ from os import environ
 from os.path import isdir, join
 import argparse
 
-from ukbrest.config import logger, GENOTYPE_PATH_ENV, PHENOTYPE_PATH, PHENOTYPE_CSV_ENV, DB_URI_ENV
+from ukbrest.config import logger, GENOTYPE_PATH_ENV, PHENOTYPE_PATH, PHENOTYPE_CSV_ENV, DB_URI_ENV, CODINGS_PATH
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--start', dest='start', action='store_true', required=False, help='Specifies whether the HTTP server should be started.', default=True)
-parser.add_argument('--load', dest='load', action='store_true', required=False, help='Specifies whether data should be loaded into the DB.', default=False)
+parser.add_argument('--start', action='store_true', help='Specifies whether the HTTP server should be started.', default=True)
+parser.add_argument('--load', action='store_true', help='Specifies whether data should be loaded into the DB.')
+parser.add_argument('--load-codings',action='store_true', help='Loads a set of codings files (coding_NUM.tsv).')
 
 args, unknown = parser.parse_known_args()
 
@@ -48,6 +49,14 @@ def _setup_phenotype_path():
     environ[PHENOTYPE_CSV_ENV] = ';'.join([join(phenotype_path, csv_file) for csv_file in phenotype_csv_file])
 
 
+def _setup_codings():
+    coding_path = environ.get(CODINGS_PATH, None)
+
+    if not isdir(coding_path):
+        coding_path = join(PHENOTYPE_PATH, coding_path)
+        parser.error('The codings directory does not exist: {}'.format(coding_path))
+
+
 def _setup_db_uri():
     db_uri = environ.get(DB_URI_ENV, None)
 
@@ -55,12 +64,19 @@ def _setup_db_uri():
         parser.error('No DB URI was specified. You have to set it using the environment variable UKBREST_DB_URI. For '
                      'example, for PostgreSQL, the format is: postgresql://user:pass@host:port/dbname')
 
+
 if __name__ == '__main__':
     if args.load:
         _setup_phenotype_path()
         _setup_db_uri()
 
         commands = ('python', ['python', '/opt/ukbrest/load_data.py'])
+
+    elif args.load_codings:
+        _setup_codings()
+        _setup_db_uri()
+
+        commands = ('python', ['python', '/opt/ukbrest/load_data.py', '--load-codings'])
 
     elif args.start:
         _setup_genotype_path()
