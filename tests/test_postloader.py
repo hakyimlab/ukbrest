@@ -878,3 +878,94 @@ class PostloaderTest(DBTest):
         assert codings.loc[cidx, 'data_coding'] == 9
         assert codings.loc[cidx, 'coding'] == '2'
         assert codings.loc[cidx, 'meaning'] == 'N/A'
+
+    def test_postload_load_samples_data_multiple_identifiers(self):
+        # prepare
+        directory = get_repository_path('postloader/samples_data05_multiple_identifiers')
+
+        # run
+        pl = Postloader(POSTGRESQL_ENGINE)
+        pl.load_samples_data(directory,
+                 identifier_columns={
+                     'relatedness.txt': ['ID1', 'ID2'],
+                     'samplesqc.txt': 'ID',
+                 },
+                 separators={
+                     'relatedness.txt': '\t',
+                     'samplesqc.txt': ',',
+                 },
+                 skip_columns={
+                     'samplesqc.txt': ['PC1', 'column.name'],
+                 }
+        )
+
+        # Validate
+        db_engine = create_engine(POSTGRESQL_ENGINE)
+
+        # samplesqc
+        table = pd.read_sql("""
+            SELECT EXISTS (
+                SELECT 1 FROM pg_tables
+                WHERE schemaname = 'public' AND tablename = '{}'
+            )""".format('samplesqc'), db_engine)
+
+        assert table.iloc[0, 0]
+
+        samplesqc = pd.read_sql("select * from samplesqc order by eid asc",
+                                create_engine(POSTGRESQL_ENGINE), index_col='eid')
+        assert samplesqc is not None
+        expected_columns = ['anothercolumn', 'pc2']
+        assert len(samplesqc.columns) == len(expected_columns)
+        assert all(x in samplesqc.columns for x in expected_columns)
+
+        assert not samplesqc.empty
+        assert samplesqc.shape[0] == 2
+
+        assert samplesqc.loc[10, 'anothercolumn'] == 'Batch'
+        assert samplesqc.loc[10, 'pc2'] == 0.357072
+
+        assert samplesqc.loc[2222240, 'anothercolumn'] == 'Some13'
+        assert samplesqc.loc[2222240, 'pc2'] == -5.46438
+
+        # relatedness
+        table = pd.read_sql("""
+            SELECT EXISTS (
+                SELECT 1 FROM pg_tables
+                WHERE schemaname = 'public' AND tablename = '{}'
+            )""".format('relatedness'), db_engine)
+
+        assert table.iloc[0, 0]
+
+        samplesqc = pd.read_sql("select * from relatedness order by id1 asc, id2 asc",
+                                create_engine(POSTGRESQL_ENGINE), index_col=['id1', 'id2'])
+        assert samplesqc is not None
+        expected_columns = ['hethet', 'ibs0', 'kinship']
+        assert len(samplesqc.columns) == len(expected_columns)
+        assert all(x in samplesqc.columns for x in expected_columns)
+
+        assert not samplesqc.empty
+        assert samplesqc.shape[0] == 6
+
+        assert samplesqc.loc[10].loc[10, 'hethet'] == 0.016
+        assert samplesqc.loc[10].loc[10, 'ibs0'] == 0.0148
+        assert samplesqc.loc[10].loc[10, 'kinship'] == 0.1367
+
+        assert samplesqc.loc[10].loc[20, 'hethet'] == 0.316
+        assert samplesqc.loc[10].loc[20, 'ibs0'] == 0.9148
+        assert samplesqc.loc[10].loc[20, 'kinship'] == 0.0667
+
+        assert samplesqc.loc[20].loc[20, 'hethet'] == 0.02
+        assert samplesqc.loc[20].loc[20, 'ibs0'] == 0.0143
+        assert samplesqc.loc[20].loc[20, 'kinship'] == 0.0801
+
+        assert samplesqc.loc[2222240].loc[2222240, 'hethet'] == 0.038
+        assert samplesqc.loc[2222240].loc[2222240, 'ibs0'] == 0.0227
+        assert samplesqc.loc[2222240].loc[2222240, 'kinship'] == 0.0742
+
+        assert samplesqc.loc[2222240].loc[10, 'hethet'] == 0.138
+        assert samplesqc.loc[2222240].loc[10, 'ibs0'] == 0.1227
+        assert samplesqc.loc[2222240].loc[10, 'kinship'] == 0.1742
+
+        assert samplesqc.loc[2222240].loc[20, 'hethet'] == 0.238
+        assert samplesqc.loc[2222240].loc[20, 'ibs0'] == 0.2227
+        assert samplesqc.loc[2222240].loc[20, 'kinship'] == 0.2742

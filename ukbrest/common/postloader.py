@@ -79,16 +79,23 @@ class Postloader(DBAccess):
                 logger.info('Dropping columns: {}'.format(','.join(skip_columns[filename])))
                 data = data.drop(skip_columns[filename], axis=1)
 
-            eid_column = identifier_columns[filename] if filename in identifier_columns else 'eid'
+            eid_columns = identifier_columns[filename] if filename in identifier_columns else 'eid'
+            if not isinstance(eid_columns, (list, tuple)):
+                eid_columns = [eid_columns]
 
-            if eid_column not in data.columns:
-                logger.error("File '{0}' has no identifier column ({1})".format(filename, eid_column))
+            if any(id_col not in data.columns for id_col in eid_columns):
+                logger.error("File '{0}' has no identifier column ({1})".format(filename, eid_columns))
                 continue
 
             table_name = splitext(filename)[0]
 
+            # rename columns
             columns_rename = {old_col: self._rename_column(old_col) for old_col in data.columns}
-            columns_rename[eid_column] = 'eid'
+
+            if len(eid_columns) == 1:
+                columns_rename[eid_columns[0]] = 'eid'
+                eid_columns[0] = 'eid'
+
             data = data.rename(columns=columns_rename)
 
             data.to_sql(table_name, db_engine, if_exists='replace', index=False)
@@ -97,8 +104,8 @@ class Postloader(DBAccess):
             logger.info('Adding primary key')
             with db_engine.connect() as conn:
                 conn.execute("""
-                    ALTER TABLE {table_name} ADD CONSTRAINT pk_{table_name} PRIMARY KEY (eid);
-                """.format(table_name=table_name))
+                    ALTER TABLE {table_name} ADD CONSTRAINT pk_{table_name} PRIMARY KEY ({id_cols});
+                """.format(table_name=table_name, id_cols=','.join(eid_columns)))
 
             # insert new data columns into fields table
             logger.info("Adding columns to 'fields' table")

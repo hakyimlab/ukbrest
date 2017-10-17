@@ -1,0 +1,3 @@
+ID,column.name,AnotherColumn,PC1,PC2
+0000010,UKBB,Batch,-1.76106,0.357072
+2222240,Other13,Some13,2.47186,-5.46438

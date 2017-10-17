@@ -24,7 +24,7 @@ if __name__ == '__main__':
         load_samples_parameters = config.get_postloader_samples_data_parameters()
 
         if args.identifier_columns is not None:
-            load_samples_parameters.update({'identifier_columns': {p.split(':')[0]: p.split(':')[1] for p in args.identifier_columns}})
+            load_samples_parameters.update({'identifier_columns': {p.split(':')[0]: p.split(':')[1].split(',') for p in args.identifier_columns}})
 
         if args.skip_columns is not None:
             load_samples_parameters.update({'skip_columns': {p.split(':')[0]: p.split(':')[1].split(',') for p in args.skip_columns}})
