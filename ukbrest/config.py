@@ -29,17 +29,18 @@ bgen_sample_file = environ.get(GENOTYPE_BGEN_SAMPLE, None)
 if bgen_sample_file is not None:
     bgen_sample_file = path.join(genotype_path, bgen_sample_file)
 
+phenotype_path = environ.get(PHENOTYPE_PATH, None)
 phenotype_csv = environ.get(PHENOTYPE_CSV_ENV, None)
 if phenotype_csv is not None:
     phenotype_csv = phenotype_csv.split(';')
 
 codings_path = environ.get(CODINGS_PATH, None)
 if codings_path is not None:
-    codings_path = path.join(PHENOTYPE_PATH, codings_path)
+    codings_path = path.join(phenotype_path, codings_path)
 
 samples_data_path = environ.get(SAMPLES_DATA_PATH, None)
 if samples_data_path is not None:
-    samples_data_path = path.join(PHENOTYPE_PATH, samples_data_path)
+    samples_data_path = path.join(phenotype_path, samples_data_path)
 
 db_uri = environ.get(DB_URI_ENV, None)
 table_prefix = environ.get(TABLE_PREFIX_ENV, 'ukb_pheno_')

@@ -51,26 +51,28 @@ def _setup_phenotype_path():
 
 
 def _setup_codings():
+    phenotype_path = environ.get(PHENOTYPE_PATH, None)
     coding_path = environ.get(CODINGS_PATH, None)
 
     if coding_path is None:
         environ[CODINGS_PATH] = 'codings'
         coding_path = 'codings'
 
-    coding_path = join(PHENOTYPE_PATH, coding_path)
+    coding_path = join(phenotype_path, coding_path)
 
     if not isdir(coding_path):
         parser.error('The codings directory does not exist: {}'.format(coding_path))
 
 
 def _setup_samples_data():
+    phenotype_path = environ.get(PHENOTYPE_PATH, None)
     samples_data_path = environ.get(SAMPLES_DATA_PATH, None)
 
     if samples_data_path is None:
         environ[SAMPLES_DATA_PATH] = 'samples_data'
         samples_data_path = 'samples_data'
 
-    samples_data_path = join(PHENOTYPE_PATH, samples_data_path)
+    samples_data_path = join(phenotype_path, samples_data_path)
 
     if not isdir(samples_data_path):
         parser.error('The samples data directory does not exist: {}'.format(samples_data_path))

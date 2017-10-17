@@ -17,6 +17,7 @@ class Postloader(DBAccess):
         }
 
     def load_codings(self, codings_dir):
+        logger.info('Loading codings from {}'.format(codings_dir))
         db_engine = self._get_db_engine()
 
         create_table('codings',
@@ -35,9 +36,13 @@ class Postloader(DBAccess):
          )
 
         for afile in glob(join(codings_dir, '*.tsv')):
-            data = pd.read_table(afile)
+            afile_base = basename(afile)
 
-            data_coding = int(splitext(basename(afile))[0].split('_')[1])
+            logger.info('Processing coding file: {}'.format(afile_base))
+
+            data = pd.read_table(afile, sep='\t+', na_filter=False)
+
+            data_coding = int(splitext(afile_base)[0].split('_')[1])
             data['data_coding'] = data_coding
 
             data.to_sql('codings', db_engine, if_exists='append', index=False)

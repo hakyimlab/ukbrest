@@ -825,4 +825,56 @@ class PostloaderTest(DBTest):
         assert len(columns) == 1
         assert 'eid' in columns
 
-# TODO samples data: create pk on eid
+
+    def test_postload_codings_table_many_tab_characters_and_na(self):
+        # prepare
+        directory = get_repository_path('postloader/codings04_many_tabs')
+
+        # run
+        pl = Postloader(POSTGRESQL_ENGINE)
+        pl.load_codings(directory)
+
+        # validate
+        ## Check samples table exists
+        table = pd.read_sql("""
+            SELECT EXISTS (
+                SELECT 1 FROM pg_tables
+                WHERE schemaname = 'public' AND tablename = '{}'
+            )""".format('codings'),
+                            create_engine(POSTGRESQL_ENGINE))
+
+        assert table.iloc[0, 0]
+
+        codings = pd.read_sql("select * from codings order by data_coding, coding", create_engine(POSTGRESQL_ENGINE))
+        assert codings is not None
+        expected_columns = ['data_coding', 'coding', 'meaning']
+        assert len(codings.columns) >= len(expected_columns)
+        assert all(x in codings.columns for x in expected_columns)
+
+        assert not codings.empty
+        assert codings.shape[0] == 5
+
+        cidx = 0
+        assert codings.loc[cidx, 'data_coding'] == 7
+        assert codings.loc[cidx, 'coding'] == '0'
+        assert codings.loc[cidx, 'meaning'] == 'No'
+
+        cidx += 1
+        assert codings.loc[cidx, 'data_coding'] == 7
+        assert codings.loc[cidx, 'coding'] == '1'
+        assert codings.loc[cidx, 'meaning'] == 'Yes'
+
+        cidx += 1
+        assert codings.loc[cidx, 'data_coding'] == 9
+        assert codings.loc[cidx, 'coding'] == '0'
+        assert codings.loc[cidx, 'meaning'] == 'Female'
+
+        cidx += 1
+        assert codings.loc[cidx, 'data_coding'] == 9
+        assert codings.loc[cidx, 'coding'] == '1'
+        assert codings.loc[cidx, 'meaning'] == 'Male'
+
+        cidx += 1
+        assert codings.loc[cidx, 'data_coding'] == 9
+        assert codings.loc[cidx, 'coding'] == '2'
+        assert codings.loc[cidx, 'meaning'] == 'N/A'
