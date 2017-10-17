@@ -5,15 +5,16 @@ from os import environ
 from os.path import isdir, join
 import argparse
 
-from ukbrest.config import logger, GENOTYPE_PATH_ENV, PHENOTYPE_PATH, PHENOTYPE_CSV_ENV, DB_URI_ENV, CODINGS_PATH
+from ukbrest.config import logger, GENOTYPE_PATH_ENV, PHENOTYPE_PATH, PHENOTYPE_CSV_ENV, DB_URI_ENV, CODINGS_PATH, SAMPLES_DATA_PATH
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--start', action='store_true', help='Specifies whether the HTTP server should be started.', default=True)
 parser.add_argument('--load', action='store_true', help='Specifies whether data should be loaded into the DB.')
 parser.add_argument('--load-codings',action='store_true', help='Loads a set of codings files (coding_NUM.tsv).')
+parser.add_argument('--load-samples-data',action='store_true', help='Loads a set of files containing information about samples.')
 
-args, unknown = parser.parse_known_args()
+args, unknown_args = parser.parse_known_args()
 
 
 def _setup_genotype_path():
@@ -52,9 +53,27 @@ def _setup_phenotype_path():
 def _setup_codings():
     coding_path = environ.get(CODINGS_PATH, None)
 
+    if coding_path is None:
+        environ[CODINGS_PATH] = 'codings'
+        coding_path = 'codings'
+
+    coding_path = join(PHENOTYPE_PATH, coding_path)
+
     if not isdir(coding_path):
-        coding_path = join(PHENOTYPE_PATH, coding_path)
         parser.error('The codings directory does not exist: {}'.format(coding_path))
+
+
+def _setup_samples_data():
+    samples_data_path = environ.get(SAMPLES_DATA_PATH, None)
+
+    if samples_data_path is None:
+        environ[SAMPLES_DATA_PATH] = 'samples_data'
+        samples_data_path = 'samples_data'
+
+    samples_data_path = join(PHENOTYPE_PATH, samples_data_path)
+
+    if not isdir(samples_data_path):
+        parser.error('The samples data directory does not exist: {}'.format(samples_data_path))
 
 
 def _setup_db_uri():
@@ -77,6 +96,12 @@ if __name__ == '__main__':
         _setup_db_uri()
 
         commands = ('python', ['python', '/opt/ukbrest/load_data.py', '--load-codings'])
+
+    elif args.load_samples_data:
+        _setup_samples_data()
+        _setup_db_uri()
+
+        commands = ('python', ['python', '/opt/ukbrest/load_data.py', '--load-samples-data'] + unknown_args)
 
     elif args.start:
         _setup_genotype_path()
