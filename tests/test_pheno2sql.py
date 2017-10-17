@@ -1982,6 +1982,40 @@ class Pheno2SQLTest(DBTest):
         assert 'instance' in columns
         assert 'event' in columns
 
+    def test_postgresql_phenotypes_tables_check_constrains_exist(self):
+        # Prepare
+        directory = get_repository_path('pheno2sql/example12')
+
+        csv_file = get_repository_path(os.path.join(directory, 'example12_diseases.csv'))
+        db_engine = POSTGRESQL_ENGINE
+
+        p2sql = Pheno2SQL(csv_file, db_engine, bgen_sample_file=os.path.join(directory, 'impv2.sample'),
+                          n_columns_per_table=15, loading_n_jobs=1)
+
+        # Run
+        p2sql.load_data()
+
+        # Validate
+        assert p2sql.db_type == 'postgresql'
+
+        ## Check tables exists
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_0_00'), create_engine(db_engine))
+        assert table.iloc[0, 0]
+
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('ukb_pheno_0_01'), create_engine(db_engine))
+        assert table.iloc[0, 0]
+
+        # primary key
+        constraint_sql = self._get_table_contrains('ukb_pheno_0_00', column_query='eid', relationship_query='pk_%%')
+        constraints_results = pd.read_sql(constraint_sql, create_engine(db_engine))
+        assert constraints_results is not None
+        assert not constraints_results.empty
+
+        constraint_sql = self._get_table_contrains('ukb_pheno_0_01', column_query='eid', relationship_query='pk_%%')
+        constraints_results = pd.read_sql(constraint_sql, create_engine(db_engine))
+        assert constraints_results is not None
+        assert not constraints_results.empty
+
     def test_postgresql_vacuum(self):
         # Prepare
         directory = get_repository_path('pheno2sql/example12')

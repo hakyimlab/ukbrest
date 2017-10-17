@@ -245,6 +245,14 @@ class Pheno2SQL(DBAccess):
             logger.info('Table {} ({} columns)'.format(table_name, len(new_columns_names)))
             data_sample.loc[[], new_columns_names].to_sql(table_name, self._get_db_engine(), if_exists='replace', dtype=db_dtypes)
 
+            with self._get_db_engine().connect() as conn:
+                conn.execute("""
+                    ALTER TABLE {table_name} ADD CONSTRAINT pk_{table_name} PRIMARY KEY (eid);
+                """.format(table_name=table_name))
+
+            with self._get_db_engine().connect() as conn:
+                conn.execute('DROP INDEX ix_{table_name}_eid;'.format(table_name=table_name))
+
             # Create auxiliary table
             n_column_names = len(new_columns_names)
             current_start = current_stop
