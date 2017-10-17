@@ -7,9 +7,9 @@ from ukbrest import config
 parser = argparse.ArgumentParser()
 parser.add_argument('--load-codings', action='store_true')
 parser.add_argument('--load-samples-data', action='store_true')
-parser.add_argument('--identifier-columns', type=str, nargs='+', help='Format file1.txt:column1 file2.txt:column2 ...', default=[])
-parser.add_argument('--skip-columns', type=str, nargs='+', help='Format file1.txt:column1 file2.txt:column2 ...', default=[])
-parser.add_argument('--separators', type=str, nargs='+', help='Format file1.txt:column1 file2.txt:column2 ...', default=[])
+parser.add_argument('--identifier-columns', type=str, nargs='+', help='Format file1.txt:column1 file2.txt:column2 ...')
+parser.add_argument('--skip-columns', type=str, nargs='+', help='Format file1.txt:column1 file2.txt:column2 ...')
+parser.add_argument('--separators', type=str, nargs='+', help='Format file1.txt:column1 file2.txt:column2 ...')
 
 
 if __name__ == '__main__':
@@ -22,13 +22,15 @@ if __name__ == '__main__':
         pl = Postloader(**config.get_postloader_parameters())
 
         load_samples_parameters = config.get_postloader_samples_data_parameters()
-        identifier_columns = {p.split(':')[0]: p.split(':')[1] for p in args.identifier_columns}
-        skip_columns = {p.split(':')[0]: p.split(':')[1] for p in args.skip_columns}
-        separators = {p.split(':')[0]: p.split(':')[1] for p in args.separators}
 
-        load_samples_parameters.update(identifier_columns)
-        load_samples_parameters.update(skip_columns)
-        load_samples_parameters.update(separators)
+        if args.identifier_columns is not None:
+            load_samples_parameters.update({'identifier_columns': {p.split(':')[0]: p.split(':')[1] for p in args.identifier_columns}})
+
+        if args.skip_columns is not None:
+            load_samples_parameters.update({'skip_columns': {p.split(':')[0]: p.split(':')[1].split(',') for p in args.skip_columns}})
+
+        if args.separators is not None:
+            load_samples_parameters.update({'separators': {p.split(':')[0]: p.split(':')[1] for p in args.separators}})
 
         pl.load_samples_data(**load_samples_parameters)
     else:
