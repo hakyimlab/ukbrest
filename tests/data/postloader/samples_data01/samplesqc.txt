@@ -1,0 +1,5 @@
+eid column.name AnotherColumn Third.Column Other.Measure..col.umn.
+0000010 UKBB Batch SomeValue 8.33992
+0000020 Other Some AnotherValue -772.1234
+0000030 Other12 Some12 AnotherValue12 -0.000001234
+2222240 Other13 Some13 AnotherValue13 0.051234

@@ -1,14 +1,14 @@
 from sqlalchemy import create_engine
 
 
-def create_table(table_name, columns, constraints, db_engine, drop_if_exists=True):
+def create_table(table_name, columns, db_engine, constraints=None, drop_if_exists=True):
     with db_engine.connect() as conn:
         sql_st = """
             {drop_st}
             CREATE TABLE {create_if_not_exists} {table_name}
             (
-                {columns},
-                CONSTRAINT {constraints}
+                {columns}
+                {constraints}
             )
             WITH (
                 OIDS = FALSE
@@ -19,7 +19,7 @@ def create_table(table_name, columns, constraints, db_engine, drop_if_exists=Tru
             table_name=table_name,
             columns=',\n'.join(columns),
             # FIXME support for more than one constraint
-            constraints=constraints[0]
+            constraints=',CONSTRAINT {}'.format(constraints[0]) if constraints is not None else ''
         )
 
         conn.execute(sql_st)
