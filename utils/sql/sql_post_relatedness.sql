@@ -1,3 +1,6 @@
+-- this query populates a table with samples that should be discarded if 2nd and higher degree are being excluded.
+-- They are the related sample with highest missing rate
+
 select * into bad_samples_relatedness_2nd_higher_and_high_missrate from (select distinct eid from (select distinct on (id1, id2) eid
     from relatedness inner join samplesqc on (id1 = eid or id2 = eid)
     where kinship >= 0.0883
