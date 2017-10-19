@@ -100,6 +100,7 @@ def get_pheno2sql_parameters():
         'sql_chunksize': int(sql_chunksize) if sql_chunksize is not None else None,
     }
 
+
 def get_pheno2sql_load_parameters():
     return {
         'vacuum': load_data_vacuum
