@@ -2030,10 +2030,17 @@ class Pheno2SQLTest(DBTest):
         p2sql.load_data(vacuum=True)
 
         # Validate
-        vacuum_data = pd.read_sql("""
-            select relname, last_vacuum, last_analyze
-            from pg_stat_user_tables
-            where schemaname = 'public' and  last_vacuum is not null and last_analyze is not null
-        """, create_engine(db_engine))
+        vacuum_data = pd.DataFrame()
+        query_count = 0
+
+        # FIXME waits for vacuum to finish
+        while vacuum_data.empty and query_count < 150:
+            vacuum_data = pd.read_sql("""
+                select relname, last_vacuum, last_analyze
+                from pg_stat_user_tables
+                where schemaname = 'public' and last_vacuum is not null and last_analyze is not null
+            """, db_engine)
+            query_count += 1
+
         assert vacuum_data is not None
         assert not vacuum_data.empty
