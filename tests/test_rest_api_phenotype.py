@@ -7,12 +7,16 @@ import pandas as pd
 from nose.tools import nottest
 
 from tests.settings import POSTGRESQL_ENGINE
-from tests.utils import get_repository_path
+from tests.utils import get_repository_path, DBTest
 from ukbrest.common.pheno2sql import Pheno2SQL
+from ukbrest.common.postloader import Postloader
 
 
-class TestRestApiPhenotype(unittest.TestCase):
-    def setUp(self, filename=None, load_data=True, **kwargs):
+class TestRestApiPhenotype(DBTest):
+    def setUp(self, filename=None, load_data=True, wipe_database=True, **kwargs):
+        if wipe_database:
+            super(TestRestApiPhenotype, self).setUp()
+        
         # Load data
         if filename is None:
             csv_file = get_repository_path('pheno2sql/example02.csv')
@@ -1113,7 +1117,7 @@ class TestRestApiPhenotype(unittest.TestCase):
         self.setUp(csvs)
 
         # then create another instance without executing load_data method
-        self.setUp(csvs, load_data=False)
+        self.setUp(csvs, load_data=False, wipe_database=False)
 
         columns = ['c48_0_0', 'c120_0_0 as c120', 'c150_0_0 c150']
         reg_exp_columns = ['c21_[01]_0', 'c100_\d_0']
@@ -1309,7 +1313,7 @@ class TestRestApiPhenotype(unittest.TestCase):
                    sql_chunksize=2, n_columns_per_table=2)
 
         yaml_data = b"""
-        samples_include_only:
+        samples_filters:
           - c47_0_0  > 0
         
         covariates:
@@ -1403,7 +1407,7 @@ class TestRestApiPhenotype(unittest.TestCase):
                    sql_chunksize=2, n_columns_per_table=2)
 
         yaml_data = b"""
-        samples_include_only:
+        samples_filters:
           - c47_0_0  > 0
 
         covariates:
@@ -1507,7 +1511,7 @@ class TestRestApiPhenotype(unittest.TestCase):
                    sql_chunksize=2, n_columns_per_table=2)
 
         yaml_data = b"""
-        samples_include_only:
+        samples_filters:
           - c47_0_0  > 0
 
         covariates:
@@ -1565,20 +1569,15 @@ class TestRestApiPhenotype(unittest.TestCase):
         assert pheno_file.loc[4, 'instance1'] == 'NA'
         assert pheno_file.loc[4, 'instance2'] == 'NA'
 
-    def test_phenotype_query_yaml_disease(self):
+    def test_phenotype_query_yaml_disease_by_coding_first_bgenie(self):
         # Prepare
-        self.setUp('pheno2sql/example10/example10_diseases.csv',
-                   bgen_sample_file=get_repository_path('pheno2sql/example10/impv2.sample'),
-                   sql_chunksize=2, n_columns_per_table=2)
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=10)
 
         yaml_data = b"""
-        samples_include_only:
+        samples_filters:
           - c34_0_0  >= -5
-          - and c31_0_0 > '1999-01-01'
-
-        covariates:
-          - field_name_34: c34_0_0 
-          - field_name_47: c47_0_0
         
         case_control:
           - disease0:
@@ -1586,7 +1585,7 @@ class TestRestApiPhenotype(unittest.TestCase):
               - coding: [N308]
         """
 
-        N_EXPECTED_SAMPLES = 5
+        N_EXPECTED_SAMPLES = 6
 
         #
         # Ask fields
@@ -1611,45 +1610,560 @@ class TestRestApiPhenotype(unittest.TestCase):
         assert len(pheno_file.columns) == len(expected_columns)
         assert all(x in expected_columns for x in pheno_file.columns)
 
-        assert pheno_file.loc[0, 'disease0'] == '0'
-        assert pheno_file.loc[1, 'disease0'] == 'NA'
-        assert pheno_file.loc[2, 'disease0'] == '1'
-        assert pheno_file.loc[3, 'disease0'] == 'NA'
-        assert pheno_file.loc[4, 'disease0'] == '1'
+        assert pheno_file.loc[0, 'disease0'] == '0'      # 1000050
+        assert pheno_file.loc[1, 'disease0'] == 'NA'     # 1000030
+        assert pheno_file.loc[2, 'disease0'] == '1'      # 1000040
+        assert pheno_file.loc[3, 'disease0'] == 'NA'     # 1000010
+        assert pheno_file.loc[4, 'disease0'] == '1'      # 1000020
+        assert pheno_file.loc[5, 'disease0'] == '0'      # 1000070
+        # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
+
+    def test_phenotype_query_yaml_disease_by_coding_second_bgenie(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=20)
+
+        yaml_data = b"""
+        samples_filters:
+          - c34_0_0  >= -5
+
+        case_control:
+          - disease0:
+            - 84:
+              - coding: [E103]
+        """
+
+        N_EXPECTED_SAMPLES = 6
 
         #
-        # Ask covariates
+        # Ask fields
         #
         response = self.app.post('/ukbrest/api/v1.0/query', data=
-            {
-                'file': (io.BytesIO(yaml_data), 'data.yaml'),
-                'section': 'covariates',
-            }, headers={'accept': 'text/bgenie'})
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'case_control',
+        }, headers={'accept': 'text/bgenie'})
 
         # Validate
         assert response.status_code == 200, response.status_code
 
         pheno_file = pd.read_table(io.StringIO(response.data.decode('utf-8')), sep=' ', header=0,
                                    dtype=str, na_values='', keep_default_na=False)
+
         assert pheno_file is not None
         assert not pheno_file.empty
-        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 2)
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 1), pheno_file.shape
 
-        expected_columns = ['field_name_34', 'field_name_47']
+        expected_columns = ['disease0']
         assert len(pheno_file.columns) == len(expected_columns)
         assert all(x in expected_columns for x in pheno_file.columns)
 
-        assert pheno_file.loc[0, 'field_name_34'] == '-4'
-        assert pheno_file.loc[0, 'field_name_47'] == 'NA'
+        assert pheno_file.loc[0, 'disease0'] == '1'   # 1000050
+        assert pheno_file.loc[1, 'disease0'] == 'NA'   # 1000030
+        assert pheno_file.loc[2, 'disease0'] == '1'   # 1000040
+        assert pheno_file.loc[3, 'disease0'] == 'NA'  # 1000010
+        assert pheno_file.loc[4, 'disease0'] == '1'   # 1000020
+        assert pheno_file.loc[5, 'disease0'] == '0'  # 1000070
+        # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
 
-        assert pheno_file.loc[1, 'field_name_34'] == 'NA'
-        assert pheno_file.loc[1, 'field_name_47'] == 'NA'
+    def test_phenotype_query_yaml_disease_by_coding_different_filter_bgenie(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=20)
 
-        assert pheno_file.loc[2, 'field_name_34'] == '3'
-        assert pheno_file.loc[2, 'field_name_47'] == '5.20832'
+        yaml_data = b"""
+        samples_filters:
+          - c31_0_0  > '2001-01-01'
 
-        assert pheno_file.loc[3, 'field_name_34'] == 'NA'
-        assert pheno_file.loc[3, 'field_name_47'] == 'NA'
+        case_control:
+          - disease0:
+            - 84:
+              - coding: [E103]
+        """
 
-        assert pheno_file.loc[4, 'field_name_34'] == '34'
-        assert pheno_file.loc[4, 'field_name_47'] == '-10.51461'
+        N_EXPECTED_SAMPLES = 6
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'case_control',
+        }, headers={'accept': 'text/bgenie'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_table(io.StringIO(response.data.decode('utf-8')), sep=' ', header=0,
+                                   dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 1), pheno_file.shape
+
+        expected_columns = ['disease0']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[0, 'disease0'] == 'NA'  # 1000050
+        assert pheno_file.loc[1, 'disease0'] == 'NA'  # 1000030
+        assert pheno_file.loc[2, 'disease0'] == 'NA'  # 1000040
+        assert pheno_file.loc[3, 'disease0'] == '1'  # 1000010
+        assert pheno_file.loc[4, 'disease0'] == '1'  # 1000020
+        assert pheno_file.loc[5, 'disease0'] == '0'  # 1000070
+        # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
+
+    def test_phenotype_query_yaml_disease_by_coding_filter_includes_nulls_bgenie(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=20)
+
+        yaml_data = b"""
+        samples_filters:
+          - c31_0_0 is null or c31_0_0  > '2001-01-01'
+
+        case_control:
+          - disease0:
+            - 84:
+              - coding: [E103]
+        """
+
+        N_EXPECTED_SAMPLES = 6
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'case_control',
+        }, headers={'accept': 'text/bgenie'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_table(io.StringIO(response.data.decode('utf-8')), sep=' ', header=0,
+                                   dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 1), pheno_file.shape
+
+        expected_columns = ['disease0']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[0, 'disease0'] == '1'  # 1000050
+        assert pheno_file.loc[1, 'disease0'] == 'NA'  # 1000030
+        assert pheno_file.loc[2, 'disease0'] == 'NA'  # 1000040
+        assert pheno_file.loc[3, 'disease0'] == '1'  # 1000010
+        assert pheno_file.loc[4, 'disease0'] == '1'  # 1000020
+        assert pheno_file.loc[5, 'disease0'] == '0'  # 1000070
+        # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
+
+    def test_phenotype_query_yaml_disease_by_coding_multiple_filters_using_like_bgenie(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=20)
+
+        yaml_data = b"""
+        samples_filters:
+          - c31_0_0 is null or c31_0_0  > '2001-01-01'
+          - c21_2_0 not like '%%obab%%'
+
+        case_control:
+          - disease0:
+            - 84:
+              - coding: [E103]
+        """
+
+        N_EXPECTED_SAMPLES = 6
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'case_control',
+        }, headers={'accept': 'text/bgenie'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_table(io.StringIO(response.data.decode('utf-8')), sep=' ', header=0,
+                                   dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 1), pheno_file.shape
+
+        expected_columns = ['disease0']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[0, 'disease0'] == 'NA'  # 1000050
+        assert pheno_file.loc[1, 'disease0'] == 'NA'  # 1000030
+        assert pheno_file.loc[2, 'disease0'] == 'NA'  # 1000040
+        assert pheno_file.loc[3, 'disease0'] == '1'  # 1000010
+        assert pheno_file.loc[4, 'disease0'] == '1'  # 1000020
+        assert pheno_file.loc[5, 'disease0'] == '0'  # 1000070
+        # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
+
+    def test_phenotype_query_yaml_disease_by_coding_fields_in_filters_are_in_different_tables_bgenie(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        yaml_data = b"""
+        samples_filters:
+          - c21_1_0 not like '%%respo%%'
+          - c47_0_0 > 0
+
+        case_control:
+          - disease0:
+            - 84:
+              - coding: [Q750]
+        """
+
+        N_EXPECTED_SAMPLES = 6
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'case_control',
+        }, headers={'accept': 'text/bgenie'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_table(io.StringIO(response.data.decode('utf-8')), sep=' ', header=0,
+                                   dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 1), pheno_file.shape
+
+        expected_columns = ['disease0']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[0, 'disease0'] == 'NA'  # 1000050
+        assert pheno_file.loc[1, 'disease0'] == 'NA'  # 1000030
+        assert pheno_file.loc[2, 'disease0'] == '1'  # 1000040
+        assert pheno_file.loc[3, 'disease0'] == 'NA'  # 1000010
+        assert pheno_file.loc[4, 'disease0'] == 'NA'  # 1000020
+        assert pheno_file.loc[5, 'disease0'] == '0'  # 1000070
+        # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
+
+
+    def test_phenotype_query_yaml_disease_by_coding_different_data_field_bgenie(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        yaml_data = b"""
+        samples_filters:
+          - lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
+          - eid not in (select eid from events where field_id = 84 and event in ('Q750'))
+    
+        case_control:
+          - disease0:
+            - 85:
+              - coding: [1114]
+        """
+
+        N_EXPECTED_SAMPLES = 6
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'case_control',
+        }, headers={'accept': 'text/bgenie'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_table(io.StringIO(response.data.decode('utf-8')), sep=' ', header=0,
+                                   dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 1), pheno_file.shape
+
+        expected_columns = ['disease0']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[0, 'disease0'] == '1'  # 1000050
+        assert pheno_file.loc[1, 'disease0'] == 'NA'  # 1000030
+        assert pheno_file.loc[2, 'disease0'] == 'NA'  # 1000040
+        assert pheno_file.loc[3, 'disease0'] == 'NA'  # 1000010
+        assert pheno_file.loc[4, 'disease0'] == '1'  # 1000020
+        assert pheno_file.loc[5, 'disease0'] == '0'  # 1000070
+        # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
+
+    def test_phenotype_query_yaml_disease_by_coding_different_disease_name_bgenie(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        yaml_data = b"""
+        samples_filters:
+          - lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
+          - eid not in (select eid from events where field_id = 84 and event in ('Q750'))
+
+        case_control:
+          - another_disease_name:
+            - 85:
+              - coding: [1114]
+        """
+
+        N_EXPECTED_SAMPLES = 6
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'case_control',
+        }, headers={'accept': 'text/bgenie'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_table(io.StringIO(response.data.decode('utf-8')), sep=' ', header=0,
+                                   dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 1), pheno_file.shape
+
+        expected_columns = ['another_disease_name']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[0, 'another_disease_name'] == '1'  # 1000050
+        assert pheno_file.loc[1, 'another_disease_name'] == 'NA'  # 1000030
+        assert pheno_file.loc[2, 'another_disease_name'] == 'NA'  # 1000040
+        assert pheno_file.loc[3, 'another_disease_name'] == 'NA'  # 1000010
+        assert pheno_file.loc[4, 'another_disease_name'] == '1'  # 1000020
+        assert pheno_file.loc[5, 'another_disease_name'] == '0'  # 1000070
+        # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
+
+    def test_phenotype_query_yaml_disease_by_coding_many_codings_bgenie(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        yaml_data = b"""
+        samples_filters:
+          - lower(c21_2_0) in ('yes', 'no', 'maybe')
+
+        case_control:
+          - another_disease_name:
+            - 85:
+              - coding: [1114, 1701]
+        """
+
+        N_EXPECTED_SAMPLES = 6
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'case_control',
+        }, headers={'accept': 'text/bgenie'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_table(io.StringIO(response.data.decode('utf-8')), sep=' ', header=0,
+                                   dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 1), pheno_file.shape
+
+        expected_columns = ['another_disease_name']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[0, 'another_disease_name'] == 'NA'  # 1000050
+        assert pheno_file.loc[1, 'another_disease_name'] == '0'  # 1000030
+        assert pheno_file.loc[2, 'another_disease_name'] == 'NA'  # 1000040
+        assert pheno_file.loc[3, 'another_disease_name'] == '1'  # 1000010
+        assert pheno_file.loc[4, 'another_disease_name'] == '1'  # 1000020
+        assert pheno_file.loc[5, 'another_disease_name'] == '0'  # 1000070
+        # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
+
+    def test_phenotype_query_yaml_disease_by_coding_many_data_fields_bgenie(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        yaml_data = b"""
+        samples_filters:
+          - 1 = 1
+
+        case_control:
+          - another_disease_name:
+            - 85:
+              - coding: [978, 1701]
+            - 84:
+              - coding: [Z876, Z678]
+        """
+
+        N_EXPECTED_SAMPLES = 6
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'case_control',
+        }, headers={'accept': 'text/bgenie'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_table(io.StringIO(response.data.decode('utf-8')), sep=' ', header=0,
+                                   dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 1), pheno_file.shape
+
+        expected_columns = ['another_disease_name']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[0, 'another_disease_name'] == '1'  # 1000050
+        assert pheno_file.loc[1, 'another_disease_name'] == '1'  # 1000030
+        assert pheno_file.loc[2, 'another_disease_name'] == '0'  # 1000040
+        assert pheno_file.loc[3, 'another_disease_name'] == '1'  # 1000010
+        assert pheno_file.loc[4, 'another_disease_name'] == '0'  # 1000020
+        assert pheno_file.loc[5, 'another_disease_name'] == '1'  # 1000070
+        # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
+
+# TODO: if coding is not a list, but a single value, work the same
+
+    # def test_phenotype_query_yaml_disease_by_node_id_bgenie(self):
+    #     # Prepare
+    #     self.setUp('pheno2sql/example13/example13_diseases.csv',
+    #                bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+    #                sql_chunksize=2, n_columns_per_table=2)
+    #
+    #     coding_dir = get_repository_path('postloader/codings05')
+    #     pl = Postloader(POSTGRESQL_ENGINE)
+    #     pl.load_codings(coding_dir)
+    #
+    #     yaml_data = b"""
+    #     samples_include_only:
+    #       - c34_0_0  >= -5
+    #
+    #     case_control:
+    #       - disease0:
+    #         - 84:
+    #           - node_id: [1501]
+    #     """
+    #
+    #     N_EXPECTED_SAMPLES = 5
+    #
+    #     #
+    #     # Ask fields
+    #     #
+    #     response = self.app.post('/ukbrest/api/v1.0/query', data=
+    #     {
+    #         'file': (io.BytesIO(yaml_data), 'data.yaml'),
+    #         'section': 'case_control',
+    #     }, headers={'accept': 'text/bgenie'})
+    #
+    #     # Validate
+    #     assert response.status_code == 200, response.status_code
+    #
+    #     pheno_file = pd.read_table(io.StringIO(response.data.decode('utf-8')), sep=' ', header=0,
+    #                                dtype=str, na_values='', keep_default_na=False)
+    #
+    #     assert pheno_file is not None
+    #     assert not pheno_file.empty
+    #     assert pheno_file.shape == (N_EXPECTED_SAMPLES, 1), pheno_file.shape
+    #
+    #     expected_columns = ['disease0']
+    #     assert len(pheno_file.columns) == len(expected_columns)
+    #     assert all(x in expected_columns for x in pheno_file.columns)
+    #
+    #     assert pheno_file.loc[0, 'disease0'] == '0'  # 1000050
+    #     assert pheno_file.loc[1, 'disease0'] == 'NA'  # 1000030
+    #     assert pheno_file.loc[2, 'disease0'] == '1'  # 1000040
+    #     assert pheno_file.loc[3, 'disease0'] == 'NA'  # 1000010
+    #     assert pheno_file.loc[4, 'disease0'] == '1'  # 1000020
+    #     # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
+
+
+# TODO to select controls, we need a table reference. It would be good to have, probably, a table with all eid values in all tables
+# TODO test with no filters
+# TODO rename samples_only to samples_filter
+# TODO coding and node_id together
+# TODO node_id means recursive, coding means flat; test recursive
+# TODO more than one filter
+# TODO filter including tables with null values (test inner and outer joins)
+# TODO sabe but just csv format, not bgenie
+
+# TODO make covariates to also respect filters:
+        # #
+        # # Ask covariates
+        # #
+        # response = self.app.post('/ukbrest/api/v1.0/query', data=
+        #     {
+        #         'file': (io.BytesIO(yaml_data), 'data.yaml'),
+        #         'section': 'covariates',
+        #     }, headers={'accept': 'text/bgenie'})
+        #
+        # # Validate
+        # assert response.status_code == 200, response.status_code
+        #
+        # pheno_file = pd.read_table(io.StringIO(response.data.decode('utf-8')), sep=' ', header=0,
+        #                            dtype=str, na_values='', keep_default_na=False)
+        # assert pheno_file is not None
+        # assert not pheno_file.empty
+        # assert pheno_file.shape == (N_EXPECTED_SAMPLES, 2)
+        #
+        # expected_columns = ['field_name_34', 'field_name_47']
+        # assert len(pheno_file.columns) == len(expected_columns)
+        # assert all(x in expected_columns for x in pheno_file.columns)
+        #
+        # assert pheno_file.loc[0, 'field_name_34'] == '-4'
+        # assert pheno_file.loc[0, 'field_name_47'] == 'NA'
+        #
+        # assert pheno_file.loc[1, 'field_name_34'] == 'NA'
+        # assert pheno_file.loc[1, 'field_name_47'] == 'NA'
+        #
+        # assert pheno_file.loc[2, 'field_name_34'] == '3'
+        # assert pheno_file.loc[2, 'field_name_47'] == '5.20832'
+        #
+        # assert pheno_file.loc[3, 'field_name_34'] == 'NA'
+        # assert pheno_file.loc[3, 'field_name_47'] == 'NA'
+        #
+        # assert pheno_file.loc[4, 'field_name_34'] == '34'
+        # assert pheno_file.loc[4, 'field_name_47'] == '-10.51461'

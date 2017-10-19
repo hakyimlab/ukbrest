@@ -1,0 +1,11 @@
+coding	meaning	node_id	parent_id	selectable
+Main 01	Main disease category 01	1500	0	N
+N308	Disease 01 01	1501	1500	Y
+E103	Disease 01 02	1502	1500	Y
+Submain 01-01	Sub-category 01 01	1510	1500	N
+Q750	Disease 01-01 01	1511	1510	Y
+Q751	Disease 01-01 02	1512	1510	Y
+Submain 01-01-01	Sub-sub-category 01 01 01	1520	1510	N
+J32	Disease 01-01-01 01	1521	1520	Y
+J33	Disease 01-01-01 02	1522	1520	Y
+99999	unclassifiable	99999	0	N

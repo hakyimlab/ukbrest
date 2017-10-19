@@ -517,12 +517,16 @@ class Pheno2SQL(DBAccess):
         if len(tables) == 1:
             return tables[0]
 
-        return tables[0] + ' ' + ' '.join(['{join_type} {table} using (eid) '.format(join_type=join_type, table=t) for t in tables[1:]])
+        return tables[0] + ' ' + ' '.join([
+            '{join_type} {table} using (eid) '.format(join_type=join_type, table=t) for t in tables[1:]
+        ])
 
     def _get_needed_tables(self, all_columns):
+        if len(all_columns) == 0:
+            return []
+
         all_columns_quoted = ["'{}'".format(x.replace("'", "''")) for x in all_columns]
 
-        # FIXME: are parameters correctly escaped by the arg parser?
         tables_needed_df = pd.read_sql(
             'select distinct table_name '
             'from fields '
@@ -550,7 +554,6 @@ class Pheno2SQL(DBAccess):
             self._fields_dtypes[row.column_name] = row.type
 
         return self._fields_dtypes[field] if field in self._fields_dtypes else None
-
 
     def _get_fields_from_reg_exp(self, ecolumns):
         if ecolumns is None:
@@ -651,8 +654,8 @@ class Pheno2SQL(DBAccess):
         section_data = yaml_file[section]
 
         include_only_stmts = None
-        if 'samples_include_only' in yaml_file:
-            include_only_stmts = yaml_file['samples_include_only']
+        if 'samples_filters' in yaml_file:
+            include_only_stmts = yaml_file['samples_filters']
 
         section_field_statements = [v for x in section_data for k, v in x.items()]
 
@@ -661,21 +664,78 @@ class Pheno2SQL(DBAccess):
             yield chunk
 
     def query_yaml_case_control(self, yaml_file, section, order_by=None):
-        section_data = yaml_file[section]
 
-        for column_data in section_data:
-            for column_name, column_fields_data in column_data.items():
-                for field_data in column_fields_data:
-                    for field_name, field_conditions in field_data.items():
-                        base_query = "select eid from {0} where event in ({1}) group by eid"
+        columns_list = list(yaml_file['case_control'][0].keys())
+        column = columns_list[0]
 
-                        sql_cases_st = """
-                            select s.index, et.eid, 1 as iscase
-                            from events_84 inner join samples s on (s.id = eid)
-                            group by s.index, eid
-                        """
+        data_fields_list = list(yaml_file['case_control'][0][column][0].keys())
 
-                        yield pd.DataFrame({'hello': [1,2,3], 'now': ['one', 'two', 'three']})
+        data_field = data_fields_list[0]
+        codings = yaml_file['case_control'][0][column][0][data_field][0]['coding']
+
+        where_st = ' AND '.join('({})'.format(afilter) for afilter in yaml_file['samples_filters'])
+        where_fields = self._get_fields_from_statements([where_st])
+
+        data_field_conditions = [
+            '(field_id = {} and event in ({}))'.format(df, ', '.join("'{}'".format(cod) for cod in df_cods[0]['coding']))
+                for df_conditions in yaml_file['case_control'][0][column] for df, df_cods in df_conditions.items()
+        ]
+
+        sql_cases = """
+            select distinct eid
+            from events
+            where {cases_conditions}
+        """.format(cases_conditions=' OR '.join(data_field_conditions))
+
+        full_sql_query = """
+            select dt.iscase::text as {column_name}
+            from samples s left outer join (
+                select s.index, 1 as iscase
+                from {cases_joins}
+                {where_st}
+                
+                union
+                
+                select s.index, 0 as iscase
+                from {controls_joins}
+                {where_st}
+                and s.eid not in (
+                    {sql_cases}
+                )
+            ) dt using (index)
+            order by s.index asc
+        """.format(
+            column_name=column,
+            sql_cases=sql_cases,
+            cases_joins=self._create_joins([
+                    'samples s',
+                    '({}) ev'.format(sql_cases),
+                ] + self._get_needed_tables(where_fields)),
+            controls_joins=self._create_joins([
+                    'samples s',
+                ] + self._get_needed_tables(where_fields)),
+            where_st='where ' + where_st
+        )
+
+        print(full_sql_query)
+
+        results = pd.read_sql(full_sql_query, self._get_db_engine(), chunksize=None)
+
+        yield results
+
+        # section_data = yaml_file[section]
+        #
+        # for column_data in section_data:
+        #     for column_name, column_fields_data in column_data.items():
+        #         for field_data in column_fields_data:
+        #             for field_name, field_conditions in field_data.items():
+        #                 base_query = "select eid from {0} where event in ({1}) group by eid"
+        #
+        #                 sql_cases_st = """
+        #                     select s.index, et.eid, 1 as iscase
+        #                     from events_84 inner join samples s on (s.id = eid)
+        #                     group by s.index, eid
+        #                 """
 
     def query_yaml(self, yaml_file, section, order_by=None):
         if section in ('fields', 'covariates'):
