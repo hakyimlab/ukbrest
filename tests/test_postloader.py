@@ -293,32 +293,32 @@ class PostloaderTest(DBTest):
         samplesqc = pd.read_sql("select * from samplesqc order by eid asc",
                                 create_engine(POSTGRESQL_ENGINE), index_col='eid')
         assert samplesqc is not None
-        expected_columns = ['column_name', 'anothercolumn', 'third_column', 'other_measure_col_umn']
+        expected_columns = ['ccolumn_name_0_0', 'canothercolumn_0_0', 'cthird_column_0_0', 'cother_measure_col_umn_0_0']
         assert len(samplesqc.columns) == len(expected_columns)
         assert all(x in samplesqc.columns for x in expected_columns)
 
         assert not samplesqc.empty
         assert samplesqc.shape[0] == 4
 
-        assert samplesqc.loc[10, 'column_name'] == 'UKBB'
-        assert samplesqc.loc[10, 'anothercolumn'] == 'Batch'
-        assert samplesqc.loc[10, 'third_column'] == 'SomeValue'
-        assert samplesqc.loc[10, 'other_measure_col_umn'] == 8.33992
+        assert samplesqc.loc[10, 'ccolumn_name_0_0'] == 'UKBB'
+        assert samplesqc.loc[10, 'canothercolumn_0_0'] == 'Batch'
+        assert samplesqc.loc[10, 'cthird_column_0_0'] == 'SomeValue'
+        assert samplesqc.loc[10, 'cother_measure_col_umn_0_0'] == 8.33992
 
-        assert samplesqc.loc[20, 'column_name'] == 'Other'
-        assert samplesqc.loc[20, 'anothercolumn'] == 'Some'
-        assert samplesqc.loc[20, 'third_column'] == 'AnotherValue'
-        assert samplesqc.loc[20, 'other_measure_col_umn'] == -772.1234
+        assert samplesqc.loc[20, 'ccolumn_name_0_0'] == 'Other'
+        assert samplesqc.loc[20, 'canothercolumn_0_0'] == 'Some'
+        assert samplesqc.loc[20, 'cthird_column_0_0'] == 'AnotherValue'
+        assert samplesqc.loc[20, 'cother_measure_col_umn_0_0'] == -772.1234
 
-        assert samplesqc.loc[30, 'column_name'] == 'Other12'
-        assert samplesqc.loc[30, 'anothercolumn'] == 'Some12'
-        assert samplesqc.loc[30, 'third_column'] == 'AnotherValue12'
-        assert samplesqc.loc[30, 'other_measure_col_umn'] == -0.000001234
+        assert samplesqc.loc[30, 'ccolumn_name_0_0'] == 'Other12'
+        assert samplesqc.loc[30, 'canothercolumn_0_0'] == 'Some12'
+        assert samplesqc.loc[30, 'cthird_column_0_0'] == 'AnotherValue12'
+        assert samplesqc.loc[30, 'cother_measure_col_umn_0_0'] == -0.000001234
 
-        assert samplesqc.loc[2222240, 'column_name'] == 'Other13'
-        assert samplesqc.loc[2222240, 'anothercolumn'] == 'Some13'
-        assert samplesqc.loc[2222240, 'third_column'] == 'AnotherValue13'
-        assert samplesqc.loc[2222240, 'other_measure_col_umn'] == 0.051234
+        assert samplesqc.loc[2222240, 'ccolumn_name_0_0'] == 'Other13'
+        assert samplesqc.loc[2222240, 'canothercolumn_0_0'] == 'Some13'
+        assert samplesqc.loc[2222240, 'cthird_column_0_0'] == 'AnotherValue13'
+        assert samplesqc.loc[2222240, 'cother_measure_col_umn_0_0'] == 0.051234
 
     def test_postload_load_samples_data_two_files(self):
         # prepare
@@ -343,22 +343,22 @@ class PostloaderTest(DBTest):
         samplesqc = pd.read_sql("select * from samplesqc order by eid asc",
                                 create_engine(POSTGRESQL_ENGINE), index_col='eid')
         assert samplesqc is not None
-        expected_columns = ['column_name', 'anothercolumn', 'pc1', 'pc2']
+        expected_columns = ['ccolumn_name_0_0', 'canothercolumn_0_0', 'cpc1_0_0', 'cpc2_0_0']
         assert len(samplesqc.columns) == len(expected_columns)
         assert all(x in samplesqc.columns for x in expected_columns)
 
         assert not samplesqc.empty
         assert samplesqc.shape[0] == 2
 
-        assert samplesqc.loc[10, 'column_name'] == 'UKBB'
-        assert samplesqc.loc[10, 'anothercolumn'] == 'Batch'
-        assert samplesqc.loc[10, 'pc1'] == -1.76106
-        assert samplesqc.loc[10, 'pc2'] == 0.357072
+        assert samplesqc.loc[10, 'ccolumn_name_0_0'] == 'UKBB'
+        assert samplesqc.loc[10, 'canothercolumn_0_0'] == 'Batch'
+        assert samplesqc.loc[10, 'cpc1_0_0'] == -1.76106
+        assert samplesqc.loc[10, 'cpc2_0_0'] == 0.357072
 
-        assert samplesqc.loc[2222240, 'column_name'] == 'Other13'
-        assert samplesqc.loc[2222240, 'anothercolumn'] == 'Some13'
-        assert samplesqc.loc[2222240, 'pc1'] == 2.47186
-        assert samplesqc.loc[2222240, 'pc2'] == -5.46438
+        assert samplesqc.loc[2222240, 'ccolumn_name_0_0'] == 'Other13'
+        assert samplesqc.loc[2222240, 'canothercolumn_0_0'] == 'Some13'
+        assert samplesqc.loc[2222240, 'cpc1_0_0'] == 2.47186
+        assert samplesqc.loc[2222240, 'cpc2_0_0'] == -5.46438
 
         # relatedness
         table = pd.read_sql("""
@@ -372,27 +372,27 @@ class PostloaderTest(DBTest):
         samplesqc = pd.read_sql("select * from relatedness order by eid asc",
                                 create_engine(POSTGRESQL_ENGINE), index_col='eid')
         assert samplesqc is not None
-        expected_columns = ['id2', 'hethet', 'ibs0', 'kinship']
+        expected_columns = ['cid2_0_0', 'chethet_0_0', 'cibs0_0_0', 'ckinship_0_0']
         assert len(samplesqc.columns) == len(expected_columns)
         assert all(x in samplesqc.columns for x in expected_columns)
 
         assert not samplesqc.empty
         assert samplesqc.shape[0] == 3
 
-        assert samplesqc.loc[10, 'id2'] == 10
-        assert samplesqc.loc[10, 'hethet'] == 0.016
-        assert samplesqc.loc[10, 'ibs0'] == 0.0148
-        assert samplesqc.loc[10, 'kinship'] == 0.1367
+        assert samplesqc.loc[10, 'cid2_0_0'] == 10
+        assert samplesqc.loc[10, 'chethet_0_0'] == 0.016
+        assert samplesqc.loc[10, 'cibs0_0_0'] == 0.0148
+        assert samplesqc.loc[10, 'ckinship_0_0'] == 0.1367
 
-        assert samplesqc.loc[20, 'id2'] == 20
-        assert samplesqc.loc[20, 'hethet'] == 0.02
-        assert samplesqc.loc[20, 'ibs0'] == 0.0143
-        assert samplesqc.loc[20, 'kinship'] == 0.0801
+        assert samplesqc.loc[20, 'cid2_0_0'] == 20
+        assert samplesqc.loc[20, 'chethet_0_0'] == 0.02
+        assert samplesqc.loc[20, 'cibs0_0_0'] == 0.0143
+        assert samplesqc.loc[20, 'ckinship_0_0'] == 0.0801
 
-        assert samplesqc.loc[2222240, 'id2'] == 2222240
-        assert samplesqc.loc[2222240, 'hethet'] == 0.038
-        assert samplesqc.loc[2222240, 'ibs0'] == 0.0227
-        assert samplesqc.loc[2222240, 'kinship'] == 0.0742
+        assert samplesqc.loc[2222240, 'cid2_0_0'] == 2222240
+        assert samplesqc.loc[2222240, 'chethet_0_0'] == 0.038
+        assert samplesqc.loc[2222240, 'cibs0_0_0'] == 0.0227
+        assert samplesqc.loc[2222240, 'ckinship_0_0'] == 0.0742
 
     def test_postload_load_samples_data_no_eid_column(self):
         # prepare
@@ -449,22 +449,22 @@ class PostloaderTest(DBTest):
         samplesqc = pd.read_sql("select * from samplesqc order by eid asc",
                                 create_engine(POSTGRESQL_ENGINE), index_col='eid')
         assert samplesqc is not None
-        expected_columns = ['column_name', 'anothercolumn', 'pc1', 'pc2']
+        expected_columns = ['ccolumn_name_0_0', 'canothercolumn_0_0', 'cpc1_0_0', 'cpc2_0_0']
         assert len(samplesqc.columns) == len(expected_columns)
         assert all(x in samplesqc.columns for x in expected_columns)
 
         assert not samplesqc.empty
         assert samplesqc.shape[0] == 2
 
-        assert samplesqc.loc[10, 'column_name'] == 'UKBB'
-        assert samplesqc.loc[10, 'anothercolumn'] == 'Batch'
-        assert samplesqc.loc[10, 'pc1'] == -1.76106
-        assert samplesqc.loc[10, 'pc2'] == 0.357072
+        assert samplesqc.loc[10, 'ccolumn_name_0_0'] == 'UKBB'
+        assert samplesqc.loc[10, 'canothercolumn_0_0'] == 'Batch'
+        assert samplesqc.loc[10, 'cpc1_0_0'] == -1.76106
+        assert samplesqc.loc[10, 'cpc2_0_0'] == 0.357072
 
-        assert samplesqc.loc[2222240, 'column_name'] == 'Other13'
-        assert samplesqc.loc[2222240, 'anothercolumn'] == 'Some13'
-        assert samplesqc.loc[2222240, 'pc1'] == 2.47186
-        assert samplesqc.loc[2222240, 'pc2'] == -5.46438
+        assert samplesqc.loc[2222240, 'ccolumn_name_0_0'] == 'Other13'
+        assert samplesqc.loc[2222240, 'canothercolumn_0_0'] == 'Some13'
+        assert samplesqc.loc[2222240, 'cpc1_0_0'] == 2.47186
+        assert samplesqc.loc[2222240, 'cpc2_0_0'] == -5.46438
 
         # relatedness
         table = pd.read_sql("""
@@ -478,27 +478,27 @@ class PostloaderTest(DBTest):
         samplesqc = pd.read_sql("select * from relatedness order by eid asc",
                                 create_engine(POSTGRESQL_ENGINE), index_col='eid')
         assert samplesqc is not None
-        expected_columns = ['id2', 'hethet', 'ibs0', 'kinship']
+        expected_columns = ['cid2_0_0', 'chethet_0_0', 'cibs0_0_0', 'ckinship_0_0']
         assert len(samplesqc.columns) == len(expected_columns)
         assert all(x in samplesqc.columns for x in expected_columns)
 
         assert not samplesqc.empty
         assert samplesqc.shape[0] == 3
 
-        assert samplesqc.loc[10, 'id2'] == 10
-        assert samplesqc.loc[10, 'hethet'] == 0.016
-        assert samplesqc.loc[10, 'ibs0'] == 0.0148
-        assert samplesqc.loc[10, 'kinship'] == 0.1367
+        assert samplesqc.loc[10, 'cid2_0_0'] == 10
+        assert samplesqc.loc[10, 'chethet_0_0'] == 0.016
+        assert samplesqc.loc[10, 'cibs0_0_0'] == 0.0148
+        assert samplesqc.loc[10, 'ckinship_0_0'] == 0.1367
 
-        assert samplesqc.loc[20, 'id2'] == 20
-        assert samplesqc.loc[20, 'hethet'] == 0.02
-        assert samplesqc.loc[20, 'ibs0'] == 0.0143
-        assert samplesqc.loc[20, 'kinship'] == 0.0801
+        assert samplesqc.loc[20, 'cid2_0_0'] == 20
+        assert samplesqc.loc[20, 'chethet_0_0'] == 0.02
+        assert samplesqc.loc[20, 'cibs0_0_0'] == 0.0143
+        assert samplesqc.loc[20, 'ckinship_0_0'] == 0.0801
 
-        assert samplesqc.loc[2222240, 'id2'] == 2222240
-        assert samplesqc.loc[2222240, 'hethet'] == 0.038
-        assert samplesqc.loc[2222240, 'ibs0'] == 0.0227
-        assert samplesqc.loc[2222240, 'kinship'] == 0.0742
+        assert samplesqc.loc[2222240, 'cid2_0_0'] == 2222240
+        assert samplesqc.loc[2222240, 'chethet_0_0'] == 0.038
+        assert samplesqc.loc[2222240, 'cibs0_0_0'] == 0.0227
+        assert samplesqc.loc[2222240, 'ckinship_0_0'] == 0.0742
 
     def test_postload_load_samples_data_skip_column(self):
         # prepare
@@ -532,18 +532,18 @@ class PostloaderTest(DBTest):
         samplesqc = pd.read_sql("select * from samplesqc order by eid asc",
                                 create_engine(POSTGRESQL_ENGINE), index_col='eid')
         assert samplesqc is not None
-        expected_columns = ['anothercolumn', 'pc2']
+        expected_columns = ['canothercolumn_0_0', 'cpc2_0_0']
         assert len(samplesqc.columns) == len(expected_columns)
         assert all(x in samplesqc.columns for x in expected_columns)
 
         assert not samplesqc.empty
         assert samplesqc.shape[0] == 2
 
-        assert samplesqc.loc[10, 'anothercolumn'] == 'Batch'
-        assert samplesqc.loc[10, 'pc2'] == 0.357072
+        assert samplesqc.loc[10, 'canothercolumn_0_0'] == 'Batch'
+        assert samplesqc.loc[10, 'cpc2_0_0'] == 0.357072
 
-        assert samplesqc.loc[2222240, 'anothercolumn'] == 'Some13'
-        assert samplesqc.loc[2222240, 'pc2'] == -5.46438
+        assert samplesqc.loc[2222240, 'canothercolumn_0_0'] == 'Some13'
+        assert samplesqc.loc[2222240, 'cpc2_0_0'] == -5.46438
 
         # relatedness
         table = pd.read_sql("""
@@ -557,24 +557,24 @@ class PostloaderTest(DBTest):
         samplesqc = pd.read_sql("select * from relatedness order by eid asc",
                                 create_engine(POSTGRESQL_ENGINE), index_col='eid')
         assert samplesqc is not None
-        expected_columns = ['hethet', 'ibs0', 'kinship']
+        expected_columns = ['chethet_0_0', 'cibs0_0_0', 'ckinship_0_0']
         assert len(samplesqc.columns) == len(expected_columns)
         assert all(x in samplesqc.columns for x in expected_columns)
 
         assert not samplesqc.empty
         assert samplesqc.shape[0] == 3
 
-        assert samplesqc.loc[10, 'hethet'] == 0.016
-        assert samplesqc.loc[10, 'ibs0'] == 0.0148
-        assert samplesqc.loc[10, 'kinship'] == 0.1367
+        assert samplesqc.loc[10, 'chethet_0_0'] == 0.016
+        assert samplesqc.loc[10, 'cibs0_0_0'] == 0.0148
+        assert samplesqc.loc[10, 'ckinship_0_0'] == 0.1367
 
-        assert samplesqc.loc[20, 'hethet'] == 0.02
-        assert samplesqc.loc[20, 'ibs0'] == 0.0143
-        assert samplesqc.loc[20, 'kinship'] == 0.0801
+        assert samplesqc.loc[20, 'chethet_0_0'] == 0.02
+        assert samplesqc.loc[20, 'cibs0_0_0'] == 0.0143
+        assert samplesqc.loc[20, 'ckinship_0_0'] == 0.0801
 
-        assert samplesqc.loc[2222240, 'hethet'] == 0.038
-        assert samplesqc.loc[2222240, 'ibs0'] == 0.0227
-        assert samplesqc.loc[2222240, 'kinship'] == 0.0742
+        assert samplesqc.loc[2222240, 'chethet_0_0'] == 0.038
+        assert samplesqc.loc[2222240, 'cibs0_0_0'] == 0.0227
+        assert samplesqc.loc[2222240, 'ckinship_0_0'] == 0.0742
 
     def test_postload_load_samples_data_different_separators(self):
         # prepare
@@ -608,22 +608,22 @@ class PostloaderTest(DBTest):
         samplesqc = pd.read_sql("select * from samplesqc order by eid asc",
                                 create_engine(POSTGRESQL_ENGINE), index_col='eid')
         assert samplesqc is not None
-        expected_columns = ['column_name', 'anothercolumn', 'pc1', 'pc2']
+        expected_columns = ['ccolumn_name_0_0', 'canothercolumn_0_0', 'cpc1_0_0', 'cpc2_0_0']
         assert len(samplesqc.columns) == len(expected_columns)
         assert all(x in samplesqc.columns for x in expected_columns)
 
         assert not samplesqc.empty
         assert samplesqc.shape[0] == 2
 
-        assert samplesqc.loc[10, 'column_name'] == 'UKBB'
-        assert samplesqc.loc[10, 'anothercolumn'] == 'Batch'
-        assert samplesqc.loc[10, 'pc1'] == -1.76106
-        assert samplesqc.loc[10, 'pc2'] == 0.357072
+        assert samplesqc.loc[10, 'ccolumn_name_0_0'] == 'UKBB'
+        assert samplesqc.loc[10, 'canothercolumn_0_0'] == 'Batch'
+        assert samplesqc.loc[10, 'cpc1_0_0'] == -1.76106
+        assert samplesqc.loc[10, 'cpc2_0_0'] == 0.357072
 
-        assert samplesqc.loc[2222240, 'column_name'] == 'Other13'
-        assert samplesqc.loc[2222240, 'anothercolumn'] == 'Some13'
-        assert samplesqc.loc[2222240, 'pc1'] == 2.47186
-        assert samplesqc.loc[2222240, 'pc2'] == -5.46438
+        assert samplesqc.loc[2222240, 'ccolumn_name_0_0'] == 'Other13'
+        assert samplesqc.loc[2222240, 'canothercolumn_0_0'] == 'Some13'
+        assert samplesqc.loc[2222240, 'cpc1_0_0'] == 2.47186
+        assert samplesqc.loc[2222240, 'cpc2_0_0'] == -5.46438
 
         # relatedness
         table = pd.read_sql("""
@@ -637,27 +637,27 @@ class PostloaderTest(DBTest):
         samplesqc = pd.read_sql("select * from relatedness order by eid asc",
                                 create_engine(POSTGRESQL_ENGINE), index_col='eid')
         assert samplesqc is not None
-        expected_columns = ['id2', 'hethet', 'ibs0', 'kinship']
+        expected_columns = ['cid2_0_0', 'chethet_0_0', 'cibs0_0_0', 'ckinship_0_0']
         assert len(samplesqc.columns) == len(expected_columns)
         assert all(x in samplesqc.columns for x in expected_columns)
 
         assert not samplesqc.empty
         assert samplesqc.shape[0] == 3
 
-        assert samplesqc.loc[10, 'id2'] == 10
-        assert samplesqc.loc[10, 'hethet'] == 0.016
-        assert samplesqc.loc[10, 'ibs0'] == 0.0148
-        assert samplesqc.loc[10, 'kinship'] == 0.1367
+        assert samplesqc.loc[10, 'cid2_0_0'] == 10
+        assert samplesqc.loc[10, 'chethet_0_0'] == 0.016
+        assert samplesqc.loc[10, 'cibs0_0_0'] == 0.0148
+        assert samplesqc.loc[10, 'ckinship_0_0'] == 0.1367
 
-        assert samplesqc.loc[20, 'id2'] == 20
-        assert samplesqc.loc[20, 'hethet'] == 0.02
-        assert samplesqc.loc[20, 'ibs0'] == 0.0143
-        assert samplesqc.loc[20, 'kinship'] == 0.0801
+        assert samplesqc.loc[20, 'cid2_0_0'] == 20
+        assert samplesqc.loc[20, 'chethet_0_0'] == 0.02
+        assert samplesqc.loc[20, 'cibs0_0_0'] == 0.0143
+        assert samplesqc.loc[20, 'ckinship_0_0'] == 0.0801
 
-        assert samplesqc.loc[2222240, 'id2'] == 2222240
-        assert samplesqc.loc[2222240, 'hethet'] == 0.038
-        assert samplesqc.loc[2222240, 'ibs0'] == 0.0227
-        assert samplesqc.loc[2222240, 'kinship'] == 0.0742
+        assert samplesqc.loc[2222240, 'cid2_0_0'] == 2222240
+        assert samplesqc.loc[2222240, 'chethet_0_0'] == 0.038
+        assert samplesqc.loc[2222240, 'cibs0_0_0'] == 0.0227
+        assert samplesqc.loc[2222240, 'ckinship_0_0'] == 0.0742
 
     def test_postload_load_samples_fields_table_filled(self):
         # prepare
@@ -698,7 +698,7 @@ class PostloaderTest(DBTest):
         samplesqc = pd.read_sql("select * from samplesqc order by eid asc",
                                 create_engine(POSTGRESQL_ENGINE), index_col='eid')
         assert samplesqc is not None
-        expected_columns = ['column_name', 'anothercolumn', 'pc1', 'pc2']
+        expected_columns = ['ccolumn_name_0_0', 'canothercolumn_0_0', 'cpc1_0_0', 'cpc2_0_0']
         assert len(samplesqc.columns) == len(expected_columns)
         assert all(x in samplesqc.columns for x in expected_columns)
 
@@ -711,21 +711,21 @@ class PostloaderTest(DBTest):
         assert tmp.shape[0] == len(expected_columns)
         assert all(x in tmp.index.tolist() for x in expected_columns)
 
-        assert tmp.loc['column_name', 'table_name'] == 'samplesqc'
-        assert tmp.loc['column_name', 'field_id'] == 'column_name'
-        assert tmp.loc['column_name', 'type'] == 'Text'
+        assert tmp.loc['ccolumn_name_0_0', 'table_name'] == 'samplesqc'
+        assert tmp.loc['ccolumn_name_0_0', 'field_id'] == 'ccolumn_name_0_0'
+        assert tmp.loc['ccolumn_name_0_0', 'type'] == 'Text'
 
-        assert tmp.loc['anothercolumn', 'table_name'] == 'samplesqc'
-        assert tmp.loc['anothercolumn', 'field_id'] == 'anothercolumn'
-        assert tmp.loc['anothercolumn', 'type'] == 'Text'
+        assert tmp.loc['canothercolumn_0_0', 'table_name'] == 'samplesqc'
+        assert tmp.loc['canothercolumn_0_0', 'field_id'] == 'canothercolumn_0_0'
+        assert tmp.loc['canothercolumn_0_0', 'type'] == 'Text'
 
-        assert tmp.loc['pc1', 'table_name'] == 'samplesqc'
-        assert tmp.loc['pc1', 'field_id'] == 'pc1'
-        assert tmp.loc['pc1', 'type'] == 'Continuous'
+        assert tmp.loc['cpc1_0_0', 'table_name'] == 'samplesqc'
+        assert tmp.loc['cpc1_0_0', 'field_id'] == 'cpc1_0_0'
+        assert tmp.loc['cpc1_0_0', 'type'] == 'Continuous'
 
-        assert tmp.loc['pc2', 'table_name'] == 'samplesqc'
-        assert tmp.loc['pc2', 'field_id'] == 'pc2'
-        assert tmp.loc['pc2', 'type'] == 'Continuous'
+        assert tmp.loc['cpc2_0_0', 'table_name'] == 'samplesqc'
+        assert tmp.loc['cpc2_0_0', 'field_id'] == 'cpc2_0_0'
+        assert tmp.loc['cpc2_0_0', 'type'] == 'Continuous'
 
 
         # relatedness
@@ -740,7 +740,7 @@ class PostloaderTest(DBTest):
         samplesqc = pd.read_sql("select * from relatedness order by eid asc",
                                 create_engine(POSTGRESQL_ENGINE), index_col='eid')
         assert samplesqc is not None
-        expected_columns = ['id2', 'hethet', 'ibs0', 'kinship']
+        expected_columns = ['cid2_0_0', 'chethet_0_0', 'cibs0_0_0', 'ckinship_0_0']
         assert len(samplesqc.columns) == len(expected_columns)
         assert all(x in samplesqc.columns for x in expected_columns)
 
@@ -753,21 +753,21 @@ class PostloaderTest(DBTest):
         assert tmp.shape[0] == len(expected_columns)
         assert all(x in tmp.index.tolist() for x in expected_columns)
 
-        assert tmp.loc['id2', 'table_name'] == 'relatedness'
-        assert tmp.loc['id2', 'field_id'] == 'id2'
-        assert tmp.loc['id2', 'type'] == 'Integer'
+        assert tmp.loc['cid2_0_0', 'table_name'] == 'relatedness'
+        assert tmp.loc['cid2_0_0', 'field_id'] == 'cid2_0_0'
+        assert tmp.loc['cid2_0_0', 'type'] == 'Integer'
 
-        assert tmp.loc['hethet', 'table_name'] == 'relatedness'
-        assert tmp.loc['hethet', 'field_id'] == 'hethet'
-        assert tmp.loc['hethet', 'type'] == 'Continuous'
+        assert tmp.loc['chethet_0_0', 'table_name'] == 'relatedness'
+        assert tmp.loc['chethet_0_0', 'field_id'] == 'chethet_0_0'
+        assert tmp.loc['chethet_0_0', 'type'] == 'Continuous'
 
-        assert tmp.loc['ibs0', 'table_name'] == 'relatedness'
-        assert tmp.loc['ibs0', 'field_id'] == 'ibs0'
-        assert tmp.loc['ibs0', 'type'] == 'Continuous'
+        assert tmp.loc['cibs0_0_0', 'table_name'] == 'relatedness'
+        assert tmp.loc['cibs0_0_0', 'field_id'] == 'cibs0_0_0'
+        assert tmp.loc['cibs0_0_0', 'type'] == 'Continuous'
 
-        assert tmp.loc['kinship', 'table_name'] == 'relatedness'
-        assert tmp.loc['kinship', 'field_id'] == 'kinship'
-        assert tmp.loc['kinship', 'type'] == 'Continuous'
+        assert tmp.loc['ckinship_0_0', 'table_name'] == 'relatedness'
+        assert tmp.loc['ckinship_0_0', 'field_id'] == 'ckinship_0_0'
+        assert tmp.loc['ckinship_0_0', 'type'] == 'Continuous'
 
     def test_postload_samples_data_check_constrains_exist(self):
         # prepare
@@ -824,7 +824,6 @@ class PostloaderTest(DBTest):
         columns = constraints_results['column_name'].tolist()
         assert len(columns) == 1
         assert 'eid' in columns
-
 
     def test_postload_codings_table_many_tab_characters_and_na(self):
         # prepare
@@ -914,18 +913,18 @@ class PostloaderTest(DBTest):
         samplesqc = pd.read_sql("select * from samplesqc order by eid asc",
                                 create_engine(POSTGRESQL_ENGINE), index_col='eid')
         assert samplesqc is not None
-        expected_columns = ['anothercolumn', 'pc2']
+        expected_columns = ['canothercolumn_0_0', 'cpc2_0_0']
         assert len(samplesqc.columns) == len(expected_columns)
         assert all(x in samplesqc.columns for x in expected_columns)
 
         assert not samplesqc.empty
         assert samplesqc.shape[0] == 2
 
-        assert samplesqc.loc[10, 'anothercolumn'] == 'Batch'
-        assert samplesqc.loc[10, 'pc2'] == 0.357072
+        assert samplesqc.loc[10, 'canothercolumn_0_0'] == 'Batch'
+        assert samplesqc.loc[10, 'cpc2_0_0'] == 0.357072
 
-        assert samplesqc.loc[2222240, 'anothercolumn'] == 'Some13'
-        assert samplesqc.loc[2222240, 'pc2'] == -5.46438
+        assert samplesqc.loc[2222240, 'canothercolumn_0_0'] == 'Some13'
+        assert samplesqc.loc[2222240, 'cpc2_0_0'] == -5.46438
 
         # relatedness
         table = pd.read_sql("""
@@ -939,33 +938,33 @@ class PostloaderTest(DBTest):
         samplesqc = pd.read_sql("select * from relatedness order by id1 asc, id2 asc",
                                 create_engine(POSTGRESQL_ENGINE), index_col=['id1', 'id2'])
         assert samplesqc is not None
-        expected_columns = ['hethet', 'ibs0', 'kinship']
+        expected_columns = ['chethet_0_0', 'cibs0_0_0', 'ckinship_0_0']
         assert len(samplesqc.columns) == len(expected_columns)
         assert all(x in samplesqc.columns for x in expected_columns)
 
         assert not samplesqc.empty
         assert samplesqc.shape[0] == 6
 
-        assert samplesqc.loc[10].loc[10, 'hethet'] == 0.016
-        assert samplesqc.loc[10].loc[10, 'ibs0'] == 0.0148
-        assert samplesqc.loc[10].loc[10, 'kinship'] == 0.1367
+        assert samplesqc.loc[10].loc[10, 'chethet_0_0'] == 0.016
+        assert samplesqc.loc[10].loc[10, 'cibs0_0_0'] == 0.0148
+        assert samplesqc.loc[10].loc[10, 'ckinship_0_0'] == 0.1367
 
-        assert samplesqc.loc[10].loc[20, 'hethet'] == 0.316
-        assert samplesqc.loc[10].loc[20, 'ibs0'] == 0.9148
-        assert samplesqc.loc[10].loc[20, 'kinship'] == 0.0667
+        assert samplesqc.loc[10].loc[20, 'chethet_0_0'] == 0.316
+        assert samplesqc.loc[10].loc[20, 'cibs0_0_0'] == 0.9148
+        assert samplesqc.loc[10].loc[20, 'ckinship_0_0'] == 0.0667
 
-        assert samplesqc.loc[20].loc[20, 'hethet'] == 0.02
-        assert samplesqc.loc[20].loc[20, 'ibs0'] == 0.0143
-        assert samplesqc.loc[20].loc[20, 'kinship'] == 0.0801
+        assert samplesqc.loc[20].loc[20, 'chethet_0_0'] == 0.02
+        assert samplesqc.loc[20].loc[20, 'cibs0_0_0'] == 0.0143
+        assert samplesqc.loc[20].loc[20, 'ckinship_0_0'] == 0.0801
 
-        assert samplesqc.loc[2222240].loc[2222240, 'hethet'] == 0.038
-        assert samplesqc.loc[2222240].loc[2222240, 'ibs0'] == 0.0227
-        assert samplesqc.loc[2222240].loc[2222240, 'kinship'] == 0.0742
+        assert samplesqc.loc[2222240].loc[2222240, 'chethet_0_0'] == 0.038
+        assert samplesqc.loc[2222240].loc[2222240, 'cibs0_0_0'] == 0.0227
+        assert samplesqc.loc[2222240].loc[2222240, 'ckinship_0_0'] == 0.0742
 
-        assert samplesqc.loc[2222240].loc[10, 'hethet'] == 0.138
-        assert samplesqc.loc[2222240].loc[10, 'ibs0'] == 0.1227
-        assert samplesqc.loc[2222240].loc[10, 'kinship'] == 0.1742
+        assert samplesqc.loc[2222240].loc[10, 'chethet_0_0'] == 0.138
+        assert samplesqc.loc[2222240].loc[10, 'cibs0_0_0'] == 0.1227
+        assert samplesqc.loc[2222240].loc[10, 'ckinship_0_0'] == 0.1742
 
-        assert samplesqc.loc[2222240].loc[20, 'hethet'] == 0.238
-        assert samplesqc.loc[2222240].loc[20, 'ibs0'] == 0.2227
-        assert samplesqc.loc[2222240].loc[20, 'kinship'] == 0.2742
+        assert samplesqc.loc[2222240].loc[20, 'chethet_0_0'] == 0.238
+        assert samplesqc.loc[2222240].loc[20, 'cibs0_0_0'] == 0.2227
+        assert samplesqc.loc[2222240].loc[20, 'ckinship_0_0'] == 0.2742

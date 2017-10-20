@@ -51,8 +51,15 @@ class Postloader(DBAccess):
 
         self._vacuum('codings')
 
-    def _rename_column(self, column_name):
-        return re.sub(self.patterns['points'], '_', column_name.lower()).strip('_')
+    def _rename_column(self, column_name, identifier_columns):
+        # first, substitute not-permitted characters
+        standard_rename = re.sub(self.patterns['points'], '_', column_name.lower()).strip('_')
+
+        if column_name in identifier_columns:
+            return standard_rename
+
+        # then apply general column format (not for identifier columns)
+        return 'c{}_0_0'.format(standard_rename)
 
     def _get_column_type(self, pandas_type):
         if pandas_type == str:
@@ -90,7 +97,7 @@ class Postloader(DBAccess):
             table_name = splitext(filename)[0]
 
             # rename columns
-            columns_rename = {old_col: self._rename_column(old_col) for old_col in data.columns}
+            columns_rename = {old_col: self._rename_column(old_col, eid_columns) for old_col in data.columns}
 
             if len(eid_columns) == 1:
                 columns_rename[eid_columns[0]] = 'eid'
