@@ -1865,7 +1865,6 @@ class TestRestApiPhenotype(DBTest):
         assert pheno_file.loc[5, 'disease0'] == '0'  # 1000070
         # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
 
-
     def test_phenotype_query_yaml_disease_by_coding_different_data_field_bgenie(self):
         # Prepare
         self.setUp('pheno2sql/example13/example13_diseases.csv',
@@ -1931,6 +1930,56 @@ class TestRestApiPhenotype(DBTest):
           - another_disease_name:
             - 85:
               - coding: [1114]
+        """
+
+        N_EXPECTED_SAMPLES = 6
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'case_control',
+        }, headers={'accept': 'text/bgenie'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_table(io.StringIO(response.data.decode('utf-8')), sep=' ', header=0,
+                                   dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 1), pheno_file.shape
+
+        expected_columns = ['another_disease_name']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[0, 'another_disease_name'] == '1'  # 1000050
+        assert pheno_file.loc[1, 'another_disease_name'] == 'NA'  # 1000030
+        assert pheno_file.loc[2, 'another_disease_name'] == 'NA'  # 1000040
+        assert pheno_file.loc[3, 'another_disease_name'] == 'NA'  # 1000010
+        assert pheno_file.loc[4, 'another_disease_name'] == '1'  # 1000020
+        assert pheno_file.loc[5, 'another_disease_name'] == '0'  # 1000070
+        # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
+
+    def test_phenotype_query_yaml_disease_by_coding_coding_not_list_bgenie(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        yaml_data = b"""
+        samples_filters:
+          - lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
+          - eid not in (select eid from events where field_id = 84 and event in ('Q750'))
+
+        case_control:
+          - another_disease_name:
+            - 85:
+              - coding: 1114
         """
 
         N_EXPECTED_SAMPLES = 6
@@ -2066,7 +2115,6 @@ class TestRestApiPhenotype(DBTest):
         assert pheno_file.loc[5, 'another_disease_name'] == '1'  # 1000070
         # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
 
-# TODO: if coding is not a list, but a single value, work the same
 
     # def test_phenotype_query_yaml_disease_by_node_id_bgenie(self):
     #     # Prepare

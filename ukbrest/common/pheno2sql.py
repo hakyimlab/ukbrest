@@ -9,12 +9,12 @@ from urllib.parse import urlparse
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
-from sqlalchemy import create_engine
 from sqlalchemy.types import TEXT, FLOAT, TIMESTAMP, INT
 
 from ukbrest.common.utils.db import create_table, create_indexes, DBAccess
 from ukbrest.common.utils.datagen import get_tmpdir
 from ukbrest.config import logger, SQL_CHUNKSIZE_ENV
+from ukbrest.common.utils.misc import get_list
 
 
 class Pheno2SQL(DBAccess):
@@ -677,7 +677,7 @@ class Pheno2SQL(DBAccess):
         where_fields = self._get_fields_from_statements([where_st])
 
         data_field_conditions = [
-            '(field_id = {} and event in ({}))'.format(df, ', '.join("'{}'".format(cod) for cod in df_cods[0]['coding']))
+            '(field_id = {} and event in ({}))'.format(df, ', '.join("'{}'".format(cod) for cod in get_list(df_cods[0]['coding'])))
                 for df_conditions in yaml_file['case_control'][0][column] for df, df_cods in df_conditions.items()
         ]
 
