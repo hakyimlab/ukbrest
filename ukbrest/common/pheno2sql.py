@@ -639,7 +639,39 @@ class Pheno2SQL(DBAccess):
 
         return int_columns
 
-    def query(self, columns=None, ecolumns=None, filterings=None, order_by=None):
+    def _query_generic(self, sql_query, order_by_dict=None, results_transformator=None):
+        final_sql_query = sql_query
+
+        if order_by_dict is not None:
+            outer_sql = """
+                select {data_fields}
+                from {order_by} s left outer join (
+                    {base_sql}
+                ) u
+                using (eid)
+                order by s.index asc
+            """.format(
+                order_by=order_by_dict['table'],
+                base_sql=sql_query,
+                data_fields=order_by_dict['columns_select']
+            )
+
+            final_sql_query = outer_sql
+
+        results_iterator = pd.read_sql(
+            final_sql_query, self._get_db_engine(), index_col='eid', chunksize=self.sql_chunksize
+        )
+
+        if self.sql_chunksize is None:
+            results_iterator = iter([results_iterator])
+
+        for chunk in results_iterator:
+            if results_transformator is not None:
+                chunk = results_transformator(chunk)
+
+            yield chunk
+
+    def query(self, columns=None, ecolumns=None, filterings=None, order_by_table=None):
         # select needed tables to join
         columns_fields = self._get_fields_from_statements(columns)
         reg_exp_columns_fields = self._get_fields_from_reg_exp(ecolumns)
@@ -656,38 +688,32 @@ class Pheno2SQL(DBAccess):
             {where_statements}
         """
 
-        if order_by is not None:
-            outer_sql = """
-                select {data_fields}
-                from {order_by} s left outer join (
-                    {base_sql}
-                ) u
-                using (eid)
-                order by s.index asc
-            """.format(order_by=order_by, base_sql=base_sql, data_fields='{data_fields}')
-
-            base_sql = outer_sql
-
-        # FIXME: are parameters correctly escaped by the arg parser?
-        results_iterator = pd.read_sql(
-            base_sql.format(
-                data_fields=','.join(all_columns),
-                tables_join=self._create_joins(tables_needed_df, join_type='full outer join'),
-                where_statements=((' where ' + ' and '.join(filterings)) if filterings is not None else ''),
-            ),
-            self._get_db_engine(), index_col='eid', chunksize=self.sql_chunksize
+        final_sql_query = base_sql.format(
+            data_fields=','.join(all_columns),
+            tables_join=self._create_joins(tables_needed_df, join_type='full outer join'),
+            where_statements=((' where ' + ' and '.join(filterings)) if filterings is not None else ''),
         )
 
-        if self.sql_chunksize is None:
-            results_iterator = iter([results_iterator])
+        order_by_dict = None
+        if order_by_table is not None:
+            order_by_dict = {
+                'table': order_by_table,
+                'columns_select': ','.join(all_columns),
+            }
 
-        for chunk in results_iterator:
+        def format_integer_columns(chunk):
             for col in int_columns:
                 chunk[col] = chunk[col].map(lambda x: np.nan if pd.isnull(x) else '{:1.0f}'.format(x))
 
-            yield chunk
+            return chunk
 
-    def query_yaml_fields(self, yaml_file, section, order_by=None):
+        return self._query_generic(
+            final_sql_query,
+            results_transformator=format_integer_columns,
+            order_by_dict=order_by_dict
+        )
+
+    def query_yaml_fields(self, yaml_file, section, order_by_table=None):
         section_data = yaml_file[section]
 
         include_only_stmts = None
@@ -696,11 +722,11 @@ class Pheno2SQL(DBAccess):
 
         section_field_statements = [v for x in section_data for k, v in x.items()]
 
-        for chunk in self.query(section_field_statements, filterings=include_only_stmts, order_by=order_by):
+        for chunk in self.query(section_field_statements, filterings=include_only_stmts, order_by_table=order_by_table):
             chunk = chunk.rename(columns={v:k for x in section_data for k, v in x.items()})
             yield chunk
 
-    def query_yaml_case_control(self, yaml_file, section, order_by=None):
+    def query_yaml_case_control(self, yaml_file, order_by_table=None):
 
         columns_list = list(yaml_file['case_control'][0].keys())
         column = columns_list[0]
@@ -724,7 +750,7 @@ class Pheno2SQL(DBAccess):
             where {cases_conditions}
         """.format(cases_conditions=' OR '.join(data_field_conditions))
 
-        inner_sql = """
+        base_sql = """
                 select eid, 1 as {column_name}
                 from {cases_joins}
                 {where_st}
@@ -737,7 +763,9 @@ class Pheno2SQL(DBAccess):
                 and aet.eid not in (
                     {sql_cases}
                 )
-        """.format(
+        """
+
+        final_sql_query = base_sql.format(
             column_name=column,
             sql_cases=sql_cases,
             cases_joins=self._create_joins([
@@ -749,45 +777,22 @@ class Pheno2SQL(DBAccess):
             where_st='where ' + where_st
         )
 
-        if order_by is not None:
-            outer_sql = """
-            select s.eid as eid, dt.{column_name}::text
-            from {order_by} s left outer join (
-                {inner_sql}
-            ) dt using (eid)
-            order by s.index asc
-            """.format(
-                column_name=column,
-                order_by=order_by,
-                inner_sql=inner_sql,
-            )
-        else:
-            outer_sql = inner_sql
+        order_by_dict = None
+        if order_by_table is not None:
+            order_by_dict = {
+                'table': order_by_table,
+                'columns_select': 's.eid as eid, u.{column_name}::text'.format(column_name=column),
+            }
 
-        # print(outer_sql)
+        return self._query_generic(
+            final_sql_query,
+            order_by_dict=order_by_dict
+        )
 
-        results = pd.read_sql(outer_sql, self._get_db_engine(), index_col='eid', chunksize=None)
-
-        yield results
-
-        # section_data = yaml_file[section]
-        #
-        # for column_data in section_data:
-        #     for column_name, column_fields_data in column_data.items():
-        #         for field_data in column_fields_data:
-        #             for field_name, field_conditions in field_data.items():
-        #                 base_query = "select eid from {0} where event in ({1}) group by eid"
-        #
-        #                 sql_cases_st = """
-        #                     select s.index, et.eid, 1 as iscase
-        #                     from events_84 inner join samples s on (s.id = eid)
-        #                     group by s.index, eid
-        #                 """
-
-    def query_yaml(self, yaml_file, section, order_by=None):
+    def query_yaml(self, yaml_file, section, order_by_table=None):
         if section in ('fields', 'covariates'):
-            return self.query_yaml_fields(yaml_file, section, order_by)
+            return self.query_yaml_fields(yaml_file, section, order_by_table)
         elif section == 'case_control':
-            return self.query_yaml_case_control(yaml_file, section, order_by)
+            return self.query_yaml_case_control(yaml_file, order_by_table)
         else:
             raise ValueError('Invalid section value')

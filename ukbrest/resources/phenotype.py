@@ -72,11 +72,11 @@ class QueryAPI(Resource):
 
         yaml = YAML(typ='safe')
 
-        order_by = None
+        order_by_table = None
         if args.Accept == 'text/bgenie':
-            order_by = BGEN_SAMPLES_TABLE
+            order_by_table = BGEN_SAMPLES_TABLE
 
-        data_results = self.pheno2sql.query_yaml(yaml.load(args.file), args.section, order_by=order_by)
+        data_results = self.pheno2sql.query_yaml(yaml.load(args.file), args.section, order_by_table=order_by_table)
 
         return {
             'data': data_results,
