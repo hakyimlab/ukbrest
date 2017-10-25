@@ -2015,6 +2015,56 @@ class TestRestApiPhenotype(DBTest):
         assert pheno_file.loc[5, 'another_disease_name'] == '0'  # 1000070
         # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
 
+    def test_phenotype_query_yaml_disease_by_coding_coding_not_list_csv(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        yaml_data = b"""
+        samples_filters:
+          - lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
+          - eid not in (select eid from events where field_id = 84 and event in ('Q750'))
+
+        case_control:
+          - another_disease_name:
+            - 85:
+              - coding: 1114
+        """
+
+        N_EXPECTED_SAMPLES = 4
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'case_control',
+        }, headers={'accept': 'text/csv'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), header=0,
+                                 index_col='eid', dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 1), pheno_file.shape
+
+        expected_columns = ['another_disease_name']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[1000050, 'another_disease_name'] == '1'  # 1000050
+        # assert pheno_file.loc[1000030, 'another_disease_name'] == '0'  # 1000030
+        # assert pheno_file.loc['1000040', 'another_disease_name'] == 'NA'  # 1000040
+        # assert pheno_file.loc[1000010, 'another_disease_name'] == '1'  # 1000010
+        assert pheno_file.loc[1000020, 'another_disease_name'] == '1'  # 1000020
+        assert pheno_file.loc[1000070, 'another_disease_name'] == '0'  # 1000070
+        assert pheno_file.loc[1000060, 'another_disease_name'] == '1'  # 1000060
+
     def test_phenotype_query_yaml_disease_by_coding_many_codings_bgenie(self):
         # Prepare
         self.setUp('pheno2sql/example13/example13_diseases.csv',
@@ -2064,12 +2114,170 @@ class TestRestApiPhenotype(DBTest):
         assert pheno_file.loc[5, 'another_disease_name'] == '0'  # 1000070
         # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
 
+    def test_phenotype_query_yaml_disease_by_coding_many_codings_csv(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        yaml_data = b"""
+        samples_filters:
+          - lower(c21_2_0) in ('yes', 'no', 'maybe')
+
+        case_control:
+          - another_disease_name:
+            - 85:
+              - coding: [1114, 1701]
+        """
+
+        # text/csv does not fetch all samples in 'samples' table by default
+        N_EXPECTED_SAMPLES = 5
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'case_control',
+        }, headers={'accept': 'text/csv'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), header=0,
+                                 index_col='eid', dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 1), pheno_file.shape
+
+        expected_columns = ['another_disease_name']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        # assert pheno_file.loc['1000050', 'another_disease_name'] == 'NA'  # 1000050
+        assert pheno_file.loc[1000030, 'another_disease_name'] == '0'  # 1000030
+        # assert pheno_file.loc['1000040', 'another_disease_name'] == 'NA'  # 1000040
+        assert pheno_file.loc[1000010, 'another_disease_name'] == '1'  # 1000010
+        assert pheno_file.loc[1000020, 'another_disease_name'] == '1'  # 1000020
+        assert pheno_file.loc[1000070, 'another_disease_name'] == '0'  # 1000070
+        assert pheno_file.loc[1000060, 'another_disease_name'] == '1'  # 1000060
+
     def test_phenotype_query_yaml_disease_by_coding_many_data_fields_bgenie(self):
         # Prepare
         self.setUp('pheno2sql/example13/example13_diseases.csv',
                    bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
                    sql_chunksize=2, n_columns_per_table=2)
 
+        # in this case the filters are not necessary, but it is forced to avoid a problem with joining that will
+        # be tested in another unit test
+        yaml_data = b"""
+        samples_filters:
+          - c21_2_0 is null or lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
+
+        case_control:
+          - another_disease_name:
+            - 85:
+              - coding: [978, 1701]
+            - 84:
+              - coding: [Z876, Z678]
+        """
+
+        N_EXPECTED_SAMPLES = 6
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'case_control',
+        }, headers={'accept': 'text/bgenie'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_table(io.StringIO(response.data.decode('utf-8')), sep=' ', header=0,
+                                   dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 1), pheno_file.shape
+
+        expected_columns = ['another_disease_name']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[0, 'another_disease_name'] == '1'  # 1000050
+        assert pheno_file.loc[1, 'another_disease_name'] == '1'  # 1000030
+        assert pheno_file.loc[2, 'another_disease_name'] == '0'  # 1000040
+        assert pheno_file.loc[3, 'another_disease_name'] == '1'  # 1000010
+        assert pheno_file.loc[4, 'another_disease_name'] == '0'  # 1000020
+        assert pheno_file.loc[5, 'another_disease_name'] == '1'  # 1000070
+        # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
+
+    def test_phenotype_query_yaml_disease_by_coding_many_data_fields_csv(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        # in this case the filters are not necessary, but it is forced to avoid a problem with joining that will
+        # be tested in another unit test
+        yaml_data = b"""
+        samples_filters:
+          - c21_2_0 is null or lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
+
+        case_control:
+          - another_disease_name:
+            - 85:
+              - coding: [978, 1701]
+            - 84:
+              - coding: [Z876, Z678]
+        """
+
+        N_EXPECTED_SAMPLES = 7
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'case_control',
+        }, headers={'accept': 'text/csv'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), header=0,
+                                 index_col='eid', dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 1), pheno_file.shape
+
+        expected_columns = ['another_disease_name']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[1000050, 'another_disease_name'] == '1'  # 1000050
+        assert pheno_file.loc[1000030, 'another_disease_name'] == '1'  # 1000030
+        assert pheno_file.loc[1000040, 'another_disease_name'] == '0'  # 1000040
+        assert pheno_file.loc[1000010, 'another_disease_name'] == '1'  # 1000010
+        assert pheno_file.loc[1000020, 'another_disease_name'] == '0'  # 1000020
+        assert pheno_file.loc[1000070, 'another_disease_name'] == '1'  # 1000070
+        assert pheno_file.loc[1000060, 'another_disease_name'] == '1'  # 1000060
+
+    def test_phenotype_query_yaml_disease_filters_not_referencing_table_bgenie(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        # in this case the filters are not necessary, but it is forced to avoid a problem with joining that will
+        # be tested in another unit test
         yaml_data = b"""
         samples_filters:
           - 1 = 1
@@ -2114,6 +2322,62 @@ class TestRestApiPhenotype(DBTest):
         assert pheno_file.loc[4, 'another_disease_name'] == '0'  # 1000020
         assert pheno_file.loc[5, 'another_disease_name'] == '1'  # 1000070
         # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
+
+    def test_phenotype_query_yaml_disease_filters_not_referencing_table_csv(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        # in this case the filters are not necessary, but it is forced to avoid a problem with joining that will
+        # be tested in another unit test
+        yaml_data = b"""
+        samples_filters:
+          - 1 = 1
+
+        case_control:
+          - another_disease_name:
+            - 85:
+              - coding: [978, 1701]
+            - 84:
+              - coding: [Z876, Z678]
+        """
+
+        N_EXPECTED_SAMPLES = 7
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'case_control',
+        }, headers={'accept': 'text/csv'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), header=0,
+                                 index_col='eid', dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 1), pheno_file.shape
+
+        expected_columns = ['another_disease_name']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[1000050, 'another_disease_name'] == '1'  # 1000050
+        assert pheno_file.loc[1000030, 'another_disease_name'] == '1'  # 1000030
+        assert pheno_file.loc[1000040, 'another_disease_name'] == '0'  # 1000040
+        assert pheno_file.loc[1000010, 'another_disease_name'] == '1'  # 1000010
+        assert pheno_file.loc[1000020, 'another_disease_name'] == '0'  # 1000020
+        assert pheno_file.loc[1000070, 'another_disease_name'] == '1'  # 1000070
+        assert pheno_file.loc[1000060, 'another_disease_name'] == '1'  # 1000060
+
+#TODO emulate the phenotype I need to fetch with asthma: check null in phenotype definition, many columns, etc
+#TODO pheno2sql has a hardcode to samples table, it should be able to left join a table with all eids I think
 
 
     # def test_phenotype_query_yaml_disease_by_node_id_bgenie(self):

@@ -13,6 +13,7 @@ from sqlalchemy.types import TEXT, FLOAT, TIMESTAMP, INT
 
 from ukbrest.common.utils.db import create_table, create_indexes, DBAccess
 from ukbrest.common.utils.datagen import get_tmpdir
+from ukbrest.common.utils.constants import BGEN_SAMPLES_TABLE, ALL_EIDS_TABLE
 from ukbrest.config import logger, SQL_CHUNKSIZE_ENV
 from ukbrest.common.utils.misc import get_list
 
@@ -82,6 +83,8 @@ class Pheno2SQL(DBAccess):
 
         # this is a temporary variable that holds information about loading
         self._loading_tmp = {}
+
+        self.table_list = set()
 
     def __enter__(self):
         return self
@@ -307,6 +310,8 @@ class Pheno2SQL(DBAccess):
             for column_names_idx, column_names in self._loading_tmp['chunked_column_names']
         )
 
+        self.table_list.update(table_name for table_name, file_path in self.table_csvs)
+
     def _load_single_csv(self, table_name, file_path):
         logger.info('{} -> {}'.format(file_path, table_name))
 
@@ -366,6 +371,37 @@ class Pheno2SQL(DBAccess):
             for table_name, file_path in self.table_csvs:
                 self._load_single_csv(table_name, file_path)
 
+    def _load_all_eids(self):
+        logger.info('Loading all eids into table {}'.format(ALL_EIDS_TABLE))
+
+        create_table(ALL_EIDS_TABLE,
+            columns=[
+                'eid bigint NOT NULL',
+            ],
+            constraints=[
+                'pk_{} PRIMARY KEY (eid)'.format(ALL_EIDS_TABLE)
+            ],
+            db_engine=self._get_db_engine()
+         )
+
+        select_eid_sql = ' UNION DISTINCT '.join(
+            'select eid from {}'.format(table_name)
+            for table_name in self.table_list
+        )
+
+        insert_eids_sql = """
+            insert into {all_eids_table} (eid)
+            (
+                {sql_eids}
+            )
+        """.format(
+            all_eids_table=ALL_EIDS_TABLE,
+            sql_eids=select_eid_sql
+        )
+
+        with self._get_db_engine().connect() as con:
+            con.execute(insert_eids_sql)
+
     def _load_bgen_samples(self):
         if self.bgen_sample_file is None or not os.path.isfile(self.bgen_sample_file):
             logger.warning('BGEN sample file not set or does not exist: {}'.format(self.bgen_sample_file))
@@ -373,13 +409,13 @@ class Pheno2SQL(DBAccess):
 
         logger.info('Loading BGEN sample file: {}'.format(self.bgen_sample_file))
 
-        create_table('samples',
+        create_table(BGEN_SAMPLES_TABLE,
             columns=[
                 'index bigint NOT NULL',
                 'eid bigint NOT NULL',
             ],
             constraints=[
-                'pk_samples PRIMARY KEY (index, eid)'
+                'pk_{} PRIMARY KEY (index, eid)'.format(BGEN_SAMPLES_TABLE)
             ],
             db_engine=self._get_db_engine()
          )
@@ -389,7 +425,7 @@ class Pheno2SQL(DBAccess):
         samples_data.drop('ID_2', axis=1, inplace=True)
         samples_data.rename(columns={'ID_1': 'eid'}, inplace=True)
 
-        samples_data.to_sql('samples', self._get_db_engine(), if_exists='append')
+        samples_data.to_sql(BGEN_SAMPLES_TABLE, self._get_db_engine(), if_exists='append')
 
     def _run_psql(self, sql_statement):
         current_env = os.environ.copy()
@@ -460,9 +496,9 @@ class Pheno2SQL(DBAccess):
 
         logger.info('Creating table constraints (indexes, primary keys, etc)')
 
-        # samples table
+        # bgen's samples table
         if self.bgen_sample_file is not None:
-            create_indexes('samples', ('index', 'eid'), db_engine=self._get_db_engine())
+            create_indexes(BGEN_SAMPLES_TABLE, ('index', 'eid'), db_engine=self._get_db_engine())
 
         # fields table
         create_indexes('fields', ('field_id', 'inst', 'arr', 'table_name', 'type', 'coding'),
@@ -493,6 +529,7 @@ class Pheno2SQL(DBAccess):
             self._create_temporary_csvs(csv_file, csv_file_idx)
             self._load_csv()
 
+        self._load_all_eids()
         self._load_bgen_samples()
         self._load_events()
         self._create_constraints()
@@ -687,39 +724,49 @@ class Pheno2SQL(DBAccess):
             where {cases_conditions}
         """.format(cases_conditions=' OR '.join(data_field_conditions))
 
-        full_sql_query = """
-            select dt.iscase::text as {column_name}
-            from samples s left outer join (
-                select s.index, 1 as iscase
+        inner_sql = """
+                select eid, 1 as {column_name}
                 from {cases_joins}
                 {where_st}
                 
-                union
+                union distinct
                 
-                select s.index, 0 as iscase
+                select aet.eid, 0 as {column_name}
                 from {controls_joins}
                 {where_st}
-                and s.eid not in (
+                and aet.eid not in (
                     {sql_cases}
                 )
-            ) dt using (index)
-            order by s.index asc
         """.format(
             column_name=column,
             sql_cases=sql_cases,
             cases_joins=self._create_joins([
-                    'samples s',
                     '({}) ev'.format(sql_cases),
                 ] + self._get_needed_tables(where_fields)),
             controls_joins=self._create_joins([
-                    'samples s',
+                    '{} aet'.format(ALL_EIDS_TABLE),
                 ] + self._get_needed_tables(where_fields)),
             where_st='where ' + where_st
         )
 
-        print(full_sql_query)
+        if order_by is not None:
+            outer_sql = """
+            select s.eid as eid, dt.{column_name}::text
+            from {order_by} s left outer join (
+                {inner_sql}
+            ) dt using (eid)
+            order by s.index asc
+            """.format(
+                column_name=column,
+                order_by=order_by,
+                inner_sql=inner_sql,
+            )
+        else:
+            outer_sql = inner_sql
 
-        results = pd.read_sql(full_sql_query, self._get_db_engine(), chunksize=None)
+        # print(outer_sql)
+
+        results = pd.read_sql(outer_sql, self._get_db_engine(), index_col='eid', chunksize=None)
 
         yield results
 

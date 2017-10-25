@@ -1526,7 +1526,78 @@ class Pheno2SQLTest(DBTest):
 
         assert index_len_sum == 4
 
-    def test_postgresql_samples_table_created(self):
+    def test_postgresql_all_eids_table_created(self):
+        # Prepare
+        directory = get_repository_path('pheno2sql/example14')
+
+        csv_file1 = get_repository_path(os.path.join(directory, 'example14_00.csv'))
+        csv_file2 = get_repository_path(os.path.join(directory, 'example14_01.csv'))
+        db_engine = POSTGRESQL_ENGINE
+
+        p2sql = Pheno2SQL((csv_file1, csv_file2), db_engine, bgen_sample_file=os.path.join(directory, 'impv2.sample'),
+                          n_columns_per_table=2, loading_n_jobs=1)
+
+        # Run
+        p2sql.load_data()
+
+        # Validate
+        assert p2sql.db_type == 'postgresql'
+
+        ## Check samples table exists
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('all_eids'), create_engine(db_engine))
+        assert table.iloc[0, 0]
+
+        ## Check columns are correct
+        all_eids = pd.read_sql('select * from all_eids', create_engine(db_engine))
+        expected_columns = ["eid"]
+        assert len(all_eids.columns) == len(expected_columns)
+        assert all(x in all_eids.columns for x in expected_columns)
+
+        ## Check data is correct
+        all_eids = pd.read_sql('select * from all_eids', create_engine(db_engine), index_col='eid')
+        assert len(all_eids.index) == 6 + 4, len(all_eids.index)
+        assert 1000010 in all_eids.index
+        assert 1000020 in all_eids.index
+        assert 1000021 in all_eids.index
+        assert 1000030 in all_eids.index
+        assert 1000040 in all_eids.index
+        assert 1000041 in all_eids.index
+        assert 1000050 in all_eids.index
+        assert 1000060 in all_eids.index
+        assert 1000061 in all_eids.index
+        assert 1000070 in all_eids.index
+
+    def test_postgresql_all_eids_table_constraints(self):
+        # Prepare
+        directory = get_repository_path('pheno2sql/example14')
+
+        csv_file1 = get_repository_path(os.path.join(directory, 'example14_00.csv'))
+        csv_file2 = get_repository_path(os.path.join(directory, 'example14_01.csv'))
+        db_engine = POSTGRESQL_ENGINE
+
+        p2sql = Pheno2SQL((csv_file1, csv_file2), db_engine, bgen_sample_file=os.path.join(directory, 'impv2.sample'),
+                          n_columns_per_table=2, loading_n_jobs=1)
+
+        # Run
+        p2sql.load_data()
+
+        # Validate
+        assert p2sql.db_type == 'postgresql'
+
+        ## Check samples table exists
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('all_eids'), create_engine(db_engine))
+        assert table.iloc[0, 0]
+
+        # primary key
+        constraint_sql = self._get_table_contrains('all_eids', relationship_query='pk_%%')
+        constraints_results = pd.read_sql(constraint_sql, create_engine(db_engine))
+        assert constraints_results is not None
+        assert not constraints_results.empty
+        columns = constraints_results['column_name'].tolist()
+        assert len(columns) == 1
+        assert 'eid' in columns
+
+    def test_postgresql_bgen_samples_table_created(self):
         # Prepare
         directory = get_repository_path('pheno2sql/example10')
 
@@ -1543,17 +1614,17 @@ class Pheno2SQLTest(DBTest):
         assert p2sql.db_type == 'postgresql'
 
         ## Check samples table exists
-        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('samples'), create_engine(db_engine))
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('bgen_samples'), create_engine(db_engine))
         assert table.iloc[0, 0]
 
         ## Check columns are correct
-        samples_data = pd.read_sql('select * from samples', create_engine(db_engine))
+        samples_data = pd.read_sql('select * from bgen_samples', create_engine(db_engine))
         expected_columns = ["index", "eid"]
         assert len(samples_data.columns) == len(expected_columns)
         assert all(x in samples_data.columns for x in expected_columns)
 
         ## Check data is correct
-        samples_data = pd.read_sql('select * from samples', create_engine(db_engine), index_col='index')
+        samples_data = pd.read_sql('select * from bgen_samples', create_engine(db_engine), index_col='index')
         assert not samples_data.empty
         assert samples_data.shape[0] == 5
         assert samples_data.loc[1, 'eid'] == 1000050
@@ -1562,7 +1633,7 @@ class Pheno2SQLTest(DBTest):
         assert samples_data.loc[4, 'eid'] == 1000010
         assert samples_data.loc[5, 'eid'] == 1000020
 
-    def test_postgresql_samples_constraints(self):
+    def test_postgresql_bgen_samples_table_constraints(self):
         # Prepare
         directory = get_repository_path('pheno2sql/example10')
 
@@ -1579,11 +1650,11 @@ class Pheno2SQLTest(DBTest):
         assert p2sql.db_type == 'postgresql'
 
         ## Check samples table exists
-        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('samples'), create_engine(db_engine))
+        table = pd.read_sql("SELECT EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = '{}');".format('bgen_samples'), create_engine(db_engine))
         assert table.iloc[0, 0]
 
         # primary key
-        constraint_sql = self._get_table_contrains('samples', relationship_query='pk_%%')
+        constraint_sql = self._get_table_contrains('bgen_samples', relationship_query='pk_%%')
         constraints_results = pd.read_sql(constraint_sql, create_engine(db_engine))
         assert constraints_results is not None
         assert not constraints_results.empty
@@ -1593,7 +1664,7 @@ class Pheno2SQLTest(DBTest):
         assert 'index' in columns
 
         # indexes
-        constraint_sql = self._get_table_contrains('samples', relationship_query='ix_%%')
+        constraint_sql = self._get_table_contrains('bgen_samples', relationship_query='ix_%%')
         constraints_results = pd.read_sql(constraint_sql, create_engine(db_engine))
         assert constraints_results is not None
         assert not constraints_results.empty

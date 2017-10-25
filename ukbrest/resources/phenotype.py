@@ -6,6 +6,8 @@ from werkzeug.datastructures import FileStorage
 from flask import Response
 from flask_restful import Resource, reqparse, current_app as app, Api
 
+from ukbrest.common.utils.constants import BGEN_SAMPLES_TABLE
+
 
 class PhenotypeAPI(Resource):
     def __init__(self, **kwargs):
@@ -72,7 +74,7 @@ class QueryAPI(Resource):
 
         order_by = None
         if args.Accept == 'text/bgenie':
-            order_by = 'samples'
+            order_by = BGEN_SAMPLES_TABLE
 
         data_results = self.pheno2sql.query_yaml(yaml.load(args.file), args.section, order_by=order_by)
 
