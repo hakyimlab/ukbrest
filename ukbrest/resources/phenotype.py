@@ -1,12 +1,16 @@
-import json
-
 from ruamel.yaml import YAML
 from werkzeug.exceptions import BadRequest
 from werkzeug.datastructures import FileStorage
-from flask import Response
 from flask_restful import Resource, reqparse, current_app as app, Api
 
-from ukbrest.common.utils.constants import BGEN_SAMPLES_TABLE
+from ukbrest.resources.formats import CSVSerializer, BgenieSerializer, Plink2Serializer, JsonSerializer
+
+
+PHENOTYPE_FORMATS = {
+    'text/plink2': Plink2Serializer(),
+    'text/csv': CSVSerializer(),
+    'text/bgenie': BgenieSerializer(),
+}
 
 
 class PhenotypeAPI(Resource):
@@ -73,83 +77,30 @@ class QueryAPI(Resource):
         yaml = YAML(typ='safe')
 
         order_by_table = None
-        if args.Accept == 'text/bgenie':
-            order_by_table = BGEN_SAMPLES_TABLE
+        if args.Accept in PHENOTYPE_FORMATS:
+            serializer = PHENOTYPE_FORMATS[args.Accept]
+            order_by_table = serializer.get_order_by_table()
 
-        data_results = self.pheno2sql.query_yaml(yaml.load(args.file), args.section, order_by_table=order_by_table)
+        data_results = self.pheno2sql.query_yaml(
+            yaml.load(args.file),
+            args.section,
+            order_by_table=order_by_table
+        )
 
-        return {
+        final_results = {
             'data': data_results,
-            'missing_code': args.missing_code,
         }
 
+        if args.missing_code is not None:
+            final_results['missing_code'] = args.missing_code
 
-def _data_generator(all_data, data_conversion_func):
-    from io import StringIO
-
-    for row_idx, row in enumerate(all_data):
-        f = StringIO()
-        data_conversion_func(row, row_idx, f)
-
-        yield f.getvalue()
-
-
-def output_phenotype(data, code, headers=None):
-    def _to_phenotype(data, data_chunk_idx, buffer):
-        data.index.name = 'FID'
-        data = data.assign(IID=data.index.values.copy())
-
-        columns = data.columns.tolist()
-        columns_reordered = ['IID'] + [c for c in columns if c != 'IID']
-        data = data.loc[:, columns_reordered]
-
-        data.to_csv(buffer, sep='\t', na_rep='NA', header=data_chunk_idx == 0)
-
-    resp = Response(_data_generator(data['data'], _to_phenotype), code)
-    resp.headers.extend(headers or {})
-    return resp
-
-
-def output_bgenie(data, code, headers=None):
-    missing_code = data['missing_code'] if ('missing_code' in data) and (data['missing_code'] is not None) else 'NA'
-
-    def _to_bgenie(data_chunk, data_chunk_idx, buffer):
-        data_chunk.to_csv(buffer, sep=' ', na_rep=missing_code, header=data_chunk_idx == 0, index=False)
-
-    resp = Response(_data_generator(data['data'], _to_bgenie), code)
-    resp.headers.extend(headers or {})
-    return resp
-
-
-def output_csv(data, code, headers=None):
-    def _to_csv(data, data_chunk_idx, buffer):
-        data.to_csv(buffer, header=data_chunk_idx == 0)
-
-    resp = Response(_data_generator(data['data'], _to_csv), code)
-    resp.headers.extend(headers or {})
-    return resp
-
-
-def output_json(data, code, headers=None):
-    if isinstance(data, dict) and 'data' in data:
-        data = data['data']
-
-    resp = Response(json.dumps(data), code)
-    resp.headers.extend(headers or {})
-    return resp
-
-
-PHENOTYPE_FORMATS = {
-    'text/phenotype': output_phenotype,
-    'text/csv': output_csv,
-    'text/bgenie': output_bgenie,
-}
+        return final_results
 
 
 class PhenotypeApiObject(Api):
-    def __init__(self, app, default_mediatype='text/phenotype'):
+    def __init__(self, app, default_mediatype='text/plink2'):
         super(PhenotypeApiObject, self).__init__(app, default_mediatype=default_mediatype)
 
         reps = PHENOTYPE_FORMATS.copy()
-        reps.update({'application/json': output_json})
+        reps.update({'application/json': JsonSerializer()})
         self.representations = reps
