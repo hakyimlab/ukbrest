@@ -2407,6 +2407,7 @@ class TestRestApiPhenotype(DBTest):
         assert pheno_file.loc[1000060, 'another_disease_name'] == '1'  # 1000060
 
     def test_phenotype_query_yaml_disease_filters_not_referencing_table_bgenie(self):
+        """This test forces a global table to obtain eid from for controls"""
         # Prepare
         self.setUp('pheno2sql/example13/example13_diseases.csv',
                    bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
@@ -2460,6 +2461,7 @@ class TestRestApiPhenotype(DBTest):
         # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
 
     def test_phenotype_query_yaml_disease_filters_not_referencing_table_csv(self):
+        """This test forces a global table to obtain eid from for controls"""
         # Prepare
         self.setUp('pheno2sql/example13/example13_diseases.csv',
                    bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
@@ -2511,6 +2513,200 @@ class TestRestApiPhenotype(DBTest):
         assert pheno_file.loc[1000020, 'another_disease_name'] == '0'  # 1000020
         assert pheno_file.loc[1000070, 'another_disease_name'] == '1'  # 1000070
         assert pheno_file.loc[1000060, 'another_disease_name'] == '1'  # 1000060
+
+    def test_phenotype_query_yaml_disease_no_filters_csv(self):
+        """This test forces a global table to obtain eid from for controls"""
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        # in this case the filters are not necessary, but it is forced to avoid a problem with joining that will
+        # be tested in another unit test
+        yaml_data = b"""
+        case_control:
+          - another_disease_name:
+            - 85:
+              - coding: [978, 1701]
+            - 84:
+              - coding: [Z876, Z678]
+        """
+
+        N_EXPECTED_SAMPLES = 7
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'case_control',
+        }, headers={'accept': 'text/csv'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), header=0,
+                                 index_col='eid', dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 1), pheno_file.shape
+
+        expected_columns = ['another_disease_name']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[1000050, 'another_disease_name'] == '1'  # 1000050
+        assert pheno_file.loc[1000030, 'another_disease_name'] == '1'  # 1000030
+        assert pheno_file.loc[1000040, 'another_disease_name'] == '0'  # 1000040
+        assert pheno_file.loc[1000010, 'another_disease_name'] == '1'  # 1000010
+        assert pheno_file.loc[1000020, 'another_disease_name'] == '0'  # 1000020
+        assert pheno_file.loc[1000070, 'another_disease_name'] == '1'  # 1000070
+        assert pheno_file.loc[1000060, 'another_disease_name'] == '1'  # 1000060
+
+    def test_phenotype_query_yaml_disease_many_columns_bgenie(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        # in this case the filters are not necessary, but it is forced to avoid a problem with joining that will
+        # be tested in another unit test
+        yaml_data = b"""
+        samples_filters:
+          - lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
+          - c34_0_0 > -10
+
+        case_control:
+          - another_disease_name:
+            - 85:
+              - coding: [978, 1701]
+            - 84:
+              - coding: [Z876, Z678]
+          - second_column:
+            - 85:
+              - coding: 1114
+          - third_column:
+            - 84:
+              - coding: [E103, Z678]
+        """
+
+        N_EXPECTED_SAMPLES = 6
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'case_control',
+        }, headers={'accept': 'text/bgenie'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_table(io.StringIO(response.data.decode('utf-8')), sep=' ', header=0,
+                                   dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 3), pheno_file.shape
+
+        expected_columns = ['another_disease_name', 'second_column', 'third_column']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[0, 'another_disease_name'] == '1'  # 1000050
+        assert pheno_file.loc[1, 'another_disease_name'] == '1'  # 1000030
+        assert pheno_file.loc[2, 'another_disease_name'] == 'NA'  # 1000040
+        assert pheno_file.loc[3, 'another_disease_name'] == 'NA'  # 1000010
+        assert pheno_file.loc[4, 'another_disease_name'] == '0'  # 1000020
+        assert pheno_file.loc[5, 'another_disease_name'] == '1'  # 1000070
+        # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
+
+        assert pheno_file.loc[0, 'second_column'] == '1'  # 1000050
+        assert pheno_file.loc[1, 'second_column'] == '0'  # 1000030
+        assert pheno_file.loc[2, 'second_column'] == 'NA'  # 1000040
+        assert pheno_file.loc[3, 'second_column'] == 'NA'  # 1000010
+        assert pheno_file.loc[4, 'second_column'] == '1'  # 1000020
+        assert pheno_file.loc[5, 'second_column'] == '0'  # 1000070
+        # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
+
+        assert pheno_file.loc[0, 'third_column'] == '1'  # 1000050
+        assert pheno_file.loc[1, 'third_column'] == '0'  # 1000030
+        assert pheno_file.loc[2, 'third_column'] == 'NA'  # 1000040
+        assert pheno_file.loc[3, 'third_column'] == 'NA'  # 1000010
+        assert pheno_file.loc[4, 'third_column'] == '1'  # 1000020
+        assert pheno_file.loc[5, 'third_column'] == '1'  # 1000070
+        # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
+
+    def test_phenotype_query_yaml_disease_many_columns_csv(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        # in this case the filters are not necessary, but it is forced to avoid a problem with joining that will
+        # be tested in another unit test
+        yaml_data = b"""
+        samples_filters:
+          - lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
+          - c34_0_0 > -10
+
+        case_control:
+          - another_disease_name:
+            - 85:
+              - coding: [978, 1701]
+            - 84:
+              - coding: [Z876, Z678]
+          - second_column:
+            - 85:
+              - coding: 1114
+          - third_column:
+            - 84:
+              - coding: [E103, Z678]
+        """
+
+        N_EXPECTED_SAMPLES = 4
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'case_control',
+        }, headers={'accept': 'text/csv'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), header=0,
+                                 index_col='eid', dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 3), pheno_file.shape
+
+        expected_columns = ['another_disease_name', 'second_column', 'third_column']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[1000050, 'another_disease_name'] == '1'  # 1000050
+        assert pheno_file.loc[1000030, 'another_disease_name'] == '1'  # 1000030
+        assert pheno_file.loc[1000020, 'another_disease_name'] == '0'  # 1000020
+        assert pheno_file.loc[1000070, 'another_disease_name'] == '1'  # 1000070
+
+        assert pheno_file.loc[1000050, 'second_column'] == '1'  # 1000050
+        assert pheno_file.loc[1000030, 'second_column'] == '0'  # 1000030
+        assert pheno_file.loc[1000020, 'second_column'] == '1'  # 1000020
+        assert pheno_file.loc[1000070, 'second_column'] == '0'  # 1000070
+
+        assert pheno_file.loc[1000050, 'third_column'] == '1'  # 1000050
+        assert pheno_file.loc[1000030, 'third_column'] == '0'  # 1000030
+        assert pheno_file.loc[1000020, 'third_column'] == '1'  # 1000020
+        assert pheno_file.loc[1000070, 'third_column'] == '1'  # 1000070
 
 #TODO emulate the phenotype I need to fetch with asthma: check null in phenotype definition, many columns, etc
 #TODO pheno2sql has a hardcode to samples table, it should be able to left join a table with all eids I think
@@ -2568,50 +2764,8 @@ class TestRestApiPhenotype(DBTest):
     #     assert pheno_file.loc[4, 'disease0'] == '1'  # 1000020
     #     # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
 
+# TODO filter including tables with null values (test inner and outer joins)
 
-# TODO to select controls, we need a table reference. It would be good to have, probably, a table with all eid values in all tables
-# TODO test with no filters
-# TODO rename samples_only to samples_filter
+
 # TODO coding and node_id together
 # TODO node_id means recursive, coding means flat; test recursive
-# TODO more than one filter
-# TODO filter including tables with null values (test inner and outer joins)
-# TODO sabe but just csv format, not bgenie
-
-# TODO make covariates to also respect filters:
-        # #
-        # # Ask covariates
-        # #
-        # response = self.app.post('/ukbrest/api/v1.0/query', data=
-        #     {
-        #         'file': (io.BytesIO(yaml_data), 'data.yaml'),
-        #         'section': 'covariates',
-        #     }, headers={'accept': 'text/bgenie'})
-        #
-        # # Validate
-        # assert response.status_code == 200, response.status_code
-        #
-        # pheno_file = pd.read_table(io.StringIO(response.data.decode('utf-8')), sep=' ', header=0,
-        #                            dtype=str, na_values='', keep_default_na=False)
-        # assert pheno_file is not None
-        # assert not pheno_file.empty
-        # assert pheno_file.shape == (N_EXPECTED_SAMPLES, 2)
-        #
-        # expected_columns = ['field_name_34', 'field_name_47']
-        # assert len(pheno_file.columns) == len(expected_columns)
-        # assert all(x in expected_columns for x in pheno_file.columns)
-        #
-        # assert pheno_file.loc[0, 'field_name_34'] == '-4'
-        # assert pheno_file.loc[0, 'field_name_47'] == 'NA'
-        #
-        # assert pheno_file.loc[1, 'field_name_34'] == 'NA'
-        # assert pheno_file.loc[1, 'field_name_47'] == 'NA'
-        #
-        # assert pheno_file.loc[2, 'field_name_34'] == '3'
-        # assert pheno_file.loc[2, 'field_name_47'] == '5.20832'
-        #
-        # assert pheno_file.loc[3, 'field_name_34'] == 'NA'
-        # assert pheno_file.loc[3, 'field_name_47'] == 'NA'
-        #
-        # assert pheno_file.loc[4, 'field_name_34'] == '34'
-        # assert pheno_file.loc[4, 'field_name_47'] == '-10.51461'

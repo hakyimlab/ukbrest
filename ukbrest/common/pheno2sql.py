@@ -658,6 +658,8 @@ class Pheno2SQL(DBAccess):
 
             final_sql_query = outer_sql
 
+        print(final_sql_query)
+
         results_iterator = pd.read_sql(
             final_sql_query, self._get_db_engine(), index_col='eid', chunksize=self.sql_chunksize
         )
@@ -727,62 +729,80 @@ class Pheno2SQL(DBAccess):
             yield chunk
 
     def query_yaml_case_control(self, yaml_file, order_by_table=None):
+        all_columns = []
+        all_columns_sql_queries = []
 
-        columns_list = list(yaml_file['case_control'][0].keys())
-        column = columns_list[0]
+        where_st = ''
+        where_fields = []
+        if 'samples_filters' in yaml_file:
+            where_st = ' AND '.join('({})'.format(afilter) for afilter in yaml_file['samples_filters'])
+            where_fields = self._get_fields_from_statements([where_st])
 
-        data_fields_list = list(yaml_file['case_control'][0][column][0].keys())
+        for column_dict in yaml_file['case_control']:
+            column = list(column_dict.keys())[0]
+            all_columns.append(column)
+            # columns_list = list(yaml_file['case_control'][0].keys())
+            # column = columns_list[0]
 
-        data_field = data_fields_list[0]
-        codings = yaml_file['case_control'][0][column][0][data_field][0]['coding']
+            data_field_conditions = [
+                '(field_id = {} and event in ({}))'.format(df, ', '.join("'{}'".format(cod) for cod in get_list(df_cods[0]['coding'])))
+                    for df_conditions in column_dict[column] for df, df_cods in df_conditions.items()
+            ]
 
-        where_st = ' AND '.join('({})'.format(afilter) for afilter in yaml_file['samples_filters'])
-        where_fields = self._get_fields_from_statements([where_st])
+            sql_cases = """
+                select distinct eid
+                from events
+                where {cases_conditions}
+            """.format(cases_conditions=' OR '.join(data_field_conditions))
 
-        data_field_conditions = [
-            '(field_id = {} and event in ({}))'.format(df, ', '.join("'{}'".format(cod) for cod in get_list(df_cods[0]['coding'])))
-                for df_conditions in yaml_file['case_control'][0][column] for df, df_cods in df_conditions.items()
-        ]
+            base_sql = """
+                    select eid, 1 as {column_name}
+                    from {cases_joins}
+                    {where_st}
+                    
+                    union distinct
+                    
+                    select aet.eid, 0 as {column_name}
+                    from {controls_joins}
+                    {where_st}
+                    and aet.eid not in (
+                        {sql_cases}
+                    )
+            """
 
-        sql_cases = """
-            select distinct eid
-            from events
-            where {cases_conditions}
-        """.format(cases_conditions=' OR '.join(data_field_conditions))
+            column_sql_query = base_sql.format(
+                column_name=column,
+                sql_cases=sql_cases,
+                cases_joins=self._create_joins([
+                        '({}) ev'.format(sql_cases),
+                    ] + self._get_needed_tables(where_fields)),
+                controls_joins=self._create_joins([
+                        '{} aet'.format(ALL_EIDS_TABLE),
+                    ] + self._get_needed_tables(where_fields)),
+                where_st='where ' + (where_st if where_st else '1=1')
+            )
 
-        base_sql = """
-                select eid, 1 as {column_name}
-                from {cases_joins}
-                {where_st}
-                
-                union distinct
-                
-                select aet.eid, 0 as {column_name}
-                from {controls_joins}
-                {where_st}
-                and aet.eid not in (
-                    {sql_cases}
-                )
-        """
-
-        final_sql_query = base_sql.format(
-            column_name=column,
-            sql_cases=sql_cases,
-            cases_joins=self._create_joins([
-                    '({}) ev'.format(sql_cases),
-                ] + self._get_needed_tables(where_fields)),
-            controls_joins=self._create_joins([
-                    '{} aet'.format(ALL_EIDS_TABLE),
-                ] + self._get_needed_tables(where_fields)),
-            where_st='where ' + where_st
-        )
+            all_columns_sql_queries.append(column_sql_query)
 
         order_by_dict = None
         if order_by_table is not None:
             order_by_dict = {
                 'table': order_by_table,
-                'columns_select': 's.eid as eid, u.{column_name}::text'.format(column_name=column),
+                'columns_select':
+                    's.eid as eid, ' +
+                    ', '.join('{column_name}::text'.format(column_name=column) for column in all_columns),
             }
+
+        final_sql_query = """
+            select eid, {columns_names}
+            from {inner_queries}
+        """.format(
+            columns_names=', '.join('{}::text'.format(column) for column in all_columns),
+            inner_queries=self._create_joins(
+                ['({}) iq{}'.format(iq, iq_idx) for iq_idx, iq in enumerate(all_columns_sql_queries)],
+                join_type='full outer join'
+            ),
+        )
 
         return self._query_generic(
             final_sql_query,
