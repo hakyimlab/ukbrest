@@ -58,15 +58,9 @@ loading_n_jobs = environ.get(LOADING_N_JOBS_ENV, -1)
 load_data_vacuum = environ.get(LOAD_DATA_VACUUM, True)
 
 # logger
+FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+logging.basicConfig(format=FORMAT, level=logging.INFO if not debug else logging.DEBUG)
 logger = logging.getLogger('ukbrest')
-logger.setLevel(logging.INFO)
-
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-console_handler.setFormatter(formatter)
-
-logger.addHandler(console_handler)
 
 
 def get_postloader_parameters():
