@@ -505,7 +505,8 @@ class Pheno2SQL(DBAccess):
                        db_engine=self._get_db_engine())
 
         # events table
-        create_indexes('events', ('eid', 'field_id', 'instance', 'event'), db_engine=self._get_db_engine())
+        create_indexes('events', ('eid', 'field_id', 'instance', 'event', ('field_id', 'event')),
+                       db_engine=self._get_db_engine())
 
     def _vacuum(self):
         logger.info('Vacuuming')

@@ -2043,15 +2043,26 @@ class Pheno2SQLTest(DBTest):
 
         # index on 'event' column
         constraint_sql = self._get_table_contrains('events', relationship_query='ix_%%')
-        constraints_results = pd.read_sql(constraint_sql, create_engine(db_engine))
+        constraints_results = pd.read_sql(constraint_sql, create_engine(db_engine), index_col='index_name')
         assert constraints_results is not None
         assert not constraints_results.empty
-        columns = constraints_results['column_name'].tolist()
-        assert len(columns) == 4
-        assert 'eid' in columns
-        assert 'field_id' in columns
-        assert 'instance' in columns
-        assert 'event' in columns
+        assert constraints_results.shape[0] == 6
+
+        assert constraints_results.loc[['ix_events_eid']].shape[0] == 1
+        assert constraints_results.loc['ix_events_eid', 'column_name'] == 'eid'
+
+        assert constraints_results.loc[['ix_events_field_id']].shape[0] == 1
+        assert constraints_results.loc['ix_events_field_id', 'column_name'] == 'field_id'
+
+        assert constraints_results.loc[['ix_events_instance']].shape[0] == 1
+        assert constraints_results.loc['ix_events_instance', 'column_name'] == 'instance'
+
+        assert constraints_results.loc[['ix_events_event']].shape[0] == 1
+        assert constraints_results.loc['ix_events_event', 'column_name'] == 'event'
+
+        assert constraints_results.loc[['ix_events_field_id_event']].shape[0] == 2
+        assert 'field_id' in constraints_results.loc['ix_events_field_id_event', 'column_name'].tolist()
+        assert 'event' in constraints_results.loc['ix_events_field_id_event', 'column_name'].tolist()
 
     def test_postgresql_phenotypes_tables_check_constrains_exist(self):
         # Prepare
