@@ -27,19 +27,19 @@ def create_table(table_name, columns, db_engine, constraints=None, drop_if_exist
 
 def create_indexes(table_name, columns, db_engine):
     with db_engine.connect() as conn:
-        for column in columns:
+        for column_spec in columns:
 
-            if not isinstance(column, (tuple, list)):
-                column = (column,)
+            if not isinstance(column_spec, (tuple, list)):
+                column_spec = (column_spec,)
 
-            index_name_suffix = '_'.join(column)
-            column_name = ', '.join(column)
+            index_name_suffix = '_'.join(column_spec)
+            columns_name = ', '.join(column_spec)
 
             index_sql = """
                 CREATE INDEX ix_{table_name}_{index_name_suffix}
                 ON {table_name} USING btree
-                ({column_name})
-            """.format(table_name=table_name, index_name_suffix=index_name_suffix, column_name=column_name)
+                ({columns_name})
+            """.format(table_name=table_name, index_name_suffix=index_name_suffix, columns_name=columns_name)
 
             conn.execute(index_sql)
 

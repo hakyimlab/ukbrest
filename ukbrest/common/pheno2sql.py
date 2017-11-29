@@ -729,7 +729,7 @@ class Pheno2SQL(DBAccess):
             chunk = chunk.rename(columns={v:k for x in section_data for k, v in x.items()})
             yield chunk
 
-    def query_yaml_case_control(self, yaml_file, order_by_table=None):
+    def query_yaml_categorized_data(self, yaml_file, order_by_table=None):
         all_columns = []
         all_columns_sql_queries = []
 
@@ -739,49 +739,86 @@ class Pheno2SQL(DBAccess):
             where_st = ' AND '.join('({})'.format(afilter) for afilter in yaml_file['samples_filters'])
             where_fields = self._get_fields_from_statements([where_st])
 
-        for column_dict in yaml_file['case_control']:
-            column = list(column_dict.keys())[0]
+        for column, column_dict in yaml_file['data'].items():
+            # column = list(column_dict.keys())[0]
             all_columns.append(column)
             # columns_list = list(yaml_file['case_control'][0].keys())
             # column = columns_list[0]
 
-            data_field_conditions = [
-                '(field_id = {} and event in ({}))'.format(df, ', '.join("'{}'".format(cod) for cod in get_list(df_cods[0]['coding'])))
-                    for df_conditions in column_dict[column] for df, df_cods in df_conditions.items()
-            ]
+            subqueries = []
 
-            sql_cases = """
-                select distinct eid
-                from events
-                where {cases_conditions}
-            """.format(cases_conditions=' OR '.join(data_field_conditions))
+            # for df_conditions in column_dict[column]:
+            for df, df_cods in column_dict.items():
+                if df == 'sql':
+                    for cat_code, cat_condition in df_cods.items():
+                        # TODO: check for repeated category codes
+                        needed_tables = self._get_needed_tables(
+                            self._get_fields_from_statements([cat_condition]) + where_fields
+                        )
 
-            base_sql = """
-                    select eid, 1 as {column_name}
-                    from {cases_joins}
-                    {where_st}
-                    
-                    union distinct
-                    
-                    select aet.eid, 0 as {column_name}
-                    from {controls_joins}
-                    {where_st}
-                    and aet.eid not in (
-                        {sql_cases}
+                        sql_code = """
+                            select eid, {cat_code} as {column_name}
+                            from {cases_joins}
+                            {where_st}
+                        """.format(
+                                cat_code=cat_code,
+                                column_name=column,
+                                cases_joins=self._create_joins(needed_tables),
+                                where_st='where ({}) AND ({})'.format(cat_condition, where_st)
+                        )
+
+                        subqueries.append(sql_code)
+
+                elif df == 'case_control':
+                    cases_conditions = [
+                        '(field_id = {} and event in ({}))'.format(
+                            field_id, ', '.join("'{}'".format(cod) for cod in get_list(field_cond['coding']))
+                        ) for field_id, field_cond in df_cods.items()
+                    ]
+
+                    sql_cases = """
+                        select distinct eid
+                        from events
+                        where {conditions}
+                    """.format(conditions=' OR '.join(cases_conditions))
+
+                    sql_cases_code = """
+                            select eid, 1 as {column_name}
+                            from {cases_joins}
+                            {where_st}
+                    """.format(
+                        column_name=column,
+                        cases_joins=self._create_joins([
+                            '({}) ev'.format(sql_cases)
+                        ] + self._get_needed_tables(where_fields)),
+                        where_st='where ' + (where_st if where_st else '1=1')
                     )
-            """
 
-            column_sql_query = base_sql.format(
-                column_name=column,
-                sql_cases=sql_cases,
-                cases_joins=self._create_joins([
-                        '({}) ev'.format(sql_cases),
-                    ] + self._get_needed_tables(where_fields)),
-                controls_joins=self._create_joins([
-                        '{} aet'.format(ALL_EIDS_TABLE),
-                    ] + self._get_needed_tables(where_fields)),
-                where_st='where ' + (where_st if where_st else '1=1')
-            )
+                    subqueries.append(sql_cases_code)
+
+                    # controls
+                    sql_controls_code = """
+                        select aet.eid, 0 as {column_name}
+                        from {controls_joins}
+                        {where_st}
+                        and aet.eid not in (
+                            {sql_cases}
+                        )
+                    """.format(
+                        column_name=column,
+                        controls_joins=self._create_joins([
+                            '{} aet'.format(ALL_EIDS_TABLE),
+                        ] + self._get_needed_tables(where_fields)),
+                        where_st='where ' + (where_st if where_st else '1=1'),
+                        sql_cases=sql_cases,
+                    )
+
+                    subqueries.append(sql_controls_code)
+
+                else:
+                    raise Exception('Invalid selector type')
+
+            column_sql_query = ' union distinct '.join(subqueries)
 
             all_columns_sql_queries.append(column_sql_query)
 
@@ -813,7 +850,7 @@ class Pheno2SQL(DBAccess):
     def query_yaml(self, yaml_file, section, order_by_table=None):
         if section in ('fields', 'covariates'):
             return self.query_yaml_fields(yaml_file, section, order_by_table)
-        elif section == 'case_control':
-            return self.query_yaml_case_control(yaml_file, order_by_table)
+        elif section == 'data':
+            return self.query_yaml_categorized_data(yaml_file, order_by_table)
         else:
             raise ValueError('Invalid section value')

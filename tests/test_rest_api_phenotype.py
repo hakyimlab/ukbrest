@@ -1715,10 +1715,11 @@ class TestRestApiPhenotype(DBTest):
         samples_filters:
           - c34_0_0  >= -5
         
-        case_control:
-          - disease0:
-            - 84:
-              - coding: [N308]
+        data:
+          disease0:
+            case_control:
+              84:
+                coding: [N308]
         """
 
         N_EXPECTED_SAMPLES = 6
@@ -1729,7 +1730,7 @@ class TestRestApiPhenotype(DBTest):
         response = self.app.post('/ukbrest/api/v1.0/query', data=
         {
             'file': (io.BytesIO(yaml_data), 'data.yaml'),
-            'section': 'case_control',
+            'section': 'data',
         }, headers={'accept': 'text/bgenie'})
 
         # Validate
@@ -1764,10 +1765,11 @@ class TestRestApiPhenotype(DBTest):
         samples_filters:
           - c34_0_0  >= -5
 
-        case_control:
-          - disease0:
-            - 84:
-              - coding: [E103]
+        data:
+          disease0:
+            case_control:
+              84:
+                coding: [E103]
         """
 
         N_EXPECTED_SAMPLES = 6
@@ -1778,7 +1780,7 @@ class TestRestApiPhenotype(DBTest):
         response = self.app.post('/ukbrest/api/v1.0/query', data=
         {
             'file': (io.BytesIO(yaml_data), 'data.yaml'),
-            'section': 'case_control',
+            'section': 'data',
         }, headers={'accept': 'text/bgenie'})
 
         # Validate
@@ -1813,10 +1815,11 @@ class TestRestApiPhenotype(DBTest):
         samples_filters:
           - c31_0_0  > '2001-01-01'
 
-        case_control:
-          - disease0:
-            - 84:
-              - coding: [E103]
+        data:
+          disease0:
+            case_control:
+              84:
+                coding: [E103]
         """
 
         N_EXPECTED_SAMPLES = 6
@@ -1827,7 +1830,7 @@ class TestRestApiPhenotype(DBTest):
         response = self.app.post('/ukbrest/api/v1.0/query', data=
         {
             'file': (io.BytesIO(yaml_data), 'data.yaml'),
-            'section': 'case_control',
+            'section': 'data',
         }, headers={'accept': 'text/bgenie'})
 
         # Validate
@@ -1862,10 +1865,11 @@ class TestRestApiPhenotype(DBTest):
         samples_filters:
           - c31_0_0 is null or c31_0_0  > '2001-01-01'
 
-        case_control:
-          - disease0:
-            - 84:
-              - coding: [E103]
+        data:
+          disease0:
+            case_control:
+              84:
+                coding: [E103]
         """
 
         N_EXPECTED_SAMPLES = 6
@@ -1876,7 +1880,7 @@ class TestRestApiPhenotype(DBTest):
         response = self.app.post('/ukbrest/api/v1.0/query', data=
         {
             'file': (io.BytesIO(yaml_data), 'data.yaml'),
-            'section': 'case_control',
+            'section': 'data',
         }, headers={'accept': 'text/bgenie'})
 
         # Validate
@@ -1912,10 +1916,11 @@ class TestRestApiPhenotype(DBTest):
           - c31_0_0 is null or c31_0_0  > '2001-01-01'
           - c21_2_0 not like '%%obab%%'
 
-        case_control:
-          - disease0:
-            - 84:
-              - coding: [E103]
+        data:
+          disease0:
+            case_control:
+              84:
+                coding: [E103]
         """
 
         N_EXPECTED_SAMPLES = 6
@@ -1926,7 +1931,7 @@ class TestRestApiPhenotype(DBTest):
         response = self.app.post('/ukbrest/api/v1.0/query', data=
         {
             'file': (io.BytesIO(yaml_data), 'data.yaml'),
-            'section': 'case_control',
+            'section': 'data',
         }, headers={'accept': 'text/bgenie'})
 
         # Validate
@@ -1962,10 +1967,11 @@ class TestRestApiPhenotype(DBTest):
           - c21_1_0 not like '%%respo%%'
           - c47_0_0 > 0
 
-        case_control:
-          - disease0:
-            - 84:
-              - coding: [Q750]
+        data:
+          disease0:
+            case_control:
+              84:
+                coding: [Q750]
         """
 
         N_EXPECTED_SAMPLES = 6
@@ -1976,7 +1982,7 @@ class TestRestApiPhenotype(DBTest):
         response = self.app.post('/ukbrest/api/v1.0/query', data=
         {
             'file': (io.BytesIO(yaml_data), 'data.yaml'),
-            'section': 'case_control',
+            'section': 'data',
         }, headers={'accept': 'text/bgenie'})
 
         # Validate
@@ -2012,10 +2018,11 @@ class TestRestApiPhenotype(DBTest):
           - lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
           - eid not in (select eid from events where field_id = 84 and event in ('Q750'))
     
-        case_control:
-          - disease0:
-            - 85:
-              - coding: [1114]
+        data:
+          disease0:
+            case_control:
+              85:
+                coding: [1114]
         """
 
         N_EXPECTED_SAMPLES = 6
@@ -2026,7 +2033,7 @@ class TestRestApiPhenotype(DBTest):
         response = self.app.post('/ukbrest/api/v1.0/query', data=
         {
             'file': (io.BytesIO(yaml_data), 'data.yaml'),
-            'section': 'case_control',
+            'section': 'data',
         }, headers={'accept': 'text/bgenie'})
 
         # Validate
@@ -2062,10 +2069,11 @@ class TestRestApiPhenotype(DBTest):
           - lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
           - eid not in (select eid from events where field_id = 84 and event in ('Q750'))
 
-        case_control:
-          - another_disease_name:
-            - 85:
-              - coding: [1114]
+        data:
+          another_disease_name:
+            case_control:
+              85:
+                coding: [1114]
         """
 
         N_EXPECTED_SAMPLES = 6
@@ -2076,7 +2084,7 @@ class TestRestApiPhenotype(DBTest):
         response = self.app.post('/ukbrest/api/v1.0/query', data=
         {
             'file': (io.BytesIO(yaml_data), 'data.yaml'),
-            'section': 'case_control',
+            'section': 'data',
         }, headers={'accept': 'text/bgenie'})
 
         # Validate
@@ -2112,10 +2120,11 @@ class TestRestApiPhenotype(DBTest):
           - lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
           - eid not in (select eid from events where field_id = 84 and event in ('Q750'))
 
-        case_control:
-          - another_disease_name:
-            - 85:
-              - coding: 1114
+        data:
+          another_disease_name:
+            case_control:
+              85:
+                coding: 1114
         """
 
         N_EXPECTED_SAMPLES = 6
@@ -2126,7 +2135,7 @@ class TestRestApiPhenotype(DBTest):
         response = self.app.post('/ukbrest/api/v1.0/query', data=
         {
             'file': (io.BytesIO(yaml_data), 'data.yaml'),
-            'section': 'case_control',
+            'section': 'data',
         }, headers={'accept': 'text/bgenie'})
 
         # Validate
@@ -2162,10 +2171,11 @@ class TestRestApiPhenotype(DBTest):
           - lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
           - eid not in (select eid from events where field_id = 84 and event in ('Q750'))
 
-        case_control:
-          - another_disease_name:
-            - 85:
-              - coding: 1114
+        data:
+          another_disease_name:
+            case_control:
+              85:
+                coding: 1114
         """
 
         N_EXPECTED_SAMPLES = 4
@@ -2176,7 +2186,7 @@ class TestRestApiPhenotype(DBTest):
         response = self.app.post('/ukbrest/api/v1.0/query', data=
         {
             'file': (io.BytesIO(yaml_data), 'data.yaml'),
-            'section': 'case_control',
+            'section': 'data',
         }, headers={'accept': 'text/csv'})
 
         # Validate
@@ -2211,10 +2221,11 @@ class TestRestApiPhenotype(DBTest):
         samples_filters:
           - lower(c21_2_0) in ('yes', 'no', 'maybe')
 
-        case_control:
-          - another_disease_name:
-            - 85:
-              - coding: [1114, 1701]
+        data:
+          another_disease_name:
+            case_control:
+              85:
+                coding: [1114, 1701]
         """
 
         N_EXPECTED_SAMPLES = 6
@@ -2225,7 +2236,7 @@ class TestRestApiPhenotype(DBTest):
         response = self.app.post('/ukbrest/api/v1.0/query', data=
         {
             'file': (io.BytesIO(yaml_data), 'data.yaml'),
-            'section': 'case_control',
+            'section': 'data',
         }, headers={'accept': 'text/bgenie'})
 
         # Validate
@@ -2260,10 +2271,11 @@ class TestRestApiPhenotype(DBTest):
         samples_filters:
           - lower(c21_2_0) in ('yes', 'no', 'maybe')
 
-        case_control:
-          - another_disease_name:
-            - 85:
-              - coding: [1114, 1701]
+        data:
+          another_disease_name:
+            case_control:
+              85:
+                coding: [1114, 1701]
         """
 
         # text/csv does not fetch all samples in 'samples' table by default
@@ -2275,7 +2287,7 @@ class TestRestApiPhenotype(DBTest):
         response = self.app.post('/ukbrest/api/v1.0/query', data=
         {
             'file': (io.BytesIO(yaml_data), 'data.yaml'),
-            'section': 'case_control',
+            'section': 'data',
         }, headers={'accept': 'text/csv'})
 
         # Validate
@@ -2312,12 +2324,13 @@ class TestRestApiPhenotype(DBTest):
         samples_filters:
           - c21_2_0 is null or lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
 
-        case_control:
-          - another_disease_name:
-            - 85:
-              - coding: [978, 1701]
-            - 84:
-              - coding: [Z876, Z678]
+        data:
+          another_disease_name:
+            case_control:
+              85:
+                coding: [978, 1701]
+              84:
+                coding: [Z876, Z678]
         """
 
         N_EXPECTED_SAMPLES = 6
@@ -2328,7 +2341,7 @@ class TestRestApiPhenotype(DBTest):
         response = self.app.post('/ukbrest/api/v1.0/query', data=
         {
             'file': (io.BytesIO(yaml_data), 'data.yaml'),
-            'section': 'case_control',
+            'section': 'data',
         }, headers={'accept': 'text/bgenie'})
 
         # Validate
@@ -2365,12 +2378,13 @@ class TestRestApiPhenotype(DBTest):
         samples_filters:
           - c21_2_0 is null or lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
 
-        case_control:
-          - another_disease_name:
-            - 85:
-              - coding: [978, 1701]
-            - 84:
-              - coding: [Z876, Z678]
+        data:
+          another_disease_name:
+            case_control:
+              85:
+                coding: [978, 1701]
+              84:
+                coding: [Z876, Z678]
         """
 
         N_EXPECTED_SAMPLES = 7
@@ -2381,7 +2395,7 @@ class TestRestApiPhenotype(DBTest):
         response = self.app.post('/ukbrest/api/v1.0/query', data=
         {
             'file': (io.BytesIO(yaml_data), 'data.yaml'),
-            'section': 'case_control',
+            'section': 'data',
         }, headers={'accept': 'text/csv'})
 
         # Validate
@@ -2419,12 +2433,13 @@ class TestRestApiPhenotype(DBTest):
         samples_filters:
           - 1 = 1
 
-        case_control:
-          - another_disease_name:
-            - 85:
-              - coding: [978, 1701]
-            - 84:
-              - coding: [Z876, Z678]
+        data:
+          another_disease_name:
+            case_control:
+              85:
+                coding: [978, 1701]
+              84:
+                coding: [Z876, Z678]
         """
 
         N_EXPECTED_SAMPLES = 6
@@ -2435,7 +2450,7 @@ class TestRestApiPhenotype(DBTest):
         response = self.app.post('/ukbrest/api/v1.0/query', data=
         {
             'file': (io.BytesIO(yaml_data), 'data.yaml'),
-            'section': 'case_control',
+            'section': 'data',
         }, headers={'accept': 'text/bgenie'})
 
         # Validate
@@ -2473,12 +2488,13 @@ class TestRestApiPhenotype(DBTest):
         samples_filters:
           - 1 = 1
 
-        case_control:
-          - another_disease_name:
-            - 85:
-              - coding: [978, 1701]
-            - 84:
-              - coding: [Z876, Z678]
+        data:
+          another_disease_name:
+            case_control:
+              85:
+                coding: [978, 1701]
+              84:
+                coding: [Z876, Z678]
         """
 
         N_EXPECTED_SAMPLES = 7
@@ -2489,7 +2505,7 @@ class TestRestApiPhenotype(DBTest):
         response = self.app.post('/ukbrest/api/v1.0/query', data=
         {
             'file': (io.BytesIO(yaml_data), 'data.yaml'),
-            'section': 'case_control',
+            'section': 'data',
         }, headers={'accept': 'text/csv'})
 
         # Validate
@@ -2524,12 +2540,13 @@ class TestRestApiPhenotype(DBTest):
         # in this case the filters are not necessary, but it is forced to avoid a problem with joining that will
         # be tested in another unit test
         yaml_data = b"""
-        case_control:
-          - another_disease_name:
-            - 85:
-              - coding: [978, 1701]
-            - 84:
-              - coding: [Z876, Z678]
+        data:
+          another_disease_name:
+            case_control:
+              85:
+                coding: [978, 1701]
+              84:
+                coding: [Z876, Z678]
         """
 
         N_EXPECTED_SAMPLES = 7
@@ -2540,7 +2557,7 @@ class TestRestApiPhenotype(DBTest):
         response = self.app.post('/ukbrest/api/v1.0/query', data=
         {
             'file': (io.BytesIO(yaml_data), 'data.yaml'),
-            'section': 'case_control',
+            'section': 'data',
         }, headers={'accept': 'text/csv'})
 
         # Validate
@@ -2578,18 +2595,21 @@ class TestRestApiPhenotype(DBTest):
           - lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
           - c34_0_0 > -10
 
-        case_control:
-          - another_disease_name:
-            - 85:
-              - coding: [978, 1701]
-            - 84:
-              - coding: [Z876, Z678]
-          - second_column:
-            - 85:
-              - coding: 1114
-          - third_column:
-            - 84:
-              - coding: [E103, Z678]
+        data:
+          another_disease_name:
+            case_control:
+              85:
+                coding: [978, 1701]
+              84:
+                coding: [Z876, Z678]
+          second_column:
+            case_control:
+              85:
+                coding: 1114
+          third_column:
+            case_control:
+              84:
+                coding: [E103, Z678]
         """
 
         N_EXPECTED_SAMPLES = 6
@@ -2600,7 +2620,7 @@ class TestRestApiPhenotype(DBTest):
         response = self.app.post('/ukbrest/api/v1.0/query', data=
         {
             'file': (io.BytesIO(yaml_data), 'data.yaml'),
-            'section': 'case_control',
+            'section': 'data',
         }, headers={'accept': 'text/bgenie'})
 
         # Validate
@@ -2654,18 +2674,21 @@ class TestRestApiPhenotype(DBTest):
           - lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
           - c34_0_0 > -10
 
-        case_control:
-          - another_disease_name:
-            - 85:
-              - coding: [978, 1701]
-            - 84:
-              - coding: [Z876, Z678]
-          - second_column:
-            - 85:
-              - coding: 1114
-          - third_column:
-            - 84:
-              - coding: [E103, Z678]
+        data:
+          another_disease_name:
+            case_control:
+              85:
+                coding: [978, 1701]
+              84:
+                coding: [Z876, Z678]
+          second_column:
+            case_control:
+              85:
+                coding: 1114
+          third_column:
+            case_control:
+              84:
+                coding: [E103, Z678]
         """
 
         N_EXPECTED_SAMPLES = 4
@@ -2676,7 +2699,7 @@ class TestRestApiPhenotype(DBTest):
         response = self.app.post('/ukbrest/api/v1.0/query', data=
         {
             'file': (io.BytesIO(yaml_data), 'data.yaml'),
-            'section': 'case_control',
+            'section': 'data',
         }, headers={'accept': 'text/csv'})
 
         # Validate
@@ -2708,64 +2731,63 @@ class TestRestApiPhenotype(DBTest):
         assert pheno_file.loc[1000020, 'third_column'] == '1'  # 1000020
         assert pheno_file.loc[1000070, 'third_column'] == '1'  # 1000070
 
+    def test_phenotype_query_yaml_disease_sql_alone_csv(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        # in this case the filters are not necessary, but it is forced to avoid a problem with joining that will
+        # be tested in another unit test
+        yaml_data = b"""
+        samples_filters:
+          - lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
+          - c34_0_0 is null or c34_0_0 > -10
+
+        data:
+          mydisease:
+            sql:
+              1: c46_0_0 > 0
+              0: c46_0_0 < 0
+        """
+
+        N_EXPECTED_SAMPLES = 4
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'data',
+        }, headers={'accept': 'text/csv'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), header=0,
+                                 index_col='eid', dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 1), pheno_file.shape
+
+        expected_columns = ['mydisease']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[1000050, 'mydisease'] == '1'  # 1000050
+        assert pheno_file.loc[1000030, 'mydisease'] == '0'  # 1000030
+        assert pheno_file.loc[1000020, 'mydisease'] == '0'  # 1000020
+        assert pheno_file.loc[1000070, 'mydisease'] == '1'  # 1000070
+
+
+#TODO: sql alone
+#TODO: sql conflicting cases and controls
+#TODO: sql with other columns
+
+
 #TODO emulate the phenotype I need to fetch with asthma: check null in phenotype definition, many columns, etc
-#TODO pheno2sql has a hardcode to samples table, it should be able to left join a table with all eids I think
-
-
-    # def test_phenotype_query_yaml_disease_by_node_id_bgenie(self):
-    #     # Prepare
-    #     self.setUp('pheno2sql/example13/example13_diseases.csv',
-    #                bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
-    #                sql_chunksize=2, n_columns_per_table=2)
-    #
-    #     coding_dir = get_repository_path('postloader/codings05')
-    #     pl = Postloader(POSTGRESQL_ENGINE)
-    #     pl.load_codings(coding_dir)
-    #
-    #     yaml_data = b"""
-    #     samples_include_only:
-    #       - c34_0_0  >= -5
-    #
-    #     case_control:
-    #       - disease0:
-    #         - 84:
-    #           - node_id: [1501]
-    #     """
-    #
-    #     N_EXPECTED_SAMPLES = 5
-    #
-    #     #
-    #     # Ask fields
-    #     #
-    #     response = self.app.post('/ukbrest/api/v1.0/query', data=
-    #     {
-    #         'file': (io.BytesIO(yaml_data), 'data.yaml'),
-    #         'section': 'case_control',
-    #     }, headers={'accept': 'text/bgenie'})
-    #
-    #     # Validate
-    #     assert response.status_code == 200, response.status_code
-    #
-    #     pheno_file = pd.read_table(io.StringIO(response.data.decode('utf-8')), sep=' ', header=0,
-    #                                dtype=str, na_values='', keep_default_na=False)
-    #
-    #     assert pheno_file is not None
-    #     assert not pheno_file.empty
-    #     assert pheno_file.shape == (N_EXPECTED_SAMPLES, 1), pheno_file.shape
-    #
-    #     expected_columns = ['disease0']
-    #     assert len(pheno_file.columns) == len(expected_columns)
-    #     assert all(x in expected_columns for x in pheno_file.columns)
-    #
-    #     assert pheno_file.loc[0, 'disease0'] == '0'  # 1000050
-    #     assert pheno_file.loc[1, 'disease0'] == 'NA'  # 1000030
-    #     assert pheno_file.loc[2, 'disease0'] == '1'  # 1000040
-    #     assert pheno_file.loc[3, 'disease0'] == 'NA'  # 1000010
-    #     assert pheno_file.loc[4, 'disease0'] == '1'  # 1000020
-    #     # 1000060 is "not genotyped" (it is not listed in BGEN's samples file)
-
-# TODO filter including tables with null values (test inner and outer joins)
-
-
-# TODO coding and node_id together
-# TODO node_id means recursive, coding means flat; test recursive
+#TODO filter including tables with null values (test inner and outer joins)
+#TODO coding and node_id together
+#TODO node_id means recursive, coding means flat; test recursive
