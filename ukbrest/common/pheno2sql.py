@@ -659,7 +659,7 @@ class Pheno2SQL(DBAccess):
 
             final_sql_query = outer_sql
 
-        print(final_sql_query)
+        logger.debug(final_sql_query)
 
         results_iterator = pd.read_sql(
             final_sql_query, self._get_db_engine(), index_col='eid', chunksize=self.sql_chunksize
@@ -740,10 +740,7 @@ class Pheno2SQL(DBAccess):
             where_fields = self._get_fields_from_statements([where_st])
 
         for column, column_dict in yaml_file['data'].items():
-            # column = list(column_dict.keys())[0]
             all_columns.append(column)
-            # columns_list = list(yaml_file['case_control'][0].keys())
-            # column = columns_list[0]
 
             subqueries = []
 
@@ -763,8 +760,8 @@ class Pheno2SQL(DBAccess):
                         """.format(
                                 cat_code=cat_code,
                                 column_name=column,
-                                cases_joins=self._create_joins(needed_tables),
-                                where_st='where ({}) AND ({})'.format(cat_condition, where_st)
+                                cases_joins=self._create_joins(needed_tables + [ALL_EIDS_TABLE]),
+                                where_st='where ({}) {}'.format(cat_condition, (' AND ({})'.format(where_st) if where_st else ''))
                         )
 
                         subqueries.append(sql_code)

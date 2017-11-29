@@ -2781,11 +2781,174 @@ class TestRestApiPhenotype(DBTest):
         assert pheno_file.loc[1000020, 'mydisease'] == '0'  # 1000020
         assert pheno_file.loc[1000070, 'mydisease'] == '1'  # 1000070
 
+    @nottest
+    def test_phenotype_query_yaml_disease_sql_conflicting_duplicated_samples_csv(self):
+        """We should check if there are repeted eid values, like in this case, due to bad specification of conditions
+        for categories"""
 
-#TODO: sql alone
-#TODO: sql conflicting cases and controls
-#TODO: sql with other columns
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
 
+        # in this case the filters are not necessary, but it is forced to avoid a problem with joining that will
+        # be tested in another unit test
+        yaml_data = b"""
+        samples_filters:
+          - lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
+          - c34_0_0 is null or c34_0_0 > -10
+
+        data:
+          mydisease:
+            sql:
+              1: c46_0_0 >= 1
+              0: c46_0_0 <= 1
+        """
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'data',
+        }, headers={'accept': 'text/csv'})
+
+        # Validate
+        assert response.status_code == 400, response.status_code
+
+    def test_phenotype_query_yaml_disease_sql_with_many_columns_csv(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        # Here I emulate case_control with sql
+        yaml_data = b"""
+        samples_filters:
+          - lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
+          - c34_0_0 > -10
+
+        data:
+          another_disease_name:
+            sql:
+              1: >
+                eid in (select eid from events where field_id = 85 and event in ('978', '1701'))
+                OR
+                eid in (select eid from events where field_id = 84 and event in ('Z876', 'Z678'))
+              0: >
+                eid not in (
+                  (select eid from events where field_id = 85 and event in ('978', '1701'))
+                  union
+                  (select eid from events where field_id = 84 and event in ('Z876', 'Z678'))
+                )
+          second_column:
+            case_control:
+              85:
+                coding: 1114
+          third_column:
+            case_control:
+              84:
+                coding: [E103, Z678]
+        """
+
+        N_EXPECTED_SAMPLES = 4
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'data',
+        }, headers={'accept': 'text/csv'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), header=0,
+                                 index_col='eid', dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 3), pheno_file.shape
+
+        expected_columns = ['another_disease_name', 'second_column', 'third_column']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[1000050, 'another_disease_name'] == '1'  # 1000050
+        assert pheno_file.loc[1000030, 'another_disease_name'] == '1'  # 1000030
+        assert pheno_file.loc[1000020, 'another_disease_name'] == '0'  # 1000020
+        assert pheno_file.loc[1000070, 'another_disease_name'] == '1'  # 1000070
+
+        assert pheno_file.loc[1000050, 'second_column'] == '1'  # 1000050
+        assert pheno_file.loc[1000030, 'second_column'] == '0'  # 1000030
+        assert pheno_file.loc[1000020, 'second_column'] == '1'  # 1000020
+        assert pheno_file.loc[1000070, 'second_column'] == '0'  # 1000070
+
+        assert pheno_file.loc[1000050, 'third_column'] == '1'  # 1000050
+        assert pheno_file.loc[1000030, 'third_column'] == '0'  # 1000030
+        assert pheno_file.loc[1000020, 'third_column'] == '1'  # 1000020
+        assert pheno_file.loc[1000070, 'third_column'] == '1'  # 1000070
+
+    def test_phenotype_query_yaml_disease_sql_no_filters_csv(self):
+        """This test forces a global table to obtain eid from for controls"""
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        # in this case the filters are not necessary, but it is forced to avoid a problem with joining that will
+        # be tested in another unit test
+        yaml_data = b"""
+        data:
+          another_disease_name:
+            sql:
+              1: >
+                eid in (select eid from events where field_id = 85 and event in ('978', '1701'))
+                OR
+                eid in (select eid from events where field_id = 84 and event in ('Z876', 'Z678'))
+              0: >
+                eid not in (
+                  (select eid from events where field_id = 85 and event in ('978', '1701'))
+                  union
+                  (select eid from events where field_id = 84 and event in ('Z876', 'Z678'))
+                )
+        """
+
+        N_EXPECTED_SAMPLES = 7
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'data',
+        }, headers={'accept': 'text/csv'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), header=0,
+                                 index_col='eid', dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 1), pheno_file.shape
+
+        expected_columns = ['another_disease_name']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[1000050, 'another_disease_name'] == '1'  # 1000050
+        assert pheno_file.loc[1000030, 'another_disease_name'] == '1'  # 1000030
+        assert pheno_file.loc[1000040, 'another_disease_name'] == '0'  # 1000040
+        assert pheno_file.loc[1000010, 'another_disease_name'] == '1'  # 1000010
+        assert pheno_file.loc[1000020, 'another_disease_name'] == '0'  # 1000020
+        assert pheno_file.loc[1000070, 'another_disease_name'] == '1'  # 1000070
+        assert pheno_file.loc[1000060, 'another_disease_name'] == '1'  # 1000060
 
 #TODO emulate the phenotype I need to fetch with asthma: check null in phenotype definition, many columns, etc
 #TODO filter including tables with null values (test inner and outer joins)
