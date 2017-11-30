@@ -1,6 +1,7 @@
 import os
 from subprocess import call
 import unittest
+from nose.tools import nottest
 
 from tests.utils import get_full_path, get_repository_path
 
@@ -15,6 +16,7 @@ class LoadDataTest(unittest.TestCase):
         
         super(LoadDataTest, self).setUp()
 
+    @nottest
     def test_basic_call(self):
         os.environ[GENOTYPE_PATH_ENV] = get_repository_path('pheno2sql/example12/')
         os.environ[PHENOTYPE_PATH] = get_repository_path('pheno2sql/example12/')
