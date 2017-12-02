@@ -1,9 +1,9 @@
 import os
 import tempfile
+import unittest
 
 import numpy as np
 import pandas as pd
-from nose.tools import nottest
 from sqlalchemy import create_engine
 
 from tests.settings import POSTGRESQL_ENGINE, SQLITE_ENGINE
@@ -12,7 +12,7 @@ from ukbrest.common.pheno2sql import Pheno2SQL
 
 
 class Pheno2SQLTest(DBTest):
-    @nottest
+    @unittest.skip('sqlite being removed')
     def test_sqlite_default_values(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example01.csv')
@@ -130,7 +130,7 @@ class Pheno2SQLTest(DBTest):
         ## Check that temporary files were deleted
         assert len(os.listdir(temp_dir)) == 0
 
-    @nottest
+    @unittest.skip('sqlite being removed')
     def test_sqlite_less_columns_per_table(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example01.csv')
@@ -298,7 +298,7 @@ class Pheno2SQLTest(DBTest):
         ## Check that temporary is now clean
         assert len(os.listdir('/tmp/custom/directory/here')) == 0
 
-    @nottest
+    @unittest.skip('sqlite being removed')
     def test_sqlite_auxiliary_table_is_created(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example01.csv')
@@ -677,7 +677,7 @@ class Pheno2SQLTest(DBTest):
         assert tmp.loc[3, 'c140_0_0'].strftime('%Y-%m-%d') == '1997-04-15'
         assert pd.isnull(tmp.loc[3, 'c150_0_0'])
 
-    @nottest
+    @unittest.skip('sqlite being removed')
     def test_sqlite_query_single_table(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example02.csv')
@@ -802,7 +802,7 @@ class Pheno2SQLTest(DBTest):
         assert query_result.loc[4, 'c48_0_0'].strftime('%Y-%m-%d') == '1990-02-15'
         assert query_result.loc[5, 'c48_0_0'].strftime('%Y-%m-%d') == '1999-10-11'
 
-    @nottest
+    @unittest.skip('sqlite being removed')
     def test_sqlite_query_multiple_tables(self):
         # RIGHT and FULL OUTER JOINs are not currently supported
 
@@ -986,7 +986,7 @@ class Pheno2SQLTest(DBTest):
         assert pd.isnull(query_result.loc[4, 'c150_0_0'])
         assert pd.isnull(query_result.loc[5, 'c150_0_0'])
 
-    @nottest
+    @unittest.skip('sqlite being removed')
     def test_sqlite_query_custom_columns(self):
         # SQLite is very limited when selecting variables, renaming, doing math operations, etc
         pass
@@ -1036,7 +1036,7 @@ class Pheno2SQLTest(DBTest):
         assert query_result.loc[3, 'c47_squared'].round(5) == round((-5.32471) ** 2, 5)
         assert query_result.loc[4, 'c47_squared'].round(5) == round(55.19832 ** 2, 5)
 
-    @nottest
+    @unittest.skip('sqlite being removed')
     def test_sqlite_query_single_filter(self):
         # RIGHT and FULL OUTER JOINs are not currently supported
 
@@ -1109,7 +1109,7 @@ class Pheno2SQLTest(DBTest):
         assert query_result.loc[1, 'c47_0_0'].round(5) == 45.55412
         assert query_result.loc[4, 'c47_0_0'].round(5) == 55.19832
 
-    @nottest
+    @unittest.skip('sqlite being removed')
     def test_sqlite_query_multiple_and_filter(self):
         # 'RIGHT and FULL OUTER JOINs are not currently supported'
 
@@ -1185,7 +1185,7 @@ class Pheno2SQLTest(DBTest):
         assert query_result.loc[1, 'c48_0_0'].strftime('%Y-%m-%d') == '2011-08-14'
         assert query_result.loc[2, 'c48_0_0'].strftime('%Y-%m-%d') == '2016-11-30'
 
-    @nottest
+    @unittest.skip('sqlite being removed')
     def test_sqlite_float_is_empty(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example03.csv')
@@ -1672,7 +1672,6 @@ class Pheno2SQLTest(DBTest):
         assert len(columns) == 2
         assert 'eid' in columns
         assert 'index' in columns
-
 
     def test_postgresql_events_tables_only_one_instance_filled(self):
         # Prepare
