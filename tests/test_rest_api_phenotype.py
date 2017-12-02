@@ -4,12 +4,10 @@ import unittest
 
 from ukbrest import app
 import pandas as pd
-from nose.tools import nottest
 
 from tests.settings import POSTGRESQL_ENGINE
 from tests.utils import get_repository_path, DBTest
 from ukbrest.common.pheno2sql import Pheno2SQL
-from ukbrest.common.postloader import Postloader
 
 
 class TestRestApiPhenotype(DBTest):
@@ -1382,6 +1380,101 @@ class TestRestApiPhenotype(DBTest):
         assert pheno_file is not None
         assert not pheno_file.empty
         assert pheno_file.shape == (N_EXPECTED_SAMPLES, 2 + 1) # plus IID
+
+        assert pheno_file.index.name == 'FID'
+        assert all(x in pheno_file.index for x in (1000010, 1000040))
+
+        expected_columns = ['IID'] + ['field_name_34', 'field_name_47']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+        # column order
+        assert pheno_file.columns.tolist()[0] == 'IID'
+
+        assert pheno_file.loc[1000010, 'IID'] == '1000010'
+        assert pheno_file.loc[1000010, 'field_name_34'] == '-33'
+        assert pheno_file.loc[1000010, 'field_name_47'] == '41.55312'
+
+        assert pheno_file.loc[1000040, 'IID'] == '1000040'
+        assert pheno_file.loc[1000040, 'field_name_34'] == '3'
+        assert pheno_file.loc[1000040, 'field_name_47'] == '5.20832'
+
+    def test_phenotype_query_yaml_filter_samples_condition_breaking_for_fields_and_covariates(self):
+        # Prepare
+        self.setUp('pheno2sql/example10/example10_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example10/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        yaml_data = b"""
+        samples_filters:
+          - c47_0_0 > 0
+          - c46_0_0 < 0 or c46_0_0 = 4 or c46_0_0 = 1
+
+        covariates:
+          - field_name_34: c34_0_0 
+          - field_name_47: c47_0_0
+
+        fields:
+          - instance0: c21_0_0
+          - instance1: c21_1_0 
+          - instance2: c21_2_0 
+        """
+
+        N_EXPECTED_SAMPLES = 2
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'fields',
+        })
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', index_col='FID', dtype=str,
+                                 na_values='', keep_default_na=False)
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 3 + 1), pheno_file.shape  # plus IID
+
+        assert pheno_file.index.name == 'FID'
+        assert all(x in pheno_file.index for x in (1000010, 1000040)), pheno_file.index.tolist()
+
+        expected_columns = ['IID'] + ['instance0', 'instance1', 'instance2']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+        # column order
+        assert pheno_file.columns.tolist()[0] == 'IID'
+
+        assert pheno_file.loc[1000010, 'IID'] == '1000010'
+        assert pheno_file.loc[1000010, 'instance0'] == 'Option number 1'
+        assert pheno_file.loc[1000010, 'instance1'] == 'No response'
+        assert pheno_file.loc[1000010, 'instance2'] == 'Yes'
+
+        assert pheno_file.loc[1000040, 'IID'] == '1000040'
+        assert pheno_file.loc[1000040, 'instance0'] == 'Option number 4'
+        assert pheno_file.loc[1000040, 'instance1'] == "I don't know"
+        assert pheno_file.loc[1000040, 'instance2'] == 'NA'
+
+        #
+        # Ask covariates
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'covariates',
+        })
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', index_col='FID', dtype=str,
+                                 na_values='', keep_default_na=False)
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 2 + 1)  # plus IID
 
         assert pheno_file.index.name == 'FID'
         assert all(x in pheno_file.index for x in (1000010, 1000040))
@@ -2781,11 +2874,8 @@ class TestRestApiPhenotype(DBTest):
         assert pheno_file.loc[1000020, 'mydisease'] == '0'  # 1000020
         assert pheno_file.loc[1000070, 'mydisease'] == '1'  # 1000070
 
-    @nottest
+    @unittest.skip("We should check if there are repeated eid values, like in this case, due to bad specification of conditions for categories")
     def test_phenotype_query_yaml_disease_sql_conflicting_duplicated_samples_csv(self):
-        """We should check if there are repeted eid values, like in this case, due to bad specification of conditions
-        for categories"""
-
         # Prepare
         self.setUp('pheno2sql/example13/example13_diseases.csv',
                    bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
@@ -2949,6 +3039,55 @@ class TestRestApiPhenotype(DBTest):
         assert pheno_file.loc[1000020, 'another_disease_name'] == '0'  # 1000020
         assert pheno_file.loc[1000070, 'another_disease_name'] == '1'  # 1000070
         assert pheno_file.loc[1000060, 'another_disease_name'] == '1'  # 1000060
+
+    def test_phenotype_query_yaml_samples_filters_condition_breaking_for_data(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        # in this case there is an or condition that could break all if it is not surrounding by ()
+        yaml_data = b"""
+        samples_filters:
+          - lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
+          - c34_0_0 is null or c34_0_0 > -10 or c34_0_0 > -11
+
+        data:
+          mydisease:
+            sql:
+              1: c46_0_0 > 0
+              0: c46_0_0 < 0
+        """
+
+        N_EXPECTED_SAMPLES = 4
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'data',
+        }, headers={'accept': 'text/csv'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), header=0,
+                                 index_col='eid', dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, 1), pheno_file.shape
+
+        expected_columns = ['mydisease']
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[1000050, 'mydisease'] == '1'  # 1000050
+        assert pheno_file.loc[1000030, 'mydisease'] == '0'  # 1000030
+        assert pheno_file.loc[1000020, 'mydisease'] == '0'  # 1000020
+        assert pheno_file.loc[1000070, 'mydisease'] == '1'  # 1000070
 
 #TODO emulate the phenotype I need to fetch with asthma: check null in phenotype definition, many columns, etc
 #TODO filter including tables with null values (test inner and outer joins)

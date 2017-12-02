@@ -640,6 +640,10 @@ class Pheno2SQL(DBAccess):
 
         return int_columns
 
+    def _get_filterings(self, filter_statements):
+        return ' AND '.join('({})'.format(afilter) for afilter in filter_statements)
+
+
     def _query_generic(self, sql_query, order_by_dict=None, results_transformator=None):
         final_sql_query = sql_query
 
@@ -694,7 +698,7 @@ class Pheno2SQL(DBAccess):
         final_sql_query = base_sql.format(
             data_fields=','.join(all_columns),
             tables_join=self._create_joins(tables_needed_df, join_type='full outer join'),
-            where_statements=((' where ' + ' and '.join(filterings)) if filterings is not None else ''),
+            where_statements=((' where ' + self._get_filterings(filterings)) if filterings is not None else ''),
         )
 
         order_by_dict = None
@@ -736,7 +740,7 @@ class Pheno2SQL(DBAccess):
         where_st = ''
         where_fields = []
         if 'samples_filters' in yaml_file:
-            where_st = ' AND '.join('({})'.format(afilter) for afilter in yaml_file['samples_filters'])
+            where_st = self._get_filterings(yaml_file['samples_filters'])
             where_fields = self._get_fields_from_statements([where_st])
 
         for column, column_dict in yaml_file['data'].items():
