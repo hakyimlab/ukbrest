@@ -40,7 +40,7 @@ class Postloader(DBAccess):
 
             logger.info('Processing coding file: {}'.format(afile_base))
 
-            data = pd.read_table(afile, sep='\t+', na_filter=False)
+            data = pd.read_table(afile, sep='\t+', na_filter=False, engine='python')
 
             data_coding = int(splitext(afile_base)[0].split('_')[1])
             data['data_coding'] = data_coding

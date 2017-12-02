@@ -1,12 +1,13 @@
 import os
+
 import numpy as np
 import pandas as pd
 from sqlalchemy import create_engine
 
-from ukbrest.common.pheno2sql import Pheno2SQL
-from ukbrest.common.postloader import Postloader
 from tests.settings import POSTGRESQL_ENGINE
 from tests.utils import get_repository_path, DBTest
+from ukbrest.common.pheno2sql import Pheno2SQL
+from ukbrest.common.postloader import Postloader
 
 
 class PostloaderTest(DBTest):
