@@ -23,3 +23,12 @@ CREATE OR REPLACE FUNCTION get_children_codings(text, integer) RETURNS setof tex
     IMMUTABLE
     RETURNS NULL ON NULL INPUT;
 
+-- Takes an array of double values (ARRAY[0.2, 2.4, NULL, ...]) and returns the average of the non-null ones
+CREATE OR REPLACE FUNCTION array_avg(double precision[]) RETURNS double precision
+    AS '
+    SELECT avg(v) FROM unnest($1) g(v)
+    '
+    LANGUAGE SQL
+    IMMUTABLE
+    RETURNS NULL ON NULL INPUT;
+
