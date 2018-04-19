@@ -21,6 +21,7 @@ install:
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
+  - source /home/travis/miniconda/etc/profile.d/conda.sh
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
