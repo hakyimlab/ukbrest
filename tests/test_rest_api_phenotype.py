@@ -11,6 +11,27 @@ from ukbrest.common.pheno2sql import Pheno2SQL
 
 
 class TestRestApiPhenotype(DBTest):
+    def _make_yaml_request(self, yaml_def, section, n_expected_rows, expected_columns):
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_def), 'data.yaml'),
+            'section': section,
+        }, headers={'accept': 'text/csv'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), header=0,
+                                 index_col='eid', dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert pheno_file.shape == (n_expected_rows, len(expected_columns)), pheno_file.shape
+
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        return pheno_file
+
     def setUp(self, filename=None, load_data=True, wipe_database=True, **kwargs):
         if wipe_database:
             super(TestRestApiPhenotype, self).setUp()
@@ -1198,13 +1219,13 @@ class TestRestApiPhenotype(DBTest):
 
         yaml_data = b"""
         covariates:
-          - field_name_34: c34_0_0 
-          - field_name_47: c47_0_0
+          field_name_34: c34_0_0
+          field_name_47: c47_0_0
         
         fields:
-          - instance0: c21_0_0
-          - instance1: c21_1_0 
-          - instance2: c21_2_0 
+          instance0: c21_0_0
+          instance1: c21_1_0
+          instance2: c21_2_0
         """
 
         # Run
@@ -1260,13 +1281,13 @@ class TestRestApiPhenotype(DBTest):
 
         yaml_data = b"""
         covariates:
-          - field_name_34: c34_0_0 
-          - field_name_47: c47_0_0
+          field_name_34: c34_0_0 
+          field_name_47: c47_0_0
 
         fields:
-          - instance0: c21_0_0
-          - instance1: c21_1_0 
-          - instance2: c21_2_0 
+          instance0: c21_0_0
+          instance1: c21_1_0 
+          instance2: c21_2_0 
         """
 
         # Run
@@ -1315,13 +1336,13 @@ class TestRestApiPhenotype(DBTest):
           - c47_0_0  > 0
         
         covariates:
-          - field_name_34: c34_0_0 
-          - field_name_47: c47_0_0
+          field_name_34: c34_0_0 
+          field_name_47: c47_0_0
 
         fields:
-          - instance0: c21_0_0
-          - instance1: c21_1_0 
-          - instance2: c21_2_0 
+          instance0: c21_0_0
+          instance1: c21_1_0 
+          instance2: c21_2_0 
         """
 
         N_EXPECTED_SAMPLES = 2
@@ -1410,13 +1431,13 @@ class TestRestApiPhenotype(DBTest):
           - c46_0_0 < 0 or c46_0_0 = 4 or c46_0_0 = 1
 
         covariates:
-          - field_name_34: c34_0_0 
-          - field_name_47: c47_0_0
+          field_name_34: c34_0_0 
+          field_name_47: c47_0_0
 
         fields:
-          - instance0: c21_0_0
-          - instance1: c21_1_0 
-          - instance2: c21_2_0 
+          instance0: c21_0_0
+          instance1: c21_1_0 
+          instance2: c21_2_0 
         """
 
         N_EXPECTED_SAMPLES = 2
@@ -1504,13 +1525,13 @@ class TestRestApiPhenotype(DBTest):
           - c47_0_0  > 0
 
         covariates:
-          - field_name_34: c34_0_0 
-          - field_name_47: c47_0_0
+          field_name_34: c34_0_0 
+          field_name_47: c47_0_0
 
         fields:
-          - instance0: c21_0_0
-          - instance1: c21_1_0 
-          - instance2: c21_2_0 
+          instance0: c21_0_0
+          instance1: c21_1_0 
+          instance2: c21_2_0 
         """
 
         N_EXPECTED_SAMPLES = 5
@@ -1608,13 +1629,13 @@ class TestRestApiPhenotype(DBTest):
           - c47_0_0  > 0
 
         covariates:
-          - field_name_34: c34_0_0 
-          - field_name_47: c47_0_0
+          field_name_34: c34_0_0 
+          field_name_47: c47_0_0
 
         fields:
-          - instance0: c21_0_0
-          - instance1: c21_1_0 
-          - instance2: c21_2_0 
+          instance0: c21_0_0
+          instance1: c21_1_0 
+          instance2: c21_2_0 
         """
 
         N_EXPECTED_SAMPLES = 2
@@ -1690,13 +1711,13 @@ class TestRestApiPhenotype(DBTest):
           - c47_0_0  > 0
 
         covariates:
-          - field_name_34: c34_0_0 
-          - field_name_47: c47_0_0
+          field_name_34: c34_0_0 
+          field_name_47: c47_0_0
 
         fields:
-          - instance0: c21_0_0
-          - instance1: c21_1_0 
-          - instance2: c21_2_0 
+          instance0: c21_0_0
+          instance1: c21_1_0 
+          instance2: c21_2_0 
         """
 
         N_EXPECTED_SAMPLES = 5
@@ -1755,13 +1776,13 @@ class TestRestApiPhenotype(DBTest):
           - c47_0_0  > 0
 
         covariates:
-          - field_name_34: c34_0_0 
-          - field_name_47: c47_0_0
+          field_name_34: c34_0_0 
+          field_name_47: c47_0_0
 
         fields:
-          - instance0: c21_0_0
-          - instance1: c21_1_0 
-          - instance2: c21_2_0 
+          instance0: c21_0_0
+          instance1: c21_1_0 
+          instance2: c21_2_0 
         """
 
         N_EXPECTED_SAMPLES = 2
@@ -3089,7 +3110,262 @@ class TestRestApiPhenotype(DBTest):
         assert pheno_file.loc[1000020, 'mydisease'] == '0'  # 1000020
         assert pheno_file.loc[1000070, 'mydisease'] == '1'  # 1000070
 
-#TODO emulate the phenotype I need to fetch with asthma: check null in phenotype definition, many columns, etc
+    def test_phenotype_query_yaml_samples_including_numerical(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        # in this case there is an or condition that could break all if it is not surrounding by ()
+        yaml_data = b"""
+        samples_filters:
+          - lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
+          - c34_0_0 is null or c34_0_0 > -10 or c34_0_0 > -11
+
+        data:
+          continuous_data: c47_0_0
+        """
+
+        N_EXPECTED_SAMPLES = 5
+        expected_columns = ['continuous_data']
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'data',
+        }, headers={'accept': 'text/csv'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), header=0,
+                                 index_col='eid', dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, len(expected_columns)), pheno_file.shape
+
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[1000050, 'continuous_data'] == 'NA'
+        assert pheno_file.loc[1000030, 'continuous_data'] == '-35.31471'
+        assert pheno_file.loc[1000020, 'continuous_data'] == '-10.51461'
+        assert pheno_file.loc[1000060, 'continuous_data'] == '-0.5864'
+        assert pheno_file.loc[1000070, 'continuous_data'] == '3.5584'
+
+    def test_phenotype_query_yaml_samples_including_numerical_integer(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        # in this case there is an or condition that could break all if it is not surrounding by ()
+        yaml_data = b"""
+        samples_filters:
+          - lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
+          - c34_0_0 is null or c34_0_0 > -10 or c34_0_0 > -11
+
+        data:
+          integer_data:
+            (case when c46_0_0 < -5 then NULL else c46_0_0 end)
+        """
+
+        N_EXPECTED_SAMPLES = 5
+        expected_columns = ['integer_data']
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'data',
+        }, headers={'accept': 'text/csv'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), header=0,
+                                 index_col='eid', dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, len(expected_columns)), pheno_file.shape
+
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[1000050, 'integer_data'] == '1'
+        assert pheno_file.loc[1000030, 'integer_data'] == 'NA'
+        assert pheno_file.loc[1000020, 'integer_data'] == '-2'
+        assert pheno_file.loc[1000060, 'integer_data'] == 'NA'
+        assert pheno_file.loc[1000070, 'integer_data'] == '2'
+
+    def test_phenotype_query_yaml_samples_including_categorical_and_numerical(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        # in this case there is an or condition that could break all if it is not surrounding by ()
+        yaml_data = b"""
+        samples_filters:
+          - lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
+          - c34_0_0 is null or c34_0_0 > -10 or c34_0_0 > -11
+
+        data:
+          mydisease:
+            sql:
+              1: c46_0_0 > 0
+              0: c46_0_0 < 0
+        
+          third_column:
+            case_control:
+              84:
+                coding: [E103, Z678]
+          
+          continuous_data:
+            c47_0_0
+        
+          integer_data: (case when c46_0_0 < 0 then NULL else c46_0_0 end)
+        """
+
+        N_EXPECTED_SAMPLES = 5
+        expected_columns = ['mydisease', 'third_column', 'continuous_data', 'integer_data']
+
+        #
+        # Ask fields
+        #
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'data',
+        }, headers={'accept': 'text/csv'})
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), header=0,
+                                 index_col='eid', dtype=str, na_values='', keep_default_na=False)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (N_EXPECTED_SAMPLES, len(expected_columns)), pheno_file.shape
+
+        assert len(pheno_file.columns) == len(expected_columns)
+        assert all(x in expected_columns for x in pheno_file.columns)
+
+        assert pheno_file.loc[1000050, 'mydisease'] == '1'
+        assert pheno_file.loc[1000030, 'mydisease'] == '0'
+        assert pheno_file.loc[1000020, 'mydisease'] == '0'
+        assert pheno_file.loc[1000060, 'mydisease'] == 'NA'
+        assert pheno_file.loc[1000070, 'mydisease'] == '1'
+
+        assert pheno_file.loc[1000050, 'third_column'] == '1'
+        assert pheno_file.loc[1000030, 'third_column'] == '0'
+        assert pheno_file.loc[1000020, 'third_column'] == '1'
+        assert pheno_file.loc[1000060, 'third_column'] == '0'
+        assert pheno_file.loc[1000070, 'third_column'] == '1'
+
+        assert pheno_file.loc[1000050, 'continuous_data'] == 'NA'
+        assert pheno_file.loc[1000030, 'continuous_data'] == '-35.31471'
+        assert pheno_file.loc[1000020, 'continuous_data'] == '-10.51461'
+        assert pheno_file.loc[1000060, 'continuous_data'] == '-0.5864'
+        assert pheno_file.loc[1000070, 'continuous_data'] == '3.5584'
+
+        assert pheno_file.loc[1000050, 'integer_data'] == '1'
+        assert pheno_file.loc[1000030, 'integer_data'] == 'NA'
+        assert pheno_file.loc[1000020, 'integer_data'] == 'NA'
+        assert pheno_file.loc[1000060, 'integer_data'] == 'NA'
+        assert pheno_file.loc[1000070, 'integer_data'] == '2'
+
+    def test_phenotype_query_yaml_multiple_files_in_one_yaml(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        # in this case there is an or condition that could break all if it is not surrounding by ()
+        yaml_data = b"""
+        samples_filters:
+          - lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
+          - c34_0_0 is null or c34_0_0 > -10 or c34_0_0 > -11
+
+        covariates:
+          field_name_34: c34_0_0 
+          field_name_47: c47_0_0
+
+        my_first_dataset:
+          mydisease:
+            sql:
+              1: c46_0_0 > 0
+              0: c46_0_0 < 0
+
+          continuous_data:
+            c47_0_0
+
+        my_second_dataset:
+          third_column:
+            case_control:
+              84:
+                coding: [E103, Z678]
+
+          integer_data: (case when c46_0_0 < 0 then NULL else c46_0_0 end)
+        """
+
+        # covariates
+        data_fetched =\
+            self._make_yaml_request(
+                yaml_data, 'covariates', 5,
+                ['field_name_34', 'field_name_47']
+            )
+
+        assert data_fetched.loc[1000020, 'field_name_34'] == '34'
+        assert data_fetched.loc[1000030, 'field_name_34'] == '-6'
+        assert data_fetched.loc[1000050, 'field_name_34'] == '-4'
+        assert data_fetched.loc[1000060, 'field_name_34'] == 'NA'
+        assert data_fetched.loc[1000070, 'field_name_34'] == '-5'
+
+        # my_first_dataset
+        data_fetched =\
+            self._make_yaml_request(
+                yaml_data, 'my_first_dataset', 5,
+                ['mydisease', 'continuous_data']
+            )
+
+        assert data_fetched.loc[1000050, 'mydisease'] == '1'
+        assert data_fetched.loc[1000030, 'mydisease'] == '0'
+        assert data_fetched.loc[1000020, 'mydisease'] == '0'
+        assert data_fetched.loc[1000060, 'mydisease'] == 'NA'
+        assert data_fetched.loc[1000070, 'mydisease'] == '1'
+
+        assert data_fetched.loc[1000050, 'continuous_data'] == 'NA'
+        assert data_fetched.loc[1000030, 'continuous_data'] == '-35.31471'
+        assert data_fetched.loc[1000020, 'continuous_data'] == '-10.51461'
+        assert data_fetched.loc[1000060, 'continuous_data'] == '-0.5864'
+        assert data_fetched.loc[1000070, 'continuous_data'] == '3.5584'
+
+        # my_second_dataset
+        data_fetched =\
+            self._make_yaml_request(
+                yaml_data, 'my_second_dataset', 5,
+                ['third_column', 'integer_data']
+            )
+
+        assert data_fetched.loc[1000050, 'third_column'] == '1'
+        assert data_fetched.loc[1000030, 'third_column'] == '0'
+        assert data_fetched.loc[1000020, 'third_column'] == '1'
+        assert data_fetched.loc[1000060, 'third_column'] == '0'
+        assert data_fetched.loc[1000070, 'third_column'] == '1'
+
+        assert data_fetched.loc[1000050, 'integer_data'] == '1'
+        assert data_fetched.loc[1000030, 'integer_data'] == 'NA'
+        assert data_fetched.loc[1000020, 'integer_data'] == 'NA'
+        assert data_fetched.loc[1000060, 'integer_data'] == 'NA'
+        assert data_fetched.loc[1000070, 'integer_data'] == '2'
+
 #TODO filter including tables with null values (test inner and outer joins)
-#TODO coding and node_id together
-#TODO node_id means recursive, coding means flat; test recursive
