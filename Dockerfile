@@ -21,12 +21,10 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && hg clone https://gavinband@bitbucket.org/gavinband/bgen -u master \
   && cd /tmp/bgen \
   && export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
-  && ./waf-1.8.13 configure \
-  && ./waf-1.8.13 \
-  && ./build/test/test_bgen \
-  && mv build/apps/bgenix /usr/local/bin/ \
-  && mv build/apps/cat-bgen /usr/local/bin/ \
-  && mv build/apps/edit-bgen /usr/local/bin/ \
+  && ./waf configure --prefix=/usr/local \
+  && ./waf \
+  && ./build/test/unit/test_bgen \
+  && ./waf install \
   && apt-get remove -y build-essential zlib1g-dev libbz2-dev mercurial \
   && apt-get autoremove -y \
   && apt-get clean \
