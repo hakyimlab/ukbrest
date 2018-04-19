@@ -7,10 +7,7 @@ RUN conda env update -n root -f /opt/environment.yml \
   && conda clean --all
 
 # Docker repository for PostgreSQL, install client programs
-RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | \
-    apt-key add - \
-  && echo deb http://apt.postgresql.org/pub/repos/apt/ jessie-pgdg main > /etc/apt/sources.list.d/postgresql.list \
-  && DEBIAN_FRONTEND=noninteractive \
+RUN DEBIAN_FRONTEND=noninteractive \
     apt-get update && apt-get install -y --no-install-recommends \
       postgresql-client-9.6 \
   && apt-get clean \
