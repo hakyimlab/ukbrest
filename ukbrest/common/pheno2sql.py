@@ -28,7 +28,7 @@ class Pheno2SQL(DBAccess):
     _RE_FIELD_CODING_PATTERN = '(?i)Uses data-coding (?P<coding>[0-9]+) '
     RE_FIELD_CODING = re.compile(_RE_FIELD_CODING_PATTERN)
 
-    _RE_FULL_COLUMN_NAME_RENAME_PATTERN = '^(?i)(?P<field>{})([ ]+([ ]*as[ ]+)?(?P<rename>[\w_]+))?$'.format(_RE_COLUMN_NAME_PATTERN)
+    _RE_FULL_COLUMN_NAME_RENAME_PATTERN = '^(?i)\(?(?P<field>{})\)?([ ]+([ ]*as[ ]+)?(?P<rename>[\w_]+))?$'.format(_RE_COLUMN_NAME_PATTERN)
     RE_FULL_COLUMN_NAME_RENAME = re.compile(_RE_FULL_COLUMN_NAME_RENAME_PATTERN)
 
     def __init__(self, ukb_csvs, db_uri, bgen_sample_file=None, table_prefix='ukb_pheno_',
@@ -726,6 +726,19 @@ class Pheno2SQL(DBAccess):
             order_by_dict=order_by_dict
         )
 
+    def query_yaml_simple_data(self, yaml_file, section, order_by_table=None):
+        section_data = yaml_file[section]
+
+        include_only_stmts = None
+        if 'samples_filters' in yaml_file:
+            include_only_stmts = yaml_file['samples_filters']
+
+        section_field_statements = ['({}) as {}'.format(v, x) for x, v in section_data.items()]
+
+        for chunk in self.query(section_field_statements, filterings=include_only_stmts, order_by_table=order_by_table):
+            # chunk = chunk.rename(columns={v:k for x in section_data.items()})
+            yield chunk
+
     def query_yaml_data(self, yaml_file, section, order_by_table=None):
         all_columns = []
         all_columns_sql_queries = []
@@ -852,4 +865,7 @@ class Pheno2SQL(DBAccess):
         )
 
     def query_yaml(self, yaml_file, section, order_by_table=None):
-        return self.query_yaml_data(yaml_file, section, order_by_table)
+        if section.startswith('simple_'):
+            return self.query_yaml_simple_data(yaml_file, section, order_by_table)
+        else:
+            return self.query_yaml_data(yaml_file, section, order_by_table)

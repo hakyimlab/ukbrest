@@ -3368,4 +3368,36 @@ class TestRestApiPhenotype(DBTest):
         assert data_fetched.loc[1000060, 'integer_data'] == 'NA'
         assert data_fetched.loc[1000070, 'integer_data'] == '2'
 
+    def test_phenotype_query_yaml_simple_query(self):
+        # Prepare
+        self.setUp('pheno2sql/example13/example13_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example13/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        # this type of query, with 'simple_' at the begining of the data section, makes direct queries to the
+        # database
+        yaml_data = b"""
+        samples_filters:
+          - lower(c21_2_0) in ('yes', 'no', 'maybe', 'probably')
+          - c34_0_0 is null or c34_0_0 > -10 or c34_0_0 > -11
+
+        simple_covariates:
+          field_name_34: c34_0_0 
+          field_name_47: c47_0_0
+        """
+
+        # simple_covariates
+        data_fetched =\
+            self._make_yaml_request(
+                yaml_data, 'simple_covariates', 5,
+                ['field_name_34', 'field_name_47']
+            )
+
+        assert data_fetched.loc[1000020, 'field_name_34'] == '34'
+        assert data_fetched.loc[1000030, 'field_name_34'] == '-6'
+        assert data_fetched.loc[1000050, 'field_name_34'] == '-4'
+        assert data_fetched.loc[1000060, 'field_name_34'] == 'NA'
+        assert data_fetched.loc[1000070, 'field_name_34'] == '-5'
+
+
 #TODO filter including tables with null values (test inner and outer joins)
