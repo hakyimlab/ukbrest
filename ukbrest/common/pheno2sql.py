@@ -86,6 +86,9 @@ class Pheno2SQL(DBAccess):
 
         self.table_list = set()
 
+        self.csv_files_encoding_file = 'encodings.txt'
+        self.csv_files_encoding = 'utf-8'
+
     def __enter__(self):
         return self
 
@@ -274,13 +277,38 @@ class Pheno2SQL(DBAccess):
             # aux_table = aux_table.set_index('column_name')
             aux_table.to_sql('fields', self._get_db_engine(), index=False, if_exists='append')
 
+    def _get_file_encoding(self, csv_file):
+        csv_file_name = os.path.basename(csv_file)
+
+        csv_file_full_path = os.path.realpath(csv_file)
+        csv_file_dir = os.path.dirname(csv_file_full_path)
+
+        encoding_file = os.path.join(csv_file_dir, self.csv_files_encoding_file)
+
+        if os.path.isfile(encoding_file):
+            enc_file = pd.read_table(encoding_file, index_col=0, header=None, delim_whitespace=True, squeeze=True)
+
+            if not enc_file.index.is_unique:
+                logger.error(f'{self.csv_files_encoding_file} has no unique files. Not using the file')
+                return self.csv_files_encoding
+
+            if csv_file_name in enc_file.index:
+                file_encoding = enc_file.at[csv_file_name]
+                logger.info(f'Encoding found in {self.csv_files_encoding_file}: {file_encoding}')
+
+                return file_encoding
+        else:
+            logger.debug(f'No {self.csv_files_encoding_file} found, assuming {self.csv_files_encoding}')
+            return self.csv_files_encoding
+
     def _save_column_range(self, csv_file, csv_file_idx, column_names_idx, column_names):
         table_name = self._get_table_name(column_names_idx, csv_file_idx)
         output_csv_filename = os.path.join(get_tmpdir(self.tmpdir), table_name + '.csv')
         full_column_names = ['eid'] + [x[0] for x in column_names]
 
         data_reader = pd.read_csv(csv_file, index_col=0, header=0, usecols=full_column_names,
-                                  chunksize=self.loading_chunksize, dtype=str)
+                                  chunksize=self.loading_chunksize, dtype=str,
+                                  encoding=self._get_file_encoding(csv_file))
 
         new_columns = [x[1] for x in column_names]
 

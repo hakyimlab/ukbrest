@@ -2125,3 +2125,40 @@ class Pheno2SQLTest(DBTest):
 
         assert vacuum_data is not None
         assert not vacuum_data.empty
+
+    def test_postgresql_load_data_non_utf_characters(self):
+        # Prepare
+        directory = get_repository_path('pheno2sql/example15')
+
+        csv_file1 = get_repository_path(os.path.join(directory, 'example15_00.csv')) # latin1
+        csv_file2 = get_repository_path(os.path.join(directory, 'example15_01.csv')) # latin1
+        csv_file3 = get_repository_path(os.path.join(directory, 'example15_02.csv')) # utf-8
+        db_engine = POSTGRESQL_ENGINE
+
+        p2sql = Pheno2SQL((csv_file1, csv_file2, csv_file3), db_engine, bgen_sample_file=os.path.join(directory, 'impv2.sample'),
+                          n_columns_per_table=2, loading_n_jobs=1)
+
+        # Run
+        p2sql.load_data()
+
+        columns = ['c21_1_0', 'c21_0_0', 'c103_0_0', 'c104_0_0', 'c221_0_0', 'c221_1_0']
+
+        query_result = next(p2sql.query(columns))
+
+        # Validate
+        assert query_result.index.name == 'eid'
+        assert len(query_result.index) == 10
+
+        assert len(query_result.columns) == len(columns)
+        assert all(x in columns for x in query_result.columns)
+
+        assert not query_result.empty
+
+        assert query_result.loc[1000041, 'c103_0_0'] == 'Optión 4'
+        assert query_result.loc[1000041, 'c104_0_0'] == '158'
+
+        assert query_result.loc[1000070, 'c21_1_0'] == 'Of course ñ'
+        assert query_result.loc[1000070, 'c21_0_0'] == 'Option number 7'
+
+        assert query_result.loc[1000050, 'c221_0_0'] == 'Option number 25'
+        assert query_result.loc[1000050, 'c221_1_0'] == 'Maybe ñó'

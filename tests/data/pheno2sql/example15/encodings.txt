@@ -1,0 +1,2 @@
+example15_00.csv latin1
+example15_01.csv latin1
