@@ -3,8 +3,11 @@
 
 # ukbrest
 
+`TODO`: this documentation is still work in progress. It will be updated and completed soon.
+
 ## Downloading and running
-The easiest way to get ukbrest up and running is using Docker. The instructions below are just to get things working quickly. You should read the Docker documentation if you want to, for example, keep data saved across different runs.
+The easiest way to get ukbrest up and running is using Docker. The instructions below are just to get things working
+quickly. You should read the Docker documentation if you want to, for example, keep data saved across different runs.
 
 **The first thing** you have to do is creating a virtual network and getting PostgreSQL up:
 
