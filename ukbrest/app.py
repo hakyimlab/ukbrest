@@ -5,11 +5,11 @@ from os.path import isdir
 from ukbrest.common.genoquery import GenoQuery
 from ukbrest.common.pheno2sql import Pheno2SQL
 from flask import Flask
-from flask_restful import Api
 from ukbrest.resources.phenotype import PhenotypeFieldsAPI, PhenotypeAPI, QueryAPI, PhenotypeApiObject
 
 from ukbrest.resources.genotype import GenotypeApiObject
 from ukbrest.resources.genotype import GenotypePositionsAPI, GenotypeRsidsAPI
+
 
 app = Flask(__name__)
 
@@ -74,8 +74,11 @@ if __name__ == '__main__':
     parser.add_argument('--port', dest='port', type=int, required=False, help='Port', default=5000)
     parser.add_argument('--debug', dest='debug', action='store_true')
     parser.add_argument('--load', dest='load_db', action='store_true')
+    parser.add_argument('--ssl-mode', type=str, default='adhoc')
+    parser.add_argument('--users-file', type=str)
 
     args = parser.parse_args()
+
 
     if not isdir(args.genotype_path):
         raise Exception('Repository path does not exist: {}'.format(args.genotype_path))
@@ -90,4 +93,6 @@ if __name__ == '__main__':
 
     app.config.update({'pheno2sql': p2sql})
 
-    app.run(host=str(args.host), port=args.port, debug=args.debug)
+    ph = PasswordHasher(config.http_auth_users_file, method='pbkdf2:sha256')
+
+    app.run(host=str(args.host), port=args.port, debug=args.debug, ssl_context=args.ssl_mode)

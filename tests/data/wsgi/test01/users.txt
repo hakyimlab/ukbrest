@@ -1,0 +1,3 @@
+john: mypassword
+adams: pbkdf2:sha256:50000$9gYneJIK$41ca8e3524f9d96539e08c574e52f8f8bb651974ed37704a8b7fb8cb35a22516
+james: mypassword

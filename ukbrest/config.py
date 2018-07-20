@@ -21,6 +21,8 @@ LOADING_N_JOBS_ENV= 'UKBREST_LOADING_N_JOBS'
 
 LOAD_DATA_VACUUM = 'UKBREST_VACUUM'
 
+HTTP_AUTH_USERS_FILE = 'UKBREST_HTTP_USERS_FILE_PATH'
+
 
 genotype_path = environ.get(GENOTYPE_PATH_ENV, None)
 
@@ -56,6 +58,9 @@ loading_chunksize = environ.get(LOADING_CHUNKSIZE, 5000)
 loading_n_jobs = environ.get(LOADING_N_JOBS_ENV, -1)
 
 load_data_vacuum = environ.get(LOAD_DATA_VACUUM, True)
+
+http_auth_users_file = environ.get(HTTP_AUTH_USERS_FILE, None)
+
 
 # logger
 FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
