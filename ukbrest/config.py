@@ -2,6 +2,10 @@ from os import environ, path
 from tempfile import gettempdir
 import logging
 
+
+#############################
+# Environment variables names
+#############################
 GENOTYPE_PATH_ENV='UKBREST_GENOTYPE_PATH'
 GENOTYPE_BGEN_SAMPLE='UKBREST_GENOTYPE_BGEN_SAMPLE_FILE'
 
@@ -24,6 +28,9 @@ LOAD_DATA_VACUUM = 'UKBREST_VACUUM'
 HTTP_AUTH_USERS_FILE = 'UKBREST_HTTP_USERS_FILE_PATH'
 
 
+########################
+# Configuration defaults
+########################
 genotype_path = environ.get(GENOTYPE_PATH_ENV, None)
 
 # bgen sample file is relative to genotype path
@@ -62,12 +69,17 @@ load_data_vacuum = environ.get(LOAD_DATA_VACUUM, True)
 http_auth_users_file = environ.get(HTTP_AUTH_USERS_FILE, None)
 
 
+########
 # logger
+########
 FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 logging.basicConfig(format=FORMAT, level=logging.INFO if not debug else logging.DEBUG)
 logger = logging.getLogger('ukbrest')
 
 
+###########
+# Functions
+###########
 def get_postloader_parameters():
     return {
         'db_uri': db_uri,
@@ -104,3 +116,26 @@ def get_pheno2sql_load_parameters():
     return {
         'vacuum': load_data_vacuum
     }
+
+
+def get_argparse_arguments(parser=None):
+    import argparse
+
+    if parser is None:
+        parser = argparse.ArgumentParser()
+
+    parser.add_argument('--genotype-path', type=str, help='Genotypes path')
+    parser.add_argument('--pheno-dir', type=str, help='Phenotypes directory, where csv files reside.')
+    parser.add_argument('--bgen-sample-file', type=str, help='BGEN sample file')
+    parser.add_argument('--db-uri', type=str, help='PostgreSQL connection string: postgresql://USER:PASSWORD@HOST:5432/DB_NAME')
+    parser.add_argument('--table-prefix', type=str, help='')
+    parser.add_argument('--n-columns-per-table', type=int, help='')
+    parser.add_argument('--loading-n-jobs', type=int, help='')
+    parser.add_argument('--tmpdir', type=str, help='')
+    parser.add_argument('--loading-chunksize', type=int, help='')
+    parser.add_argument('--sql-chunksize', type=int, help='')
+    parser.add_argument('--debug', action='store_true')
+    parser.add_argument('--host', type=str, help='Host', default='127.0.0.1')
+    parser.add_argument('--port', type=int, help='Port where to listen to')
+
+    return parser

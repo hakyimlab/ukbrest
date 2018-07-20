@@ -1,8 +1,10 @@
+import os
 import argparse
 
 from ukbrest.common.pheno2sql import Pheno2SQL
 from ukbrest.common.postloader import Postloader
 from ukbrest import config
+from ukbrest.common.utils.misc import _update_parameters_from_args, _parameter_empty
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--load-codings', action='store_true')
@@ -13,11 +15,13 @@ parser.add_argument('--separators', type=str, nargs='+', help='Format file1.txt:
 
 
 if __name__ == '__main__':
+    parser = config.get_argparse_arguments(parser)
     args, unknown_args = parser.parse_known_args()
 
     if args.load_codings:
         pl = Postloader(**config.get_postloader_parameters())
         pl.load_codings(**config.get_postloader_codings_parameters())
+
     elif args.load_samples_data:
         pl = Postloader(**config.get_postloader_parameters())
 
@@ -33,6 +37,26 @@ if __name__ == '__main__':
             load_samples_parameters.update({'separators': {p.split(':')[0]: p.split(':')[1] for p in args.separators}})
 
         pl.load_samples_data(**load_samples_parameters)
+
     else:
-        p2sql = Pheno2SQL(**config.get_pheno2sql_parameters())
-        p2sql.load_data(**config.get_pheno2sql_load_parameters())
+        pheno2sql_parameters = config.get_pheno2sql_parameters()
+        pheno2sql_parameters = _update_parameters_from_args(pheno2sql_parameters, args)
+
+        # FIXME: parameter names hard coded here
+        if _parameter_empty(pheno2sql_parameters, 'ukb_csvs'):
+            if args.pheno_dir is None:
+                parser.error('--pheno-dir missing')
+
+            pheno2sql_parameters['ukb_csvs'] = sorted([
+                os.path.join(args.pheno_dir, f)
+                for f in os.listdir(args.pheno_dir)
+                if f.lower().endswith('.csv')
+            ])
+
+        if _parameter_empty(pheno2sql_parameters, 'db_uri'):
+            parser.error('--db-uri missing')
+
+        p2sql = Pheno2SQL(**pheno2sql_parameters)
+
+        load_parameters = config.get_pheno2sql_load_parameters()
+        p2sql.load_data(**load_parameters)

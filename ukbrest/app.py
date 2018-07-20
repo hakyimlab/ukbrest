@@ -1,9 +1,5 @@
-import tempfile
 import logging
-from os.path import isdir
 
-from ukbrest.common.genoquery import GenoQuery
-from ukbrest.common.pheno2sql import Pheno2SQL
 from flask import Flask
 from ukbrest.resources.phenotype import PhenotypeFieldsAPI, PhenotypeAPI, QueryAPI, PhenotypeApiObject
 
@@ -62,37 +58,38 @@ def setup_logging():
 
 
 if __name__ == '__main__':
-    from ipaddress import ip_address
-    import argparse
+    from ukbrest.common.genoquery import GenoQuery
+    from ukbrest.common.pheno2sql import Pheno2SQL
+    from ukbrest.common.utils.auth import PasswordHasher
+    from ukbrest import config
+    from ukbrest.common.utils.misc import _update_parameters_from_args, _parameter_empty
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('genotype_path', type=str, help='UK Biobank genotype (imputed) path')
-    parser.add_argument('phenotype_csv', type=str, help='UK Biobank phenotype data in CSV format')
-    parser.add_argument('--tmp_dir', dest='tmp_dir', type=str, required=False, help='Directory where write temporal files', default=tempfile.gettempdir())
-    parser.add_argument('--db_uri', dest='db_uri', type=str, required=False, help='Database engine URI', default='sqlite:///ukbrest_tmp.db')
-    parser.add_argument('--host', dest='host', type=ip_address, required=False, help='Host', default=ip_address('127.0.0.1'))
-    parser.add_argument('--port', dest='port', type=int, required=False, help='Port', default=5000)
-    parser.add_argument('--debug', dest='debug', action='store_true')
-    parser.add_argument('--load', dest='load_db', action='store_true')
-    parser.add_argument('--ssl-mode', type=str, default='adhoc')
-    parser.add_argument('--users-file', type=str)
+    logger = config.logger
+    parser = config.get_argparse_arguments()
+
+    # parser.add_argument('--ssl-mode', type=str, default='adhoc')
+    # parser.add_argument('--users-file', type=str)
 
     args = parser.parse_args()
 
-
-    if not isdir(args.genotype_path):
-        raise Exception('Repository path does not exist: {}'.format(args.genotype_path))
+    # GenoQuery
+    if args.genotype_path is None:
+        logger.warning('Genotype directory not specified.')
 
     app.config.update({'genoquery': GenoQuery(args.genotype_path, debug=args.debug)})
 
-    csv_file = args.phenotype_csv
-    db_engine = args.db_uri
-    p2sql = Pheno2SQL(csv_file, db_engine, n_columns_per_table=1500, tmpdir=args.tmp_dir)
-    if args.load_db:
-        p2sql.load_data()
+    # Pheno2SQL
+    pheno2sql_parameters = config.get_pheno2sql_parameters()
+    pheno2sql_parameters = _update_parameters_from_args(pheno2sql_parameters, args)
+
+    if _parameter_empty(pheno2sql_parameters, 'db_uri'):
+        parser.error('--db-uri missing')
+
+    p2sql = Pheno2SQL(**pheno2sql_parameters)
 
     app.config.update({'pheno2sql': p2sql})
 
     ph = PasswordHasher(config.http_auth_users_file, method='pbkdf2:sha256')
 
-    app.run(host=str(args.host), port=args.port, debug=args.debug, ssl_context=args.ssl_mode)
+    # app.run(host=str(args.host), port=args.port, debug=args.debug, ssl_context=args.ssl_mode)
+    app.run(host=str(args.host), port=args.port, debug=args.debug)
