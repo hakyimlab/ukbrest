@@ -67,9 +67,6 @@ if __name__ == '__main__':
     logger = config.logger
     parser = config.get_argparse_arguments()
 
-    # parser.add_argument('--ssl-mode', type=str, default='adhoc')
-    # parser.add_argument('--users-file', type=str)
-
     args = parser.parse_args()
 
     # GenoQuery
@@ -94,5 +91,4 @@ if __name__ == '__main__':
     auth = ph.setup_http_basic_auth()
     app.config.update({'auth': auth})
 
-    # app.run(host=str(args.host), port=args.port, debug=args.debug, ssl_context=args.ssl_mode)
-    app.run(host=str(args.host), port=args.port, debug=args.debug)
+    app.run(host=str(args.host), port=args.port, debug=args.debug, ssl_context='adhoc' if args.ssl_mode else None)

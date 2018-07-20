@@ -138,5 +138,6 @@ def get_argparse_arguments(parser=None):
     parser.add_argument('--host', type=str, help='Host', default='127.0.0.1')
     parser.add_argument('--port', type=int, help='Port where to listen to')
     parser.add_argument('--users-file', type=str, help='')
+    parser.add_argument('--ssl-mode', action='store_true')
 
     return parser
