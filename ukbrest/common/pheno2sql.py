@@ -525,7 +525,7 @@ class Pheno2SQL(DBAccess):
         logger.info('Creating table constraints (indexes, primary keys, etc)')
 
         # bgen's samples table
-        if self.bgen_sample_file is not None:
+        if self.bgen_sample_file is not None and os.path.isfile(self.bgen_sample_file):
             create_indexes(BGEN_SAMPLES_TABLE, ('index', 'eid'), db_engine=self._get_db_engine())
 
         # fields table
