@@ -57,6 +57,9 @@ class DBAccess():
 
     def _get_db_engine(self):
         if self.db_engine is None:
+            if self.db_uri is None or self.db_uri == "":
+                raise ValueError('DB URI was not set')
+
             kargs = {'pool_size': 10}
             self.db_engine = create_engine(self.db_uri, **kargs)
 
