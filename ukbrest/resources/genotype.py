@@ -15,6 +15,10 @@ class GenotypePositionsAPI(Resource):
 
         self.genoq = app.config['genoquery']
 
+        auth = app.config['auth']
+        self.get = auth.login_required(self.get)
+        self.post = auth.login_required(self.post)
+
         super(GenotypePositionsAPI, self).__init__()
 
     def get(self, chr, start, stop=None):
@@ -35,6 +39,9 @@ class GenotypeRsidsAPI(Resource):
         self.parser.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files', required=True)
 
         self.genoq = app.config['genoquery']
+
+        auth = app.config['auth']
+        self.post = auth.login_required(self.post)
 
         super(GenotypeRsidsAPI, self).__init__()
 

@@ -24,6 +24,9 @@ class PhenotypeAPI(Resource):
 
         self.pheno2sql = app.config['pheno2sql']
 
+        auth = app.config['auth']
+        self.get = auth.login_required(self.get)
+
         super(PhenotypeAPI, self).__init__()
 
     def get(self):
@@ -45,6 +48,9 @@ class PhenotypeFieldsAPI(Resource):
         # self.parser.add_argument('info', type=int, help='Rate to charge for this resource')
 
         self.pheno2sql = app.config['pheno2sql']
+
+        auth = app.config['auth']
+        self.get = auth.login_required(self.get)
 
         super(PhenotypeFieldsAPI, self).__init__()
 
@@ -68,6 +74,9 @@ class QueryAPI(Resource):
                                       help='Only {} are supported'.format(' and '.join(PHENOTYPE_FORMATS.keys())))
 
         self.pheno2sql = app.config['pheno2sql']
+
+        auth = app.config['auth']
+        self.post = auth.login_required(self.post)
 
         super(QueryAPI, self).__init__()
 

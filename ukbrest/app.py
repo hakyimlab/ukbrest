@@ -89,7 +89,10 @@ if __name__ == '__main__':
 
     app.config.update({'pheno2sql': p2sql})
 
-    ph = PasswordHasher(config.http_auth_users_file, method='pbkdf2:sha256')
+    ph = PasswordHasher(args.users_file, method='pbkdf2:sha256')
+    ph.process_users_file()
+    auth = ph.setup_http_basic_auth()
+    app.config.update({'auth': auth})
 
     # app.run(host=str(args.host), port=args.port, debug=args.debug, ssl_context=args.ssl_mode)
     app.run(host=str(args.host), port=args.port, debug=args.debug)

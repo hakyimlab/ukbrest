@@ -17,7 +17,7 @@ class PasswordHasher(object):
         self.method = method
 
     def verify_password(self, username, password):
-        users_passwd = self._read_users_file()
+        users_passwd = self.read_users_file()
 
         if users_passwd is None:
             return True
@@ -27,7 +27,7 @@ class PasswordHasher(object):
 
         return False
 
-    def _read_users_file(self):
+    def read_users_file(self):
         self.process_users_file()
         return self._read_yaml_file(self.users_file)
 
@@ -62,8 +62,9 @@ class PasswordHasher(object):
 
             with open(self.users_file, 'w') as f:
                 yaml.dump(new_users, f)
-        else:
-            logger.warning('Users file not specified. Not using HTTP authentication.')
+        elif self.users_file is not None and not os.path.isfile(self.users_file):
+            logger.warning('Users file for authentication does not exist. No access will be allowed until the file is properly created.')
+
 
     def setup_http_basic_auth(self):
         auth = HTTPBasicAuth()
