@@ -1,6 +1,8 @@
 import io
 import json
 import unittest
+import tempfile
+from base64 import b64encode
 
 from ukbrest import app
 import pandas as pd
@@ -8,6 +10,7 @@ import pandas as pd
 from tests.settings import POSTGRESQL_ENGINE
 from tests.utils import get_repository_path, DBTest
 from ukbrest.common.pheno2sql import Pheno2SQL
+from ukbrest.common.utils.auth import PasswordHasher
 
 
 class TestRestApiPhenotype(DBTest):
@@ -37,6 +40,17 @@ class TestRestApiPhenotype(DBTest):
             super(TestRestApiPhenotype, self).setUp()
         
         # Load data
+        p2sql = self._get_p2sql(filename, **kwargs)
+
+        if load_data:
+            p2sql.load_data()
+
+        app.app.config['pheno2sql'] = p2sql
+
+        # Configure
+        self.configureApp()
+
+    def _get_p2sql(self, filename, **kwargs):
         if filename is None:
             csv_file = get_repository_path('pheno2sql/example02.csv')
         elif isinstance(filename, (tuple, list)):
@@ -51,14 +65,33 @@ class TestRestApiPhenotype(DBTest):
         if 'n_columns_per_table' not in kwargs:
             kwargs['n_columns_per_table'] = 2
 
-        p2sql = Pheno2SQL(csv_file, db_engine, **kwargs)
-        if load_data:
-            p2sql.load_data()
+        return Pheno2SQL(csv_file, db_engine, **kwargs)
 
-        # Configure
+    def configureApp(self, app_func=None):
         app.app.config['TESTING'] = True
-        app.app.config['pheno2sql'] = p2sql
+        app.app.config['auth'] = None
+
+        if app_func is not None:
+            app_func(app.app)
+
         self.app = app.app.test_client()
+
+    def configureAppWithAuth(self, user_pass_line):
+        f = tempfile.NamedTemporaryFile(delete=False)
+        f.close()
+
+        with open(f.name, 'w') as fi:
+            fi.write(user_pass_line)
+
+        ph = PasswordHasher(f.name, method='pbkdf2:sha256')
+
+        def conf(a):
+            a.config['auth'] = ph.setup_http_basic_auth()
+
+        self.configureApp(conf)
+
+    def _get_http_basic_auth_header(self, user, password):
+        return {'Authorization': 'Basic %s' % b64encode(f'{user}:{password}'.encode()).decode("ascii")}
 
     def test_not_found(self):
         response = self.app.get('/ukbrest/api/v1.0/')
@@ -68,6 +101,35 @@ class TestRestApiPhenotype(DBTest):
         # Prepare
         # Run
         response = self.app.get('/ukbrest/api/v1.0/phenotype/fields')
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        fields = json.loads(response.data.decode('utf-8'))
+        assert len(fields) == 8
+
+    def test_phenotype_fields_http_auth_no_credentials(self):
+        # Prepare
+        self.configureAppWithAuth('user: thepassword2')
+
+        # Run
+        response = self.app.get(
+            '/ukbrest/api/v1.0/phenotype/fields',
+            # headers=self._get_http_basic_auth_header('user', 'thepassword2'),
+        )
+
+        # Validate
+        assert response.status_code == 401, response.status_code
+
+    def test_phenotype_fields_http_auth_with_credentials(self):
+        # Prepare
+        self.configureAppWithAuth('user: thepassword2')
+
+        # Run
+        response = self.app.get(
+            '/ukbrest/api/v1.0/phenotype/fields',
+            headers=self._get_http_basic_auth_header('user', 'thepassword2'),
+        )
 
         # Validate
         assert response.status_code == 200, response.status_code
@@ -1211,6 +1273,173 @@ class TestRestApiPhenotype(DBTest):
         assert pheno_file.loc[4, 'c100_2_0'] == 'NA'
         assert pheno_file.loc[5, 'c100_2_0'] == 'NA'
 
+    def test_phenotype_query_http_basic_auth_is_null(self):
+        # Prepare
+        csv01 = get_repository_path('pheno2sql/example08_01.csv')
+        csv02 = get_repository_path('pheno2sql/example08_02.csv')
+        csvs = (csv01, csv02)
+
+        # first load data
+        self.setUp(csvs)
+
+        # then create another instance without executing load_data method
+        self.setUp(csvs, load_data=False, wipe_database=False)
+
+        def configure_http_auth(theapp):
+            theapp.config['auth'] = None
+
+        self.configureApp(configure_http_auth)
+
+        columns = ['c48_0_0', 'c120_0_0 as c120', 'c150_0_0 c150']
+        reg_exp_columns = ['c21_[01]_0', 'c100_\d_0']
+
+        parameters = {
+            'columns': columns,
+            'ecolumns': reg_exp_columns,
+        }
+
+        # Run
+        response = self.app.get('/ukbrest/api/v1.0/phenotype', query_string=parameters)
+
+        # Validate
+        # unauthorized
+        assert response.status_code == 200, response.status_code
+
+    def test_phenotype_query_http_basic_auth_no_user_pass(self):
+        # Prepare
+        csv01 = get_repository_path('pheno2sql/example08_01.csv')
+        csv02 = get_repository_path('pheno2sql/example08_02.csv')
+        csvs = (csv01, csv02)
+
+        # first load data
+        self.setUp(csvs)
+
+        # then create another instance without executing load_data method
+        self.setUp(csvs, load_data=False, wipe_database=False)
+
+        self.configureAppWithAuth('user: thepassword2')
+
+        columns = ['c48_0_0', 'c120_0_0 as c120', 'c150_0_0 c150']
+        reg_exp_columns = ['c21_[01]_0', 'c100_\d_0']
+
+        parameters = {
+            'columns': columns,
+            'ecolumns': reg_exp_columns,
+        }
+
+        # Run
+        response = self.app.get('/ukbrest/api/v1.0/phenotype', query_string=parameters)
+
+        # Validate
+        # unauthorized
+        assert response.status_code == 401, response.status_code
+
+    def test_phenotype_query_http_basic_auth_with_user_pass(self):
+        # Prepare
+        csv01 = get_repository_path('pheno2sql/example08_01.csv')
+        csv02 = get_repository_path('pheno2sql/example08_02.csv')
+        csvs = (csv01, csv02)
+
+        # first load data
+        self.setUp(csvs)
+
+        # then create another instance without executing load_data method
+        self.setUp(csvs, load_data=False, wipe_database=False)
+
+        self.configureAppWithAuth('user: thepassword2')
+
+        columns = ['c48_0_0', 'c120_0_0 as c120', 'c150_0_0 c150']
+        reg_exp_columns = ['c21_[01]_0', 'c100_\d_0']
+
+        parameters = {
+            'columns': columns,
+            'ecolumns': reg_exp_columns,
+        }
+
+        # Run
+        response = self.app.get(
+            '/ukbrest/api/v1.0/phenotype',
+            query_string=parameters,
+            headers=self._get_http_basic_auth_header('user', 'thepassword2'),
+        )
+
+        # Validate
+        # unauthorized
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', na_values='',
+                                 keep_default_na=False, index_col='FID', dtype=str)
+
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (5, 8 + 1), pheno_file.shape # plus IID
+
+    def test_phenotype_query_http_basic_auth_with_wrong_pass(self):
+        # Prepare
+        csv01 = get_repository_path('pheno2sql/example08_01.csv')
+        csv02 = get_repository_path('pheno2sql/example08_02.csv')
+        csvs = (csv01, csv02)
+
+        # first load data
+        self.setUp(csvs)
+
+        # then create another instance without executing load_data method
+        self.setUp(csvs, load_data=False, wipe_database=False)
+
+        self.configureAppWithAuth('user: anotherpass')
+
+        columns = ['c48_0_0', 'c120_0_0 as c120', 'c150_0_0 c150']
+        reg_exp_columns = ['c21_[01]_0', 'c100_\d_0']
+
+        parameters = {
+            'columns': columns,
+            'ecolumns': reg_exp_columns,
+        }
+
+        # Run
+        response = self.app.get(
+            '/ukbrest/api/v1.0/phenotype',
+            query_string=parameters,
+            headers=self._get_http_basic_auth_header('user', 'thepassword2')
+        )
+
+        # Validate
+        # unauthorized
+        assert response.status_code == 401, response.status_code
+
+    def test_phenotype_query_http_basic_auth_with_wrong_user(self):
+        # Prepare
+        csv01 = get_repository_path('pheno2sql/example08_01.csv')
+        csv02 = get_repository_path('pheno2sql/example08_02.csv')
+        csvs = (csv01, csv02)
+
+        # first load data
+        self.setUp(csvs)
+
+        # then create another instance without executing load_data method
+        self.setUp(csvs, load_data=False, wipe_database=False)
+
+        self.configureAppWithAuth('anotheruser: thepassword2')
+
+        columns = ['c48_0_0', 'c120_0_0 as c120', 'c150_0_0 c150']
+        reg_exp_columns = ['c21_[01]_0', 'c100_\d_0']
+
+        parameters = {
+            'columns': columns,
+            'ecolumns': reg_exp_columns,
+        }
+
+        # Run
+        response = self.app.get(
+            '/ukbrest/api/v1.0/phenotype',
+            query_string=parameters,
+            headers=self._get_http_basic_auth_header('user', 'thepassword2'),
+        )
+
+        # Validate
+        # unauthorized
+        assert response.status_code == 401, response.status_code
+
     def test_phenotype_query_yaml_get_covariates(self):
         # Prepare
         self.setUp('pheno2sql/example10/example10_diseases.csv',
@@ -1272,6 +1501,73 @@ class TestRestApiPhenotype(DBTest):
         assert pheno_file.loc[1000050, 'IID'] == '1000050'
         assert pheno_file.loc[1000050, 'field_name_34'] == '-4'
         assert pheno_file.loc[1000050, 'field_name_47'] == 'NA'
+
+    def test_phenotype_query_yaml_get_covariates_http_auth_with_no_credentials(self):
+        # Prepare
+        self.setUp('pheno2sql/example10/example10_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example10/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        self.configureAppWithAuth('user: thepassword2')
+
+        yaml_data = b"""
+        covariates:
+          field_name_34: c34_0_0
+          field_name_47: c47_0_0
+
+        fields:
+          instance0: c21_0_0
+          instance1: c21_1_0
+          instance2: c21_2_0
+        """
+
+        # Run
+        response = self.app.post('/ukbrest/api/v1.0/query', data=
+        {
+            'file': (io.BytesIO(yaml_data), 'data.yaml'),
+            'section': 'covariates',
+        })
+
+        # Validate
+        assert response.status_code == 401, response.status_code
+
+    def test_phenotype_query_yaml_get_covariates_http_auth_with_credentials(self):
+        # Prepare
+        self.setUp('pheno2sql/example10/example10_diseases.csv',
+                   bgen_sample_file=get_repository_path('pheno2sql/example10/impv2.sample'),
+                   sql_chunksize=2, n_columns_per_table=2)
+
+        self.configureAppWithAuth('user: thepassword2')
+
+        yaml_data = b"""
+        covariates:
+          field_name_34: c34_0_0
+          field_name_47: c47_0_0
+
+        fields:
+          instance0: c21_0_0
+          instance1: c21_1_0
+          instance2: c21_2_0
+        """
+
+        # Run
+        response = self.app.post(
+            '/ukbrest/api/v1.0/query',
+            data={
+                'file': (io.BytesIO(yaml_data), 'data.yaml'),
+                'section': 'covariates',
+            },
+            headers=self._get_http_basic_auth_header('user', 'thepassword2'),
+        )
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', index_col='FID', dtype=str,
+                                 na_values='', keep_default_na=False)
+        assert pheno_file is not None
+        assert not pheno_file.empty
+        assert pheno_file.shape == (5, 2 + 1)  # plus IID
 
     def test_phenotype_query_yaml_get_fields(self):
         # Prepare
@@ -3398,6 +3694,3 @@ class TestRestApiPhenotype(DBTest):
         assert data_fetched.loc[1000050, 'field_name_34'] == '-4'
         assert data_fetched.loc[1000060, 'field_name_34'] == 'NA'
         assert data_fetched.loc[1000070, 'field_name_34'] == '-5'
-
-
-#TODO filter including tables with null values (test inner and outer joins)

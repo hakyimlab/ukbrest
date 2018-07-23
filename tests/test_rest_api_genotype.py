@@ -3,9 +3,12 @@ from os.path import isdir
 import io
 import shutil
 import unittest
+import tempfile
+from base64 import b64encode
 
 from ukbrest import app
 from ukbrest.common.genoquery import GenoQuery
+from ukbrest.common.utils.auth import PasswordHasher
 from ukbrest.common.utils.external import qctool
 
 from tests.utils import get_repository_path
@@ -13,13 +16,27 @@ from ukbrest.common.utils.datagen import get_temp_file_name
 
 
 class TestRestApiGenotype(unittest.TestCase):
-    def setUp(self):
+    def setUp(self, user_pass_line=None):
+        super(TestRestApiGenotype, self).setUp()
+
         # Load data
         genoq = GenoQuery(get_repository_path('example01'))
 
         # Configure
         app.app.config['TESTING'] = True
+        app.app.config['auth'] = None
         app.app.config['genoquery'] = genoq
+
+        if user_pass_line is not None:
+            f = tempfile.NamedTemporaryFile(delete=False)
+            f.close()
+
+            with open(f.name, 'w') as fi:
+                fi.write(user_pass_line)
+
+            ph = PasswordHasher(f.name, method='pbkdf2:sha256')
+            app.app.config['auth'] = ph.setup_http_basic_auth()
+
         self.app = app.app.test_client()
 
     def _save_file(self, response):
@@ -28,6 +45,9 @@ class TestRestApiGenotype(unittest.TestCase):
             shutil.copyfileobj(io.BytesIO(response.data), f)
 
         return filename
+
+    def _get_http_basic_auth_header(self, user, password):
+        return {'Authorization': 'Basic %s' % b64encode(f'{user}:{password}'.encode()).decode("ascii")}
 
     def test_genotype_positions_lower_and_upper_limits(self):
         # Prepare
@@ -79,6 +99,39 @@ class TestRestApiGenotype(unittest.TestCase):
         assert results.loc[0, 'pos'] == 100
         assert results.loc[1, 'pos'] == 181
         assert results.loc[2, 'pos'] == 276
+
+    def test_genotype_positions_lower_and_upper_limits_http_auth_no_credentials(self):
+        # Prepare
+        self.setUp(user_pass_line='user: thepassword2')
+
+        # Run
+        response = self.app.get('/ukbrest/api/v1.0/genotype/1/positions/100/276')
+
+        # Validate
+        assert response.status_code == 401, response.status_code
+
+    def test_genotype_positions_lower_and_upper_limits_http_auth_with_credentials(self):
+        # Prepare
+        self.setUp(user_pass_line='user: thepassword2')
+
+        # Run
+        response = self.app.get(
+            '/ukbrest/api/v1.0/genotype/1/positions/100/276',
+            headers=self._get_http_basic_auth_header('user', 'thepassword2'),
+        )
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        bgen_file = self._save_file(response)
+
+        results = qctool(bgen_file)
+
+        assert results is not None
+        assert hasattr(results, 'shape')
+        assert hasattr(results, 'columns')
+        assert results.shape[1] == 6 + 300 * 3
+        assert results.shape[0] == 3
 
     def test_genotype_positions_lower_limit_only(self):
         # Prepare
@@ -341,6 +394,46 @@ class TestRestApiGenotype(unittest.TestCase):
         assert results.loc[2, 'pos'] == 5925
         assert results.loc[3, 'pos'] == 10447
         assert results.loc[4, 'pos'] == 11226
+
+    def test_genotype_rsids_using_file_http_auth_no_credentials(self):
+        # Prepare
+        self.setUp(user_pass_line='user: thepassword2')
+
+        rsids_file = get_repository_path('example01/rsids01.txt')
+
+        # Run
+        response = self.app.post('/ukbrest/api/v1.0/genotype/2/rsids', data={'file': (open(rsids_file, 'rb'), rsids_file)})
+
+        # Validate
+        assert response.status_code == 401, response.status_code
+
+    def test_genotype_rsids_using_file_http_auth_with_credentials(self):
+        # Prepare
+        self.setUp(user_pass_line='user: thepassword2')
+
+        rsids_file = get_repository_path('example01/rsids01.txt')
+
+        # Run
+        response = self.app.post(
+            '/ukbrest/api/v1.0/genotype/2/rsids',
+            data={
+                'file': (open(rsids_file, 'rb'), rsids_file)
+            },
+            headers=self._get_http_basic_auth_header('user', 'thepassword2'),
+        )
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        bgen_file = self._save_file(response)
+
+        results = qctool(bgen_file)
+
+        assert results is not None
+        assert hasattr(results, 'shape')
+        assert hasattr(results, 'columns')
+        assert results.shape[1] == 6 + 300 * 3
+        assert results.shape[0] == 5
 
     def test_genotype_temp_files_removed_in_server_side(self):
         # Prepare

@@ -6,20 +6,16 @@ from flask import current_app as app, Response
 from flask_restful import Resource, reqparse, Api
 
 from ukbrest.common.utils.datagen import get_temp_file_name
+from ukbrest.resources.common import UkbRestAPI
 
 
-class GenotypePositionsAPI(Resource):
+class GenotypePositionsAPI(UkbRestAPI):
     def __init__(self, **kwargs):
-        self.parser = reqparse.RequestParser()
+        super(GenotypePositionsAPI, self).__init__()
+
         self.parser.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files', required=True)
 
         self.genoq = app.config['genoquery']
-
-        auth = app.config['auth']
-        self.get = auth.login_required(self.get)
-        self.post = auth.login_required(self.post)
-
-        super(GenotypePositionsAPI, self).__init__()
 
     def get(self, chr, start, stop=None):
         return self.genoq.get_incl_range(chr, start, stop)
@@ -33,17 +29,13 @@ class GenotypePositionsAPI(Resource):
         return self.genoq.get_incl_range_from_file(chr, file)
 
 
-class GenotypeRsidsAPI(Resource):
+class GenotypeRsidsAPI(UkbRestAPI):
     def __init__(self, **kwargs):
-        self.parser = reqparse.RequestParser()
+        super(GenotypeRsidsAPI, self).__init__()
+
         self.parser.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files', required=True)
 
         self.genoq = app.config['genoquery']
-
-        auth = app.config['auth']
-        self.post = auth.login_required(self.post)
-
-        super(GenotypeRsidsAPI, self).__init__()
 
     def post(self, chr):
         args = self.parser.parse_args()

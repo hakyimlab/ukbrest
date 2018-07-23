@@ -3,6 +3,7 @@ from werkzeug.exceptions import BadRequest
 from werkzeug.datastructures import FileStorage
 from flask_restful import Resource, reqparse, current_app as app, Api
 
+from ukbrest.resources.common import UkbRestAPI
 from ukbrest.resources.formats import CSVSerializer, BgenieSerializer, Plink2Serializer, JsonSerializer
 
 
@@ -13,9 +14,10 @@ PHENOTYPE_FORMATS = {
 }
 
 
-class PhenotypeAPI(Resource):
+class PhenotypeAPI(UkbRestAPI):
     def __init__(self, **kwargs):
-        self.parser = reqparse.RequestParser()
+        super(PhenotypeAPI, self).__init__()
+
         self.parser.add_argument('columns', type=str, action='append', required=False, help='Columns to include')
         self.parser.add_argument('ecolumns', type=str, action='append', required=False, help='Columns to include (with regular expressions)')
         self.parser.add_argument('filters', type=str, action='append', required=False, help='Filters to include (AND)')
@@ -23,11 +25,6 @@ class PhenotypeAPI(Resource):
                                  help='Only {} are supported'.format(' and '.join(PHENOTYPE_FORMATS.keys())))
 
         self.pheno2sql = app.config['pheno2sql']
-
-        auth = app.config['auth']
-        self.get = auth.login_required(self.get)
-
-        super(PhenotypeAPI, self).__init__()
 
     def get(self):
         args = self.parser.parse_args()
@@ -42,17 +39,11 @@ class PhenotypeAPI(Resource):
         }
 
 
-class PhenotypeFieldsAPI(Resource):
+class PhenotypeFieldsAPI(UkbRestAPI):
     def __init__(self, **kwargs):
-        # self.parser = reqparse.RequestParser()
-        # self.parser.add_argument('info', type=int, help='Rate to charge for this resource')
+        super(PhenotypeFieldsAPI, self).__init__()
 
         self.pheno2sql = app.config['pheno2sql']
-
-        auth = app.config['auth']
-        self.get = auth.login_required(self.get)
-
-        super(PhenotypeFieldsAPI, self).__init__()
 
     def get(self):
         self.pheno2sql.get_field_dtype()
@@ -64,24 +55,20 @@ class PhenotypeFieldsAPI(Resource):
         }
 
 
-class QueryAPI(Resource):
+class QueryAPI(UkbRestAPI):
     def __init__(self, **kwargs):
-        self.post_parser = reqparse.RequestParser()
-        self.post_parser.add_argument('file', type=FileStorage, location='files', required=True)
-        self.post_parser.add_argument('section', type=str, required=True)
-        self.post_parser.add_argument('missing_code', type=str, required=False)
-        self.post_parser.add_argument('Accept', location='headers', choices=PHENOTYPE_FORMATS.keys(),
+        super(QueryAPI, self).__init__()
+
+        self.parser.add_argument('file', type=FileStorage, location='files', required=True)
+        self.parser.add_argument('section', type=str, required=True)
+        self.parser.add_argument('missing_code', type=str, required=False)
+        self.parser.add_argument('Accept', location='headers', choices=PHENOTYPE_FORMATS.keys(),
                                       help='Only {} are supported'.format(' and '.join(PHENOTYPE_FORMATS.keys())))
 
         self.pheno2sql = app.config['pheno2sql']
 
-        auth = app.config['auth']
-        self.post = auth.login_required(self.post)
-
-        super(QueryAPI, self).__init__()
-
     def post(self):
-        args = self.post_parser.parse_args()
+        args = self.parser.parse_args()
 
         yaml = YAML(typ='safe')
 

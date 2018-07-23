@@ -12,7 +12,7 @@ ENCODED_PASSWORD_PATTERN = re.compile('^pbkdf2:sha256:\d+\$\w+\$\w{64}$')
 
 
 class PasswordHasher(object):
-    def __init__(self, users_file, method):
+    def __init__(self, users_file, method='pbkdf2:sha256'):
         self.users_file = users_file
         self.method = method
 
