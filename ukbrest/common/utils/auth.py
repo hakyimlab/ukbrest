@@ -64,6 +64,8 @@ class PasswordHasher(object):
                 yaml.dump(new_users, f)
         elif self.users_file is not None and not os.path.isfile(self.users_file):
             logger.warning('Users file for authentication does not exist. No access will be allowed until the file is properly created.')
+        elif self.users_file is None:
+            logger.warning('No users file was specified, so HTTP Basic authentication is disabled.')
 
 
     def setup_http_basic_auth(self):
