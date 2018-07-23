@@ -137,6 +137,37 @@ class TestRestApiPhenotype(DBTest):
         fields = json.loads(response.data.decode('utf-8'))
         assert len(fields) == 8
 
+    def test_phenotype_fields_http_auth_multiple_users(self):
+        # Prepare
+        self.configureAppWithAuth(
+            'user: thepassword2\n'
+            'another_user: another_password'
+        )
+
+        # Run
+        response = self.app.get(
+            '/ukbrest/api/v1.0/phenotype/fields',
+            headers=self._get_http_basic_auth_header('user', 'thepassword2'),
+        )
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        fields = json.loads(response.data.decode('utf-8'))
+        assert len(fields) == 8
+
+        # Run 2
+        response = self.app.get(
+            '/ukbrest/api/v1.0/phenotype/fields',
+            headers=self._get_http_basic_auth_header('another_user', 'another_password'),
+        )
+
+        # Validate
+        assert response.status_code == 200, response.status_code
+
+        fields = json.loads(response.data.decode('utf-8'))
+        assert len(fields) == 8
+
     def test_phenotype_query_single_column_format_csv(self):
         # Prepare
         columns = ['c21_0_0']
