@@ -70,10 +70,14 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # GenoQuery
-    if args.genotype_path is None:
-        logger.warning('Genotype directory not specified.')
+    genoq_parameters = config.get_genoquery_parameters()
+    genoq_parameters = _update_parameters_from_args(genoq_parameters, args)
 
-    app.config.update({'genoquery': GenoQuery(args.genotype_path, debug=args.debug)})
+    if _parameter_empty(genoq_parameters, 'genotype_path'):
+        logger.warning('--genotype-path missing')
+
+    genoq = GenoQuery(**genoq_parameters)
+    app.config.update({'genoquery': genoq})
 
     # Pheno2SQL
     pheno2sql_parameters = config.get_pheno2sql_parameters()

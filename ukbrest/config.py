@@ -6,7 +6,9 @@ import logging
 #############################
 # Environment variables names
 #############################
+GENOTYPE_BGENIX_PATH='UKBREST_GENOTYPE_BGENIX_PATH'
 GENOTYPE_PATH_ENV='UKBREST_GENOTYPE_PATH'
+GENOTYPE_BGEN_FILE_NAMING='UKBREST_GENOTYPE_BGEN_FILE_NAMING'
 GENOTYPE_BGEN_SAMPLE='UKBREST_GENOTYPE_BGEN_SAMPLE_FILE'
 
 PHENOTYPE_PATH='UKBREST_PHENOTYPE_PATH'
@@ -31,7 +33,11 @@ HTTP_AUTH_USERS_FILE = 'UKBREST_HTTP_USERS_FILE_PATH'
 ########################
 # Configuration defaults
 ########################
+genotype_bgenix_path = environ.get(GENOTYPE_BGENIX_PATH, 'bgenix')
+
 genotype_path = environ.get(GENOTYPE_PATH_ENV, None)
+
+genotype_bgen_file_naming = environ.get(GENOTYPE_BGEN_FILE_NAMING, 'chr{:d}impv1.bgen')
 
 # bgen sample file is relative to genotype path
 bgen_sample_file = environ.get(GENOTYPE_BGEN_SAMPLE, None)
@@ -98,6 +104,15 @@ def get_postloader_samples_data_parameters():
     }
 
 
+def get_genoquery_parameters():
+    return {
+        'genotype_path': genotype_path,
+        'bgen_names': genotype_bgen_file_naming,
+        'bgenix_path': genotype_bgenix_path,
+        'tmpdir': tmpdir,
+        'debug': debug,
+    }
+
 def get_pheno2sql_parameters():
     return {
         'ukb_csvs': phenotype_csv,
@@ -125,6 +140,7 @@ def get_argparse_arguments(parser=None):
         parser = argparse.ArgumentParser()
 
     parser.add_argument('--genotype-path', type=str, help='Genotypes path, where BGEN files reside')
+    parser.add_argument('--bgen-names', type=str, help='BGEN file name format')
     parser.add_argument('--pheno-dir', type=str, help='Phenotypes directory, where csv files reside.')
     parser.add_argument('--bgen-sample-file', type=str, help='BGEN sample file')
     parser.add_argument('--db-uri', type=str, help='PostgreSQL connection string in the format: postgresql://USER:PASSWORD@HOST:5432/DB_NAME')

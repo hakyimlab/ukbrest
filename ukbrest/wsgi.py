@@ -7,7 +7,7 @@ from ukbrest.common.utils.auth import PasswordHasher
 
 def setup_app(app, ph):
     # Add GenoQuery object
-    genoq = GenoQuery(config.genotype_path, tmpdir=config.tmpdir, debug=config.debug)
+    genoq = GenoQuery(**config.get_genoquery_parameters())
     app.config.update({'genoquery': genoq})
 
     # Add Pheno2SQL object
