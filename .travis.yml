@@ -28,6 +28,7 @@ install:
   - ./waf
   - ./build/test/unit/test_bgen
   - sudo cp ./build/apps/bgenix /usr/local/bin/
+  - cd ..
 # Install conda and create environment
   - source /home/travis/miniconda/etc/profile.d/conda.sh
   - conda config --set always_yes yes --set changeps1 no
