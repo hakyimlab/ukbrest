@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/hakyimlab/ukbrest.svg?branch=master)](https://travis-ci.org/hakyimlab/ukbrest)
-[![Coverage Status](https://coveralls.io/repos/github/miltondp/ukbrest/badge.svg?branch=master)](https://coveralls.io/github/miltondp/ukbrest?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/hakyimlab/ukbrest/badge.svg?branch=master)](https://coveralls.io/github/hakyimlab/ukbrest?branch=master)
 
 # ukbrest
 
