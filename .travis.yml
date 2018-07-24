@@ -29,6 +29,7 @@ install:
   - ./build/test/unit/test_bgen
   - sudo cp ./build/apps/bgenix /usr/local/bin/
   - cd ..
+  - sudo cp lib/qctool/* /usr/local/bin/
 # Install conda and create environment
   - source /home/travis/miniconda/etc/profile.d/conda.sh
   - conda config --set always_yes yes --set changeps1 no
@@ -36,9 +37,6 @@ install:
   - conda info -a
   - conda env create -q -n test-environment --file environment.yml
   - conda activate test-environment
-#  - sudo cp lib/bgen/* /usr/local/bin/
-#  - sudo cp lib/qctool/* /usr/local/bin/
-  # Wait for PostgreSQL to finish loading
 #  - sleep 10
 
 script: nosetests --with-coverage
