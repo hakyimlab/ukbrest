@@ -3,7 +3,7 @@ from werkzeug.exceptions import BadRequest
 from werkzeug.datastructures import FileStorage
 from flask_restful import Resource, reqparse, current_app as app, Api
 
-from ukbrest.resources.common import UkbRestAPI
+from ukbrest.resources.ukbrestapi import UkbRestAPI
 from ukbrest.resources.formats import CSVSerializer, BgenieSerializer, Plink2Serializer, JsonSerializer
 
 

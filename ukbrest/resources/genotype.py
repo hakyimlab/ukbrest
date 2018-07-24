@@ -3,10 +3,10 @@ import json
 
 import werkzeug
 from flask import current_app as app, Response
-from flask_restful import Resource, reqparse, Api
+from flask_restful import Api
 
 from ukbrest.common.utils.datagen import get_temp_file_name
-from ukbrest.resources.common import UkbRestAPI
+from ukbrest.resources.ukbrestapi import UkbRestAPI
 
 
 class GenotypePositionsAPI(UkbRestAPI):
@@ -43,7 +43,7 @@ class GenotypeRsidsAPI(UkbRestAPI):
         file = get_temp_file_name('.txt')
         args.file.save(file)
 
-        return self.genoq.get_incl_rsids(chr, [file])
+        return self.genoq.get_incl_rsids(chr, file)
 
 
 def generate(file_path, file_mode='rb', delete=False):

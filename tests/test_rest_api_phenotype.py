@@ -68,7 +68,7 @@ class TestRestApiPhenotype(DBTest):
         return Pheno2SQL(csv_file, db_engine, **kwargs)
 
     def configureApp(self, app_func=None):
-        app.app.config['TESTING'] = True
+        app.app.config['testing'] = True
         app.app.config['auth'] = None
 
         if app_func is not None:
