@@ -63,6 +63,10 @@ class GenoQuery:
 
     def get_incl_rsids(self, chr, rsids):
         chr_file = self._get_chr_file(chr)
-        bgenix_args = ['-g', chr_file, '-incl-rsids'] + [rsids]
+
+        if not isinstance(rsids, list):
+            rsids = [rsids]
+
+        bgenix_args = ['-g', chr_file, '-incl-rsids'] + rsids
 
         return self._run_bgenix(bgenix_args)
