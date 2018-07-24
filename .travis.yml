@@ -6,7 +6,7 @@ services:
 
 language: python
 python:
-  - "3.5"
+  - "3.6"
 install:
   # Start PostgreSQL
   - sudo service postgresql stop
@@ -26,10 +26,17 @@ install:
   - conda info -a
   - conda env create -q -n test-environment --file environment.yml
   - conda activate test-environment
-  - sudo cp lib/bgen/* /usr/local/bin/
-  - sudo cp lib/qctool/* /usr/local/bin/
+  - wget http://bitbucket.org/gavinband/bgen/get/master.tar.gz
+  - tar -xf master.tar.gz
+  - cd gavinband-bgen-*
+  - ./waf configure
+  - ./waf
+  - ./build/test/unit/test_bgen
+  - sudo cp ./build/apps/bgenix /usr/local/bin/
+#  - sudo cp lib/bgen/* /usr/local/bin/
+#  - sudo cp lib/qctool/* /usr/local/bin/
   # Wait for PostgreSQL to finish loading
-  - sleep 10
+#  - sleep 10
 
 script: nosetests --with-coverage
 
