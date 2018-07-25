@@ -19,13 +19,17 @@ class GenoQuery:
         chr_file = os.path.join(self.repository_path, self.bgen_names.format(chr))
 
         if not os.path.isfile(chr_file):
-            raise UkbRestValidationError(f'BGEN file not found: {chr_file}')
+            message = f'BGEN file not found: {chr_file}'
+            logger.error(message)
+            raise UkbRestValidationError(message)
 
         return chr_file
 
     def _get_bgenix_path(self):
         if shutil.which(self.bgenix_path) is None:
-            raise UkbRestValidationError(f'bgenix was not found: {self.bgenix_path}')
+            message = f'bgenix was not found: {self.bgenix_path}'
+            logger.error(message)
+            raise UkbRestValidationError(message)
 
         return self.bgenix_path
 
@@ -42,9 +46,15 @@ class GenoQuery:
             )
 
             if run_status.returncode != 0:
+                message = f'bgenix failed: {" ".join(run_status.args)}'
+                output = run_status.stderr.decode()
+
+                logger.error(message)
+                logger.debug(output)
+
                 raise UkbRestExecutionError(
-                    f'bgenix failed: {" ".join(run_status.args)}',
-                    run_status.stderr.decode(),
+                    message,
+                    output,
                 )
 
         return random_bgen_file
