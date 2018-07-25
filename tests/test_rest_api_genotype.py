@@ -163,7 +163,7 @@ class TestRestApiGenotype(unittest.TestCase):
 
         assert 'output' in data, data
         assert 'Welcome to bgenix' in data['output'], data['output']
-        assert '(pos2 >= pos1)' in data['output'], data['output']
+        assert 'pos2 >= pos1' in data['output'], data['output']
 
     def test_genotype_positions_lower_limit_only(self):
         # Prepare
