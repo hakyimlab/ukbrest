@@ -7,8 +7,11 @@ TODO: add abstract
 
 TODO:
 > loading commands
+
 > starting command
+
 > example query command line
+
 > example query YAML
 
 
