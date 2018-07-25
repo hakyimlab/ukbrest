@@ -1,6 +1,21 @@
 [![Build Status](https://travis-ci.org/hakyimlab/ukbrest.svg?branch=master)](https://travis-ci.org/hakyimlab/ukbrest)
 [![Coverage Status](https://coveralls.io/repos/github/hakyimlab/ukbrest/badge.svg?branch=master)](https://coveralls.io/github/hakyimlab/ukbrest?branch=master)
 
+TODO: add figure 
+
+TODO: add abstract
+
+TODO:
+> loading commands
+
+> starting command
+
+> example query command line
+
+> example query YAML
+
+
+
 # ukbrest
 
 `TODO`: this documentation is still work in progress. It will be updated and completed soon.
