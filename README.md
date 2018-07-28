@@ -1,13 +1,15 @@
 [![Build Status](https://travis-ci.org/hakyimlab/ukbrest.svg?branch=master)](https://travis-ci.org/hakyimlab/ukbrest)
 [![Coverage Status](https://coveralls.io/repos/github/hakyimlab/ukbrest/badge.svg?branch=master)](https://coveralls.io/github/hakyimlab/ukbrest?branch=master)
+[![Docker Automated build](https://img.shields.io/docker/automated/jrottenberg/ffmpeg.svg)](https://hub.docker.com/r/hakyimlab/ukbrest/)
+
 
 # ukbREST
-
-`TODO`: this documentation is still work in progress. It will be updated and completed soon.
 
 **Title:** ukbREST: efficient and easily accessible data for reproducible research on large biobanks
 
 **Authors:** Milton Pividori and Hae Kyung Im
+
+TODO: link to bioRxiv
 
 *Im-Lab (http://hakyimlab.org/), Section of Genetic Medicine, Department of Medicine, The University of Chicago*
 
@@ -23,21 +25,24 @@ the data to answer specific scientific questions.  Here we propose a tool
 called ukbREST designed for the UK Biobank study (but easily extensible to
 other biobanks), which allows authorized users to efficiently retrieve
 phenotypic and genetic data. It exposes a REST API that makes data highly
-accessible inside a private and secure network, allowing  data specification in
-a human readable text format easily shareable with other researchers.  These
-characteristics make ukbREST an important tool to make biobank’s valuable data
-more readily accessible to the research community but also facilitate
-reproducibility of the analysis, a key aspect of science.
+accessible inside a private and secure network, allowing to write the data
+specification in a human readable text format easily shareable with other
+researchers.  These characteristics make ukbREST an important tool to make
+biobank’s valuable data more readily accessible to the research community but
+also facilitate reproducibility of the analysis, a key aspect of science.
 
+# Architecture and setup overview
 ![Setup and architecture image](/misc/ukbrest_arch.png)
 
 # Installation and usage
 TODO:
 
+* use same words as in steps: pre-process, setup, etc
 * loading commands
 * starting command
 * example query command line
 * example query YAML
+* mention http basic auth and ssl, but do not explain here
 
 
 ## Downloading and running
