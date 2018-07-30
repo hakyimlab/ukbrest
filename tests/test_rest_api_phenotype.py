@@ -60,12 +60,13 @@ class TestRestApiPhenotype(DBTest):
         else:
             raise ValueError('filename unknown type')
 
-        db_engine = POSTGRESQL_ENGINE
+        if 'db_uri' not in kwargs:
+            kwargs['db_uri'] = POSTGRESQL_ENGINE
 
         if 'n_columns_per_table' not in kwargs:
             kwargs['n_columns_per_table'] = 2
 
-        return Pheno2SQL(csv_file, db_engine, **kwargs)
+        return Pheno2SQL(csv_file, **kwargs)
 
     def configureApp(self, app_func=None):
         app.app.config['testing'] = True
@@ -199,6 +200,88 @@ class TestRestApiPhenotype(DBTest):
         assert csv_file.loc[2, 'c21_0_0'] == 'Option number 2'
         assert csv_file.loc[3, 'c21_0_0'] == 'Option number 3'
         assert csv_file.loc[4, 'c21_0_0'] == 'Option number 4'
+
+    def test_phenotype_query_error_column_does_not_exist(self):
+        # Prepare
+        columns = ['nonexistent_column']
+
+        parameters = {
+            'columns': columns,
+        }
+
+        # Run
+
+        # with self.app:
+        response = self.app.get('/ukbrest/api/v1.0/phenotype',
+                                query_string=parameters, headers={'accept': 'text/csv'})
+
+        # Validate
+        assert response.status_code == 400, response.status_code
+        data = json.load(io.StringIO(response.data.decode('utf-8')))
+
+        assert 'message' in data, data
+        assert 'column "nonexistent_column" does not exist' in data['message'], data['message']
+
+        assert 'output' not in data, data
+
+    def test_phenotype_query_error_column_does_not_exist_standard_column_name(self):
+        # Prepare
+        columns = ['c999_0_0']
+
+        parameters = {
+            'columns': columns,
+        }
+
+        # Run
+
+        # with self.app:
+        response = self.app.get('/ukbrest/api/v1.0/phenotype',
+                                query_string=parameters, headers={'accept': 'text/csv'})
+
+        # Validate
+        assert response.status_code == 400, response.status_code
+        data = json.load(io.StringIO(response.data.decode('utf-8')))
+
+        assert 'status_code' in data, data
+        assert data['status_code'] == 400, data['status_code']
+
+        assert 'error_type' in data, data
+        assert data['error_type'] == 'SQL_EXECUTION_ERROR'
+
+        assert 'message' in data, data
+        assert 'column "c999_0_0" does not exist' in data['message'], data['message']
+
+        assert 'output' not in data, data
+
+    def test_phenotype_query_error_cannot_connect_to_database(self):
+        # Prepare
+        self.setUp(load_data=False, db_uri='postgresql://test:test@wronghost:5432/ukb')
+
+        columns = ['c21_0_0', 'invalid value here']
+
+        parameters = {
+            'columns': columns,
+        }
+
+        # Run
+
+        # with self.app:
+        response = self.app.get('/ukbrest/api/v1.0/phenotype',
+                                query_string=parameters, headers={'accept': 'text/csv'})
+
+        # Validate
+        assert response.status_code == 500, response.status_code
+        data = json.load(io.StringIO(response.data.decode('utf-8')))
+
+        assert 'status_code' in data, data
+        assert data['status_code'] == 500, data['status_code']
+
+        assert 'error_type' in data, data
+        assert data['error_type'] == 'UNKNOWN', data['error_type']
+
+        assert 'message' in data, data
+        assert 'psycopg2.OperationalError' in data['message'], data['message']
+        assert 'wronghost' in data['message'], data['message']
 
     def test_phenotype_query_multiple_column_format_csv(self):
         # Prepare
@@ -1030,19 +1113,17 @@ class TestRestApiPhenotype(DBTest):
 
         # Validate
         assert response.status_code == 400, response.status_code
+        data = json.load(io.StringIO(response.data.decode('utf-8')))
 
-        data = json.loads(response.data.decode('utf-8'))
-        assert data is not None
-        assert 'message' in data
-        assert data['message'] is not None
+        assert 'status_code' in data, data
+        assert data['status_code'] == 400, data['status_code']
 
-    def test_phenotype_no_columns(self):
-        # Prepare
-        # Run
-        response = self.app.get('/ukbrest/api/v1.0/phenotype')
+        assert 'error_type' in data, data
+        assert data['error_type'] == 'UNKNOWN', data['error_type']
 
-        # Validate
-        assert response.status_code == 400, response.status_code
+        assert 'message' in data, data
+        assert 'are supported' in str(data['message']), data['message']
+        assert 'text/plink2' in str(data['message']), data['message']
 
     def test_phenotype_query_with_filtering(self):
         # Prepare

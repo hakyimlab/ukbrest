@@ -3,6 +3,24 @@ import json
 from flask import Response
 
 from ukbrest.common.utils.constants import BGEN_SAMPLES_TABLE
+from ukbrest.resources.error_handling import handle_errors
+
+
+class DataIterator:
+    def __init__(self, data):
+        self.first_chunk = next(data)
+        self.data = data
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.first_chunk is not None:
+            fc = self.first_chunk
+            self.first_chunk = None
+            return fc
+        else:
+            return next(self.data)
 
 
 class GenericSerializer():
@@ -30,18 +48,23 @@ class GenericSerializer():
     def get_order_by_table(self):
         return None
 
+    @handle_errors
     def __call__(self, *args, **kwargs):
         data, code = self._get_args(*args)
         missing_code = self._get_value_from_dict('missing_code', data, default_value='NA')
 
         headers = self._get_value_from_dict('headers', kwargs, {})
 
-        resp = Response(
+        data_response = DataIterator(
             self.data_generator(
                 data['data'],
                 self.serialize,
                 na_rep=missing_code
-            ),
+            )
+        )
+
+        resp = Response(
+            data_response,
             code
         )
 

@@ -1,8 +1,8 @@
 from ruamel.yaml import YAML
-from werkzeug.exceptions import BadRequest
 from werkzeug.datastructures import FileStorage
-from flask_restful import Resource, reqparse, current_app as app, Api
+from flask_restful import current_app as app, Api
 
+from ukbrest.resources.exceptions import UkbRestValidationError
 from ukbrest.resources.ukbrestapi import UkbRestAPI
 from ukbrest.resources.formats import CSVSerializer, BgenieSerializer, Plink2Serializer, JsonSerializer
 
@@ -22,7 +22,7 @@ class PhenotypeAPI(UkbRestAPI):
         self.parser.add_argument('ecolumns', type=str, action='append', required=False, help='Columns to include (with regular expressions)')
         self.parser.add_argument('filters', type=str, action='append', required=False, help='Filters to include (AND)')
         self.parser.add_argument('Accept', location='headers', choices=PHENOTYPE_FORMATS.keys(),
-                                 help='Only {} are supported'.format(' and '.join(PHENOTYPE_FORMATS.keys())))
+                                 help='Only {} are supported'.format(', '.join(PHENOTYPE_FORMATS.keys())))
 
         self.pheno2sql = app.config['pheno2sql']
 
@@ -30,7 +30,7 @@ class PhenotypeAPI(UkbRestAPI):
         args = self.parser.parse_args()
 
         if args.columns is None and args.ecolumns is None:
-            raise BadRequest('You have to specify either columns or ecolumns')
+            raise UkbRestValidationError('You have to specify either columns or ecolumns')
 
         data_results = self.pheno2sql.query(args.columns, args.ecolumns, args.filters)
 

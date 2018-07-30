@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
+from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.types import TEXT, FLOAT, TIMESTAMP, INT
 
 from ukbrest.common.utils.db import create_table, create_indexes, DBAccess
@@ -16,6 +17,7 @@ from ukbrest.common.utils.datagen import get_tmpdir
 from ukbrest.common.utils.constants import BGEN_SAMPLES_TABLE, ALL_EIDS_TABLE
 from ukbrest.config import logger, SQL_CHUNKSIZE_ENV
 from ukbrest.common.utils.misc import get_list
+from ukbrest.resources.exceptions import UkbRestSQLExecutionError
 
 
 class Pheno2SQL(DBAccess):
@@ -580,6 +582,9 @@ class Pheno2SQL(DBAccess):
         logger.info('Initialization finished!')
 
     def _create_joins(self, tables, join_type='inner join'):
+        if len(tables) == 0:
+            return ""
+
         if len(tables) == 1:
             return tables[0]
 
@@ -600,7 +605,7 @@ class Pheno2SQL(DBAccess):
         self._get_db_engine()).loc[:, 'table_name'].tolist()
 
         if len(tables_needed_df) == 0:
-            raise Exception('Tables not found.')
+            return []
 
         return tables_needed_df
 
@@ -692,9 +697,12 @@ class Pheno2SQL(DBAccess):
 
         logger.debug(final_sql_query)
 
-        results_iterator = pd.read_sql(
-            final_sql_query, self._get_db_engine(), index_col='eid', chunksize=self.sql_chunksize
-        )
+        try:
+            results_iterator = pd.read_sql(
+                final_sql_query, self._get_db_engine(), index_col='eid', chunksize=self.sql_chunksize
+            )
+        except ProgrammingError as e:
+            raise UkbRestSQLExecutionError(str(e))
 
         if self.sql_chunksize is None:
             results_iterator = iter([results_iterator])
@@ -717,13 +725,21 @@ class Pheno2SQL(DBAccess):
 
         base_sql = """
             select {data_fields}
-            from {tables_join}
+            {from_clause}
             {where_statements}
         """
 
+        tables_join_sql = self._create_joins(tables_needed_df, join_type='full outer join')
+
+        if tables_join_sql:
+            from_clause_sql = f'from {tables_join_sql}'
+        else:
+            from_clause_sql = 'from all_eids'
+
+
         return base_sql.format(
             data_fields=','.join(all_columns),
-            tables_join=self._create_joins(tables_needed_df, join_type='full outer join'),
+            from_clause=from_clause_sql,
             where_statements=((' where ' + self._get_filterings(filterings)) if filterings is not None else ''),
         )
 

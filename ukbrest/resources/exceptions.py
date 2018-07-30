@@ -1,3 +1,5 @@
+from ukbrest.config import logger
+
 
 class UkbRestException(Exception):
     def __init__(self, message, subtype, output=None):
@@ -6,7 +8,11 @@ class UkbRestException(Exception):
         self.message = message
         self.status_code = 400
         self.subtype = subtype
-        self.output = output
+
+        if output is not None:
+            self.output = output
+
+        logger.error(self.message)
 
 
 class UkbRestValidationError(UkbRestException):
@@ -14,6 +20,11 @@ class UkbRestValidationError(UkbRestException):
         super(UkbRestValidationError, self).__init__(message, 'VALIDATION_ERROR')
 
 
-class UkbRestExecutionError(UkbRestException):
+class UkbRestProgramExecutionError(UkbRestException):
     def __init__(self, message, output):
-        super(UkbRestExecutionError, self).__init__(message, 'EXECUTION_ERROR', output)
+        super(UkbRestProgramExecutionError, self).__init__(message, 'EXECUTION_ERROR', output)
+
+
+class UkbRestSQLExecutionError(UkbRestException):
+    def __init__(self, message):
+        super(UkbRestSQLExecutionError, self).__init__(message, 'SQL_EXECUTION_ERROR')
