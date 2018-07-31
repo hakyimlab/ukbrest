@@ -72,7 +72,7 @@ $ ls -lh genotype/*
 -rw-rw-r-- 1  201M Mar 16 10:12 genotype/ukb_imp_chr11_v3.bgen.bgi
 -rw-rw-r-- 1  109G Mar 16 09:54 genotype/ukb_imp_chr12_v3.bgen
 [...]
--rw-rw-r-- 1  9.3M Apr  6 09:41 genotype/<b>ukb12345_imp_chr1_v3_s487395.sample</b>
+-rw-rw-r-- 1  9.3M Apr  6 09:41 genotype/ukb12345_imp_chr1_v3_s487395.sample
 ```
 
 ## Step 2: Setup
