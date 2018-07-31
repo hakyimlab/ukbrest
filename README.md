@@ -40,6 +40,10 @@ make queries just using standard tools like `curl`. The quickest way to get ukbR
 [our Docker image](https://hub.docker.com/r/hakyimlab/ukbrest/). So install
 [Docker](https://docs.docker.com/) and follow the steps below.
 
+If you just want to give ukbREST a try, and you are not a UK Biobank user, you
+can follow the [guide in the wiki](https://github.com/hakyimlab/ukbrest/wiki)
+and use our simulated data.
+
 ## Step 1: Pre-process
 If you are an approved UK Biobank researcher you are probably already familiar with this.
 Once you downloaded your encrypted application files, decrypt them and convert them
@@ -61,6 +65,9 @@ $ ls -lh phenotype/*
 -rw-rw-r-- 1   4.1M Jul  2 23:19 phenotype/ukb4444.html
 ```
 
+Make sure your phenotype CSV file do not have overlapping data-fields (use the latest
+data refresh for each basket).
+
 For the genotype data you'll also have a specific folder, for instance, called `genotype`.
 Here you have to copy your `bgen`, `bgi` (BGEN index files) and `sample` (BGEN sample) files:
 
@@ -76,86 +83,87 @@ $ ls -lh genotype/*
 ```
 
 ## Step 2: Setup
-## Step 3: Start
-## Step 4: Query
+Here we are going to start PostgreSQL and load the phenotype data into it.
+Start Docker in the server and pull the PostgreSQL and ukbREST images:
 
-# Documentation
+```
+$ docker pull postgres:9.6
+[...]
+$ docker pull docker pull hakyimlab/ukbrest
+[...]
+```
 
-Check out the [wiki pages](https://github.com/hakyimlab/ukbrest/wiki) for more information.
+Create a network in Docker that we'll use to connect ukbREST with PostgreSQL:
 
-TODO:
-
-* use same words as in steps: pre-process, setup, etc
-* loading commands
-* starting command
-* example query command line
-* example query YAML
-* mention http basic auth and ssl, but do not explain here
-
-
-## Downloading and running
-The easiest way to get ukbrest up and running is using Docker. The instructions below are just to get things working
-quickly. You should read the Docker documentation if you want to, for example, keep data saved across different runs.
-
-**The first thing** you have to do is creating a virtual network and getting PostgreSQL up:
-
-```bash
+```
 $ docker network create ukb
+```
 
-$ docker run -d --name pg --net ukb -e POSTGRES_USER=test \
-  -e POSTGRES_PASSWORD=test -e POSTGRES_DB=ukb -p 5432:5432 \
+Start the PostgreSQL container (here we are using user `test` with password `test`; you should
+pick a stronger one):
+
+```
+$ docker run -d --name pg --net ukb \
+  -e POSTGRES_USER=test -e POSTGRES_PASSWORD=test \
+  -e POSTGRES_DB=ukb -p 5432:5432 \
   postgres:9.6
 ```
 
-**Secondly**, you have to load your phenotype data into PostgreSQL:
+Then use the ukbREST Docker image to load your phenotype data into the PostgreSQL database:
 
-```bash
+<pre>
 $ docker run --rm --net ukb \
-  -v /mnt/ukbrest/genotype:/var/lib/genotype \
-  -v /mnt/ukbrest/phenotype/:/var/lib/phenotype \
-  -e UKBREST_GENOTYPE_BGEN_SAMPLE_FILE="ukb1952_v2_s487398.sample" \
+  -v /full/path/to/<b>genotype</b>/folder/:/var/lib/genotype \
+  -v /full/path/to/<b>phenotype</b>/folder/:/var/lib/phenotype \
+  -e UKBREST_GENOTYPE_BGEN_SAMPLE_FILE="<b>ukb12345_imp_chr1_v3_s487395.sample</b>" \
   -e UKBREST_DB_URI="postgresql://test:test@pg:5432/ukb" \
-  miltondp/ukbrest --load
-```
+  hakyimlab/ukbrest --load
+[...]
+2018-07-20 22:50:34,962 - ukbrest - INFO - Loading finished!
+</pre>
 
-The BGEN sample file (specified by the environment variable `UKBREST_GENOTYPE_BGEN_SAMPLE_FILE`) is
-relative to the genotype directory (`/mnt/ukbrest/genotype`, in the example above).
+## Step 3: Start
+Now you only need to start the ukbREST server:
 
-Once the loading process finishes, you can get all the data field codings by connecting to the
-PostgreSQL database and exporting a list of codings:
-
-```sql
-\copy (select distinct coding from fields where coding is not null)
-to /mnt/all_codings.txt (format csv)
-```
-
-The file `/mnt/all_codings.txt` is just a list of coding numbers, one per line, that you can use
-to download all coding files using the `download_codings.sh` script:
-
-```bash
-$ mkdir /tmp/codings && cd /mnt/codings
-$ [...]/misc/download_codings.sh all_codings.txt
-```
-
-`TODO`: how to load coding tables.
-
-**The third step** consists in indexing your genotype data. You have to use the [bgenix](https://bitbucket.org/gavinband/bgen/wiki/bgenix) indexer to generate a `.bgi` file for each `.bgen` file (for each chromosome). This feature will be added soon to ukbrest, so you don't have to download and compile bgenix.
-
-Finally, run ukbrest with:
-
-```bash
-$ docker run --rm --net ukb -p 5000:5000 \
-  -v /mnt/genotype:/var/lib/genotype \
-  -e UKBREST_SQL_CHUNKSIZE="10000" \
+<pre>
+docker run --rm --net ukb -p 5000:5000 \
+  -v /full/path/to/<b>genotype</b>/folder/:/var/lib/genotype \
   -e UKBREST_DB_URI="postgresql://test:test@pg:5432/ukb" \
-  miltondp/ukbrest
+  hakyimlab/ukbrest
+</pre>
+
+Check out [the documentation](https://github.com/hakyimlab/ukbrest/wiki)
+to see how to add **user authentication** and **SSL encryption**.
+
+## Step 4: Query
+Once the ukbREST is up and running, you can request any data-field using
+[different query methods](https://github.com/hakyimlab/ukbrest/wiki/Phenotype-queries).
+Below we show some examples using **simulated data**, so you can see how the output
+looks like.
+
+### Phenotype queries
+You can request a single or multiple data-fields using standard tools like `curl`:
+
+**TODO:** Change example to query two data-fields.
+
+```
+$ curl -G \
+  -HAccept:text/csv \
+  "http://127.0.0.1:5000/ukbrest/api/v1.0/phenotype" \
+  --data-urlencode "columns=c101_0_0 as variable_name"
+
+eid,variable_name
+1000010,NA
+1000021,0.0401
+1000030,NA
+1000041,0.5632
+1000050,0.4852
+1000061,0.1192
 ```
 
-Make sure the directory `/mnt/genotype` (you can choose another one) has you genotype data (chr21impv1.bgen, chr21impv1.bgen.bgi, etc).
+**TODO:** example with YAML file requesting hierarchical diseases.
 
-
-## Querying genotype data
-
+### Genotype queries
 Query chromosome 1, positions from 0 to 1000:
 ```bash
 $ curl -HAccept:application/octel-stream \
@@ -183,22 +191,6 @@ $ curl -HAccept:application/octel-stream \
 ```
 
 
-## Querying phenotype data
+# Documentation
 
-CSV format:
-```bash
-$ curl -HAccept:text/csv \
-"http://localhost:5000/ukbrest/api/v1.0/phenotype\
-?columns=c21_0_0\
-&columns=c34_0_0\
-&filters=eid <1000100"
-```
-
-Phenotype format (used by plink2, for example):
-```bash
-$ curl -HAccept:text/phenotype \
-"http://localhost:5000/ukbrest/api/v1.0/phenotype\
-?columns=c21_0_0\
-&columns=c34_0_0\
-&filters=eid <1000100"
-```
+Check out the [wiki pages](https://github.com/hakyimlab/ukbrest/wiki) for more information.
