@@ -34,7 +34,55 @@ also facilitate reproducibility of the analysis, a key aspect of science.
 # Architecture and setup overview
 ![Setup and architecture image](/misc/ukbrest_arch.png)
 
-# Installation and usage
+# Installation
+You only need to install ukbREST in a server; clients can connect to it and
+make queries just using standard tools like `curl`. The quickest way to get ukbREST is to use
+[our Docker image](https://hub.docker.com/r/hakyimlab/ukbrest/). So install
+[Docker](https://docs.docker.com/) and follow the steps below.
+
+## Step 1: Pre-process
+If you are an approved UK Biobank researcher you are probably already familiar with this.
+Once you downloaded your encrypted application files, decrypt them and convert them
+to CSV and HTML formats using `ukbconv`. Checkout the
+[Data Showcase documentation](http://biobank.ctsu.ox.ac.uk/crystal/).
+
+Copy all CSV and HTML file to a particular folder (for example, called `phenotype`).
+You will have one CSV and one HTML file per dataset, each one with a specific *Basket ID*, like
+for example shown below for four different datasets with Basket IDs 1111, 2222, 3333, 4444:
+```
+$ ls -lh phenotype/*
+-rw-rw-r-- 1   6.6G Jul  2 23:22 phenotype/ukb1111.csv
+-rw-rw-r-- 1   6.4M Jul  2 23:19 phenotype/ukb1111.html
+-rw-rw-r-- 1   2.7G Jul  2 23:20 phenotype/ukb2222.csv
+-rw-rw-r-- 1   4.5M Jul  2 23:19 phenotype/ukb2222.html
+-rw-rw-r-- 1  1012M Jul  2 23:22 phenotype/ukb3333.csv
+-rw-rw-r-- 1   192K Jul  2 23:19 phenotype/ukb3333.html
+-rw-rw-r-- 1    22G Jul  2 23:24 phenotype/ukb4444.csv
+-rw-rw-r-- 1   4.1M Jul  2 23:19 phenotype/ukb4444.html
+```
+
+For the genotype data you'll also have a specific folder, for instance, called `genotype`.
+Here you have to copy your `bgen`, `bgi` (BGEN index files) and `sample` (BGEN sample) files:
+
+```
+$ ls -lh genotype/*
+-rw-rw-r-- 1  114G Mar 16 09:51 genotype/ukb_imp_chr10_v3.bgen
+-rw-rw-r-- 1  198M Mar 16 10:12 genotype/ukb_imp_chr10_v3.bgen.bgi
+-rw-rw-r-- 1  109G Mar 16 09:52 genotype/ukb_imp_chr11_v3.bgen
+-rw-rw-r-- 1  201M Mar 16 10:12 genotype/ukb_imp_chr11_v3.bgen.bgi
+-rw-rw-r-- 1  109G Mar 16 09:54 genotype/ukb_imp_chr12_v3.bgen
+[...]
+-rw-rw-r-- 1  9.3M Apr  6 09:41 genotype/<b>ukb12345_imp_chr1_v3_s487395.sample</b>
+```
+
+## Step 2: Setup
+## Step 3: Start
+## Step 4: Query
+
+# Documentation
+
+Check out the [wiki pages](https://github.com/hakyimlab/ukbrest/wiki) for more information.
+
 TODO:
 
 * use same words as in steps: pre-process, setup, etc
