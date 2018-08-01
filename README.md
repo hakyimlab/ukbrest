@@ -42,9 +42,9 @@ Once you downloaded your encrypted application files, decrypt them and convert t
 to CSV and HTML formats using `ukbconv`. Checkout the
 [Data Showcase documentation](http://biobank.ctsu.ox.ac.uk/crystal/).
 
-Copy all CSV and HTML file to a particular folder (for example, called `phenotype`).
+Copy all CSV and HTML files to a particular folder (for example, called `phenotype`).
 You will have one CSV and one HTML file per dataset, each one with a specific *Basket ID*, like
-for example shown below for four different datasets with Basket IDs 1111, 2222, 3333, 4444:
+for example the ones shown below for four different datasets with Basket IDs 1111, 2222, 3333, 4444:
 ```
 $ ls -lh phenotype/*
 -rw-rw-r-- 1   6.6G Jul  2 23:22 phenotype/ukb1111.csv
@@ -57,7 +57,7 @@ $ ls -lh phenotype/*
 -rw-rw-r-- 1   4.1M Jul  2 23:19 phenotype/ukb4444.html
 ```
 
-Make sure your phenotype CSV file do not have overlapping data-fields (use the latest
+Make sure your phenotype CSV files do not have overlapping data-fields (use the latest
 data refresh for each basket).
 
 For the genotype data you'll also have a specific folder, for instance, called `genotype`.
@@ -76,13 +76,14 @@ $ ls -lh genotype/*
 
 ## Step 2: Setup
 Here we are going to start PostgreSQL and load the phenotype data into it.
-Start Docker in the server and pull the PostgreSQL and ukbREST images:
+Start Docker in your server/computer and pull the PostgreSQL and ukbREST images:
 
 ```
 $ docker pull postgres:9.6
-[...]
-$ docker pull docker pull hakyimlab/ukbrest
-[...]
+```
+
+```
+$ docker pull hakyimlab/ukbrest
 ```
 
 Create a network in Docker that we'll use to connect ukbREST with PostgreSQL:
@@ -99,19 +100,20 @@ $ docker run -d --name pg --net ukb -p 127.0.0.1:5432:5432 \
   -e POSTGRES_USER=test -e POSTGRES_PASSWORD=test \
   -e POSTGRES_DB=ukb \
   postgres:9.6
-
-33be0d462fee59a992f1e5f27e4ccee8526df5d1f3641f7924373e3cc94292d4
 ```
 
-Then use the ukbREST Docker image to load your phenotype data into the PostgreSQL database:
+Then use the ukbREST Docker image to load your phenotype data into the PostgreSQL database.
+Replace the bold text in the command below with the full path of both your phenotype and genotype folder,
+as well as the right name of your `.sample` file.
 
 <pre>
 $ docker run --rm --net ukb \
-  -v /full/path/to/<b>genotype</b>/folder/:/var/lib/genotype \
-  -v /full/path/to/<b>phenotype</b>/folder/:/var/lib/phenotype \
+  -v <b>/full/path/to/genotype/folder/</b>:/var/lib/genotype \
+  -v <b>/full/path/to/phenotype/folder/</b>:/var/lib/phenotype \
   -e UKBREST_GENOTYPE_BGEN_SAMPLE_FILE="<b>ukb12345_imp_chr1_v3_s487395.sample</b>" \
   -e UKBREST_DB_URI="postgresql://test:test@pg:5432/ukb" \
   hakyimlab/ukbrest --load
+
 [...]
 2018-07-20 22:50:34,962 - ukbrest - INFO - Loading finished!
 </pre>
