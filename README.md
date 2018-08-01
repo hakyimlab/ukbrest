@@ -27,7 +27,7 @@ These characteristics make ukbREST an important tool to make biobank’s valuabl
 </p>
 
 # Installation
-You only need to install ukbREST in a server; clients can connect to it and
+You only need to install ukbREST in a server/computer; clients can connect to it and
 make queries just using standard tools like `curl`. The quickest way to get ukbREST is to use
 [our Docker image](https://hub.docker.com/r/hakyimlab/ukbrest/). So install
 [Docker](https://docs.docker.com/) and follow the steps below.
@@ -92,13 +92,15 @@ $ docker network create ukb
 ```
 
 Start the PostgreSQL container (here we are using user `test` with password `test`; you should
-pick a stronger one):
+choose a stronger one):
 
 ```
-$ docker run -d --name pg --net ukb \
+$ docker run -d --name pg --net ukb -p 127.0.0.1:5432:5432 \
   -e POSTGRES_USER=test -e POSTGRES_PASSWORD=test \
-  -e POSTGRES_DB=ukb -p 5432:5432 \
+  -e POSTGRES_DB=ukb \
   postgres:9.6
+
+33be0d462fee59a992f1e5f27e4ccee8526df5d1f3641f7924373e3cc94292d4
 ```
 
 Then use the ukbREST Docker image to load your phenotype data into the PostgreSQL database:
@@ -118,14 +120,20 @@ $ docker run --rm --net ukb \
 Now you only need to start the ukbREST server:
 
 <pre>
-docker run --rm --net ukb -p 5000:5000 \
+$ docker run --rm --net ukb -p 127.0.0.1:5000:5000 \
   -v /full/path/to/<b>genotype</b>/folder/:/var/lib/genotype \
   -e UKBREST_DB_URI="postgresql://test:test@pg:5432/ukb" \
   hakyimlab/ukbrest
 </pre>
 
+For **security reasons**, note that with these commands both the ukbREST server
+and the PostgreSQL are only reachable from your own computer/server. No one from the
+network will be able to make any queries other than you from the computer where
+ukbREST is running.
+
 Check out [the documentation](https://github.com/hakyimlab/ukbrest/wiki)
-to see how to add **user authentication** and **SSL encryption**.
+to setup ukbREST in a private and secure network and how to add **user authentication**
+and **SSL encryption**.
 
 ## Step 4: Query
 Once the ukbREST is up and running, you can request any data-field using
