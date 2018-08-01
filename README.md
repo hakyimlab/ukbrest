@@ -138,27 +138,37 @@ and **SSL encryption**.
 ## Step 4: Query
 Once the ukbREST is up and running, you can request any data-field using
 [different query methods](https://github.com/hakyimlab/ukbrest/wiki/Phenotype-queries).
-Below we show some examples using **simulated data**, so you can see how the output
-looks like.
+Column names for data-fields have this format: `c{DATA_FIELD_ID}_{INSTANCE}_{ARRAY}`.
+So if you would like to query the [Standing height](http://biobank.ctsu.ox.ac.uk/showcase/field.cgi?id=50)
+data field (which has ID 50), instance 1 (First repeat assessment visit 2012-13), you have to use: `c50_1_0`.
+
+Below we show some examples using **simulated data** (not from UK Biobank, of course),
+so you can see how the output looks like.
 
 ### Phenotype queries
 You can request a single or multiple data-fields using standard tools like `curl`:
 
-**TODO:** Change example to query two data-fields.
-
+Here we request two simulated data-fields: 
+* Data field ID 101, instance 0, array 0, which has a column name `c101_0_0`. We rename this data-field to `variable_name`.
+* Data field ID 21, instance 2, array 0, which has a column name `c21_2_0`.
 ```
 $ curl -G \
   -HAccept:text/csv \
   "http://127.0.0.1:5000/ukbrest/api/v1.0/phenotype" \
-  --data-urlencode "columns=c101_0_0 as variable_name"
+  --data-urlencode "columns=c101_0_0 as variable_name" \
+  --data-urlencode "columns=c21_2_0"
 
-eid,variable_name
-1000010,NA
-1000021,0.0401
-1000030,NA
-1000041,0.5632
-1000050,0.4852
-1000061,0.1192
+eid,variable_name,c21_2_0
+9999910,NA,Yes
+9999920,NA,No
+9999930,NA,Maybe
+9999940,NA,NA
+9999950,0.4852,Probably
+9999960,NA,Yes
+9999970,NA,NA
+9999961,0.1192,NA
+9999921,0.0401,NA
+9999941,0.5632,NA
 ```
 
 **TODO:** example with YAML file requesting hierarchical diseases.
