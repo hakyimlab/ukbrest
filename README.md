@@ -5,7 +5,7 @@
 
 # ukbREST
 
-**Title:** ukbREST: efficient and easily accessible data for reproducible research on large biobanks
+**Title:** ukbREST: efficient and streamlined data access for reproducible research of large biobanks
 
 **Authors:** Milton Pividori and Hae Kyung Im
 
@@ -14,25 +14,17 @@ TODO: link to bioRxiv
 *Im-Lab (http://hakyimlab.org/), Section of Genetic Medicine, Department of Medicine, The University of Chicago*
 
 # Abstract
-Large biobanks, such as UK Biobank with half a million participants, are
-changing the scale and availability of genotypic and phenotypic data for
-researchers to ask fundamental questions about the biology of health and
-disease. The breadth of the UK Biobank data is enabling discoveries at an
-unprecedented pace.  However, this size and complexity pose new challenges to
-investigators who need to keep the accruing data up to date, comply with
-potential consent changes, and efficiently and reproducibly extract subsets of
-the data to answer specific scientific questions.  Here we propose a tool
-called ukbREST designed for the UK Biobank study (but easily extensible to
-other biobanks), which allows authorized users to efficiently retrieve
-phenotypic and genetic data. It exposes a REST API that makes data highly
-accessible inside a private and secure network, allowing to write the data
-specification in a human readable text format easily shareable with other
-researchers.  These characteristics make ukbREST an important tool to make
-biobank’s valuable data more readily accessible to the research community but
-also facilitate reproducibility of the analysis, a key aspect of science.
+Large biobanks, such as UK Biobank with half a million participants, are changing the scale and availability of genotypic and phenotypic data for researchers to ask fundamental questions about the biology of health and disease. The breadth of the UK Biobank data is enabling discoveries at an unprecedented pace.
+However, this size and complexity pose new challenges to investigators who need to keep the accruing data up to date, comply with potential consent changes, and efficiently and reproducibly extract subsets of the data to answer specific scientific questions.
+Here we propose a tool called ukbREST designed for the UK Biobank study (easily
+extensible to other biobanks), which allows authorized users to efficiently 
+retrieve phenotypic and genetic data. It exposes a REST API that makes data highly accessible inside a private and secure network, allowing the data specification in a human readable text format easily shareable with other researchers.
+These characteristics make ukbREST an important tool to make biobank’s valuable data more readily accessible to the research community but also facilitate reproducibility of the analysis, a key aspect of science.
 
 # Architecture and setup overview
-![Setup and architecture image](/misc/ukbrest_arch.png)
+<p align="center">
+<img src="/misc/ukbrest_arch.png" alt="Setup and architecture image" width="75%"/>
+</p>
 
 # Installation
 You only need to install ukbREST in a server; clients can connect to it and
