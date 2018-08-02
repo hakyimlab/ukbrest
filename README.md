@@ -118,6 +118,11 @@ $ docker run --rm --net ukb \
 2018-07-20 22:50:34,962 - ukbrest - INFO - Loading finished!
 </pre>
 
+Sometimes we found that the CSV file have a wrong encoding, making Python fail when reading
+the file. If ukbREST found this, you'll see an error message about **Unicode decoding error**.
+Check out [the documentation](https://github.com/hakyimlab/ukbrest/wiki/Load-real-UK-Biobank-data)
+to know how to fix it.
+
 ## Step 3: Start
 Now you only need to start the ukbREST server:
 
