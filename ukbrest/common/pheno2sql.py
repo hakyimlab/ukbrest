@@ -11,13 +11,14 @@ import pandas as pd
 from joblib import Parallel, delayed
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.types import TEXT, FLOAT, TIMESTAMP, INT
+from sqlalchemy.exc import OperationalError
 
 from ukbrest.common.utils.db import create_table, create_indexes, DBAccess
 from ukbrest.common.utils.datagen import get_tmpdir
 from ukbrest.common.utils.constants import BGEN_SAMPLES_TABLE, ALL_EIDS_TABLE
 from ukbrest.config import logger, SQL_CHUNKSIZE_ENV
 from ukbrest.common.utils.misc import get_list
-from ukbrest.resources.exceptions import UkbRestSQLExecutionError
+from ukbrest.resources.exceptions import UkbRestSQLExecutionError, UkbRestProgramExecutionError
 
 
 class Pheno2SQL(DBAccess):
@@ -300,7 +301,7 @@ class Pheno2SQL(DBAccess):
 
                 return file_encoding
         else:
-            logger.debug(f'No {self.csv_files_encoding_file} found, assuming {self.csv_files_encoding}')
+            logger.warning(f'No {self.csv_files_encoding_file} found, assuming {self.csv_files_encoding}')
             return self.csv_files_encoding
 
     def _save_column_range(self, csv_file, csv_file_idx, column_names_idx, column_names):
@@ -328,6 +329,7 @@ class Pheno2SQL(DBAccess):
                 chunk.loc[:, new_columns].to_csv(output_csv_filename, quoting=csv.QUOTE_NONNUMERIC, na_rep=np.nan, header=write_headers, mode='w')
             else:
                 chunk.loc[:, new_columns].to_csv(output_csv_filename, quoting=csv.QUOTE_NONNUMERIC, na_rep=np.nan, header=False, mode='a')
+
 
         return table_name, output_csv_filename
 
@@ -553,20 +555,27 @@ class Pheno2SQL(DBAccess):
         """
         logger.info('Loading phenotype data into database')
 
-        for csv_file_idx, csv_file in enumerate(self.ukb_csvs):
-            logger.info('Working on {}'.format(csv_file))
+        try:
+            for csv_file_idx, csv_file in enumerate(self.ukb_csvs):
+                logger.info('Working on {}'.format(csv_file))
 
-            self._create_tables_schema(csv_file, csv_file_idx)
-            self._create_temporary_csvs(csv_file, csv_file_idx)
-            self._load_csv()
+                self._create_tables_schema(csv_file, csv_file_idx)
+                self._create_temporary_csvs(csv_file, csv_file_idx)
+                self._load_csv()
 
-        self._load_all_eids()
-        self._load_bgen_samples()
-        self._load_events()
-        self._create_constraints()
+            self._load_all_eids()
+            self._load_bgen_samples()
+            self._load_events()
+            self._create_constraints()
 
-        if vacuum:
-            self._vacuum()
+            if vacuum:
+                self._vacuum()
+
+        except OperationalError as e:
+            raise UkbRestSQLExecutionError('There was an error with the database: ' + str(e))
+        except UnicodeDecodeError as e:
+            logger.debug(str(e))
+            raise UkbRestProgramExecutionError('Unicode decoding error when reading CSV file. Activate debug to show more details.')
 
         # delete temporary variable
         del(self._loading_tmp)

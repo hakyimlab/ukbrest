@@ -12,7 +12,7 @@ class UkbRestException(Exception):
         if output is not None:
             self.output = output
 
-        logger.error(self.message)
+        logger.error(self.message.strip())
 
 
 class UkbRestValidationError(UkbRestException):
@@ -21,7 +21,7 @@ class UkbRestValidationError(UkbRestException):
 
 
 class UkbRestProgramExecutionError(UkbRestException):
-    def __init__(self, message, output):
+    def __init__(self, message, output=None):
         super(UkbRestProgramExecutionError, self).__init__(message, 'EXECUTION_ERROR', output)
 
 

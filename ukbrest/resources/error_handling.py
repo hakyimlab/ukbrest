@@ -1,10 +1,14 @@
+import traceback
+from joblib.my_exceptions import JoblibException
+
 from flask import jsonify
 from werkzeug.exceptions import HTTPException
 
 from ukbrest.resources.exceptions import UkbRestException
+from ukbrest.config import logger
 
 
-def handle_errors(func):
+def handle_http_errors(func):
     def func_wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
@@ -12,6 +16,25 @@ def handle_errors(func):
             return _make_ukbrest_error(e)
         except Exception as e:
             return _make_ukbrest_error(e)
+
+    return func_wrapper
+
+
+def handle_errors(func):
+    def func_wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except UkbRestException as e:
+            pass
+        except Exception as e:
+            tb = traceback.format_exc()
+            logger.debug(tb)
+
+            msg = f'\n{str(e)}'
+            if isinstance(e, JoblibException):
+                msg = ''
+
+            logger.error(f'Loading finished with an unknown error. Activate debug to see full stack trace.{msg}')
 
     return func_wrapper
 
