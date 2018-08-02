@@ -11,7 +11,7 @@ def get_list(values):
     return [values]
 
 
-def _update_parameters_from_args(params, args):
+def update_parameters_from_args(params, args):
     for k, v in vars(args).items():
         if k in params and v is not None:
             params[k] = v
@@ -19,5 +19,5 @@ def _update_parameters_from_args(params, args):
     return params
 
 
-def _parameter_empty(parameters, parameter_name):
+def parameter_empty(parameters, parameter_name):
     return (parameter_name not in parameters or parameters[parameter_name] is None)

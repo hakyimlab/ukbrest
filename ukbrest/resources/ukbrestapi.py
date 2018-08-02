@@ -1,6 +1,6 @@
 from flask_restful import Resource, reqparse, current_app as app
 
-from ukbrest.resources.error_handling import handle_errors
+from ukbrest.resources.error_handling import handle_http_errors
 
 
 class UkbRestAPI(Resource):
@@ -12,7 +12,7 @@ class UkbRestAPI(Resource):
         # add error handling
         for met in UkbRestAPI.HTTP_METHODS:
             if hasattr(self, met):
-                setattr(self, met, handle_errors(getattr(self, met)))
+                setattr(self, met, handle_http_errors(getattr(self, met)))
 
         # add http authentication
         if 'auth' in app.config and app.config['auth'] is not None:

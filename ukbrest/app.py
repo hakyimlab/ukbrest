@@ -62,7 +62,7 @@ if __name__ == '__main__':
     from ukbrest.common.pheno2sql import Pheno2SQL
     from ukbrest.common.utils.auth import PasswordHasher
     from ukbrest import config
-    from ukbrest.common.utils.misc import _update_parameters_from_args, _parameter_empty
+    from ukbrest.common.utils.misc import update_parameters_from_args, parameter_empty
 
     logger = config.logger
     parser = config.get_argparse_arguments()
@@ -71,9 +71,9 @@ if __name__ == '__main__':
 
     # GenoQuery
     genoq_parameters = config.get_genoquery_parameters()
-    genoq_parameters = _update_parameters_from_args(genoq_parameters, args)
+    genoq_parameters = update_parameters_from_args(genoq_parameters, args)
 
-    if _parameter_empty(genoq_parameters, 'genotype_path'):
+    if parameter_empty(genoq_parameters, 'genotype_path'):
         logger.warning('--genotype-path missing')
 
     genoq = GenoQuery(**genoq_parameters)
@@ -81,9 +81,9 @@ if __name__ == '__main__':
 
     # Pheno2SQL
     pheno2sql_parameters = config.get_pheno2sql_parameters()
-    pheno2sql_parameters = _update_parameters_from_args(pheno2sql_parameters, args)
+    pheno2sql_parameters = update_parameters_from_args(pheno2sql_parameters, args)
 
-    if _parameter_empty(pheno2sql_parameters, 'db_uri'):
+    if parameter_empty(pheno2sql_parameters, 'db_uri'):
         parser.error('--db-uri missing')
 
     p2sql = Pheno2SQL(**pheno2sql_parameters)

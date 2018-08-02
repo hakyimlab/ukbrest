@@ -3,7 +3,7 @@ import json
 from flask import Response
 
 from ukbrest.common.utils.constants import BGEN_SAMPLES_TABLE
-from ukbrest.resources.error_handling import handle_errors
+from ukbrest.resources.error_handling import handle_http_errors
 
 
 class DataIterator:
@@ -48,7 +48,7 @@ class GenericSerializer():
     def get_order_by_table(self):
         return None
 
-    @handle_errors
+    @handle_http_errors
     def __call__(self, *args, **kwargs):
         data, code = self._get_args(*args)
         missing_code = self._get_value_from_dict('missing_code', data, default_value='NA')
