@@ -103,7 +103,11 @@ $ docker run -d --name pg --net ukb -p 127.0.0.1:5432:5432 \
 ```
 
 Then use the ukbREST Docker image to load your phenotype data into the PostgreSQL database.
-Replace the bold text in the command below with the full path of both your phenotype and genotype folder,
+Here we are loading your CSV/HTML main datasets, but keep in mind that you can also load Sample-QC
+or relatedness data, which is provided separately in UK Biobank. This is covered in
+[the wiki](https://github.com/hakyimlab/ukbrest/wiki/Load-real-UK-Biobank-data).
+
+In the command below, replace the bold text with the full path of both your phenotype and genotype folder,
 as well as the right name of your `.sample` file.
 
 <pre>
@@ -123,15 +127,21 @@ the file. If ukbREST found this, you'll see an error message about **Unicode dec
 Check out [the documentation](https://github.com/hakyimlab/ukbrest/wiki/Load-real-UK-Biobank-data)
 to know how to fix it.
 
+COMPLETE: The documentation also explain the SQL scheme used, so you can take full advantage of it.
+
 ## Step 3: Start
 Now you only need to start the ukbREST server:
 
 <pre>
 $ docker run --rm --net ukb -p 127.0.0.1:5000:5000 \
   -v /full/path/to/<b>genotype</b>/folder/:/var/lib/genotype \
+  -e UKBREST_SQL_CHUNKSIZE="10000"
   -e UKBREST_DB_URI="postgresql://test:test@pg:5432/ukb" \
   hakyimlab/ukbrest
 </pre>
+
+You don't need to specify the genotype folder (`-v /full/path/to/[...]:/var/lib/genotype`)
+if you are not going to use genotype queries.
 
 For **security reasons**, note that with these commands both the ukbREST server
 and the PostgreSQL are only reachable from your own computer/server. No one from the
@@ -153,6 +163,12 @@ Below we show some examples using **simulated data** (not from UK Biobank, of co
 so you can see how the output looks like.
 
 ### Phenotype queries
+ukbREST lets you make queries in different ways. If you only need to access some data-fields,
+you can use standard tools like `curl` to make your query. You can also use a **YAML file** to write
+your data specification in one place and easily share it (for instance, when submitting your manuscript),
+improving reproducibility of results for others working on UK Biobank.
+
+#### Using the command line
 You can request a single or multiple data-fields using standard tools like `curl`:
 
 Here we request two simulated data-fields: 
@@ -176,6 +192,37 @@ eid,variable_name,c21_2_0
 9999961,0.1192,NA
 9999921,0.0401,NA
 9999941,0.5632,NA
+```
+
+#### Using a YAML file
+
+You can write your data specification in a YAML file. Take a look at this real example (we don't
+show results, of course, but you can try it with your UK Biobank data):
+
+```
+$ cat my_query.yaml
+samples_filters:
+  - cin_white_british_ancestry_subset_0_0 = 1
+  - eid not in (select eid from withdrawls)
+
+data:
+  sex: c31_0_0
+  smoking_status: >
+    coalesce(
+      nullifneg(c20116_2_0), nullifneg(c20116_1_0), nullifneg(c20116_0_0)
+    )
+  asthma:
+    case_control:
+      20002:
+        coding: 1111
+      41202:
+        coding: [J45, J450, J451, J458, J459]
+
+$ curl -X POST \
+  -H "Accept: text/csv" \
+  -F file=my_query.yaml \
+  -F section=data \
+  http://127.0.0.1:5000/ukbrest/api/v1.0/query
 ```
 
 **TODO:** example with YAML file requesting hierarchical diseases.
