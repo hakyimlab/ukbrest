@@ -137,7 +137,7 @@ Now you only need to start the ukbREST server:
 <pre>
 $ docker run --rm --net ukb -p 127.0.0.1:5000:5000 \
   -v /full/path/to/<b>genotype</b>/folder/:/var/lib/genotype \
-  -e UKBREST_SQL_CHUNKSIZE="10000"
+  -e UKBREST_SQL_CHUNKSIZE="10000" \
   -e UKBREST_DB_URI="postgresql://test:test@pg:5432/ukb" \
   hakyimlab/ukbrest
 </pre>
