@@ -31,8 +31,8 @@ def handle_errors(func):
             logger.debug(tb)
 
             msg = f'\n{str(e)}'
-            if isinstance(e, JoblibException):
-                msg = ''
+            # if isinstance(e, JoblibException):
+            #     msg = ''
 
             logger.error(f'Loading finished with an unknown error. Activate debug to see full stack trace.{msg}')
 
