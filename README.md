@@ -105,8 +105,8 @@ $ docker run -d --name pg --net ukb -p 127.0.0.1:5432:5432 \
 ```
 
 Then use the ukbREST Docker image to load your phenotype data into the PostgreSQL database.
-Here we are loading your CSV/HTML main datasets, but keep in mind that you can also load Sample-QC
-or relatedness data, which is provided separately in UK Biobank. This is covered in
+Here we are only loading your CSV/HTML main datasets, but keep in mind that you can also load **Sample-QC**
+or **relatedness data**, which is provided separately in UK Biobank. This is covered in
 [the wiki](https://github.com/hakyimlab/ukbrest/wiki/Load-real-UK-Biobank-data).
 
 In the command below, replace the bold text with the full path of both your phenotype and genotype folder,
@@ -137,7 +137,7 @@ Now you only need to start the ukbREST server:
 <pre>
 $ docker run --rm --net ukb -p 127.0.0.1:5000:5000 \
   -v /full/path/to/<b>genotype</b>/folder/:/var/lib/genotype \
-  -e UKBREST_SQL_CHUNKSIZE="10000"
+  -e UKBREST_SQL_CHUNKSIZE="10000" \
   -e UKBREST_DB_URI="postgresql://test:test@pg:5432/ukb" \
   hakyimlab/ukbrest
 </pre>
@@ -180,8 +180,11 @@ $ curl -G \
   -HAccept:text/csv \
   "http://127.0.0.1:5000/ukbrest/api/v1.0/phenotype" \
   --data-urlencode "columns=c50_0_0 as height" \
-  --data-urlencode "columns=c21002_1_0 as weight"
+  --data-urlencode "columns=c21002_1_0 as weight" \
+  > my_data.csv
 ```
+
+Your data will be saved in file `my_data.csv`.
 
 #### Using a YAML file
 
@@ -191,8 +194,7 @@ show results, of course, but you can try it with your UK Biobank data):
 ```
 $ cat my_query.yaml
 samples_filters:
-  - cin_white_british_ancestry_subset_0_0 = 1
-  - eid not in (select eid from withdrawls)
+  - c22006_0_0 = '1'
   - eid > 0
 
 data:
@@ -226,13 +228,18 @@ data:
 
 $ curl -X POST \
   -H "Accept: text/csv" \
-  -F file=@my_query.yaml
+  -F file=@my_query.yaml \
   -F section=data \
-  http://127.0.0.1:5100/ukbrest/api/v1.0/query \
+  http://127.0.0.1:5000/ukbrest/api/v1.0/query \
   > my_data.csv
 ```
 
-The YAML file above has two sections: `sample_filters` which is a set of filters applied to all samples, and `data` which defines a data specification that will be translated to a CSV file later. You can have as many data specifications as you want. The `data` section has four columns:
+The YAML file above has two sections: `samples_filters` which is a set of filters applied to all samples
+(in the example above we are considering Caucasian specified in data-field 22006), and `data` which defines
+a data specification that will be translated to a CSV file later. You can have as many data
+specifications in one file as you want. The `samples_filters` will be applied on all of them.
+
+The `data` section has four columns:
 
 * `sex`: it just select data field [31](http://biobank.ctsu.ox.ac.uk/showcase/field.cgi?id=31), instance 0, array 0.
 * `smoking_status`: picks the first non empty value from all instances of
@@ -249,14 +256,12 @@ this criteria are controls (with value `0` for this column).
 * `hypertension`: here we use a more advanced feature called `sql`, more better suited for real scenarios, and also employ another feature to select children of a hierarchically organized data-field (like self-reported diseases or ICD10 codes). First, with `sql`, you can specify a column with several categorical values: `1` and `0` in this case; for each of them you can write the SQL code with the conditions. The SQL code for category `1` will contain all samples that have self-reported (data-field [20002](http://biobank.ctsu.ox.ac.uk/showcase/field.cgi?id=20002))
 any disease in the tree of cardiovascular/hypertension: this includes `hypertension`
 itself but also `essential hypertension` and `gestational hypertension/pre-eclampsia`. For this you use the `get_children_codings` SQL function, indicating the data-field (20002) and the node id of the disease of interest (`1081` for hypertension; take a look at
-[the codings for data-field 20002](http://biobank.ctsu.ox.ac.uk/showcase/coding.cgi?id=6)).
+[the codings for data-field 20002](http://biobank.ctsu.ox.ac.uk/showcase/coding.cgi?id=6)). In this case we are including all instances of data-field 20002. Something similar is done for category `0`, but in this case we are excluding (`eid not in...`) all individual with any disease under parents `hypertension` (node id `1081`) and `venous thromboembolic disease` (node id `1085`). Keep in mind that function `get_children_codings` works recursively, so *all* children down in the tree will be selected. If you would like to choose *all* individuals with *any* self-reported cardiovascular disease you would use `get_children_codings('20002', array[1071])`.
 
-**TODO:** describe what my_data.csv has, each column:
-* hypertension looks for all children of data field 20002 (FOR ALL INSTANCES) of hypertension, including the two DESCRIBE
-
-**TODO:** example with YAML file requesting hierarchical diseases.
 
 ### Genotype queries
+**TODO:** needs test.
+
 Query chromosome 1, positions from 0 to 1000:
 ```bash
 $ curl -HAccept:application/octel-stream \
