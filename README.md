@@ -180,8 +180,11 @@ $ curl -G \
   -HAccept:text/csv \
   "http://127.0.0.1:5000/ukbrest/api/v1.0/phenotype" \
   --data-urlencode "columns=c50_0_0 as height" \
-  --data-urlencode "columns=c21002_1_0 as weight"
+  --data-urlencode "columns=c21002_1_0 as weight" \
+  > mydata.csv
 ```
+
+Your data will be saved in file `mydata.csv`.
 
 #### Using a YAML file
 
