@@ -105,8 +105,8 @@ $ docker run -d --name pg --net ukb -p 127.0.0.1:5432:5432 \
 ```
 
 Then use the ukbREST Docker image to load your phenotype data into the PostgreSQL database.
-Here we are loading your CSV/HTML main datasets, but keep in mind that you can also load Sample-QC
-or relatedness data, which is provided separately in UK Biobank. This is covered in
+Here we are only loading your CSV/HTML main datasets, but keep in mind that you can also load **Sample-QC**
+or **relatedness data**, which is provided separately in UK Biobank. This is covered in
 [the wiki](https://github.com/hakyimlab/ukbrest/wiki/Load-real-UK-Biobank-data).
 
 In the command below, replace the bold text with the full path of both your phenotype and genotype folder,
@@ -194,8 +194,7 @@ show results, of course, but you can try it with your UK Biobank data):
 ```
 $ cat my_query.yaml
 samples_filters:
-  - cin_white_british_ancestry_subset_0_0 = 1
-  - eid not in (select eid from withdrawls)
+  - c22006_0_0 = 1
   - eid > 0
 
 data:
@@ -235,7 +234,12 @@ $ curl -X POST \
   > my_data.csv
 ```
 
-The YAML file above has two sections: `sample_filters` which is a set of filters applied to all samples, and `data` which defines a data specification that will be translated to a CSV file later. You can have as many data specifications as you want. The `data` section has four columns:
+The YAML file above has two sections: `samples_filters` which is a set of filters applied to all samples
+(in the example above we are considering Caucasian specified in data-field 22006), and `data` which defines
+a data specification that will be translated to a CSV file later. You can have as many data
+specifications in one file as you want. The `samples_filters` will be applied on all of them.
+
+The `data` section has four columns:
 
 * `sex`: it just select data field [31](http://biobank.ctsu.ox.ac.uk/showcase/field.cgi?id=31), instance 0, array 0.
 * `smoking_status`: picks the first non empty value from all instances of
