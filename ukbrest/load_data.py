@@ -1,5 +1,6 @@
 import os
 import argparse
+from subprocess import Popen, PIPE
 
 from ukbrest.common.pheno2sql import Pheno2SQL
 from ukbrest.common.postloader import Postloader
@@ -9,6 +10,7 @@ from ukbrest.common.utils.misc import update_parameters_from_args, parameter_emp
 from ukbrest.resources.error_handling import handle_errors
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--load-sql', action='store_true')
 parser.add_argument('--load-codings', action='store_true')
 parser.add_argument('--load-samples-data', action='store_true')
 parser.add_argument('--identifier-columns', type=str, nargs='+', help='Format file1.txt:column1 file2.txt:column2 ...')
@@ -68,6 +70,19 @@ def load_data(args):
     p2sql.load_data(**load_parameters)
 
 
+@handle_errors
+def load_sql():
+    pheno2sql_parameters = config.get_pheno2sql_parameters()
+    pheno2sql_parameters = update_parameters_from_args(pheno2sql_parameters, args)
+
+    if parameter_empty(pheno2sql_parameters, 'db_uri'):
+        parser.error('--db-uri missing')
+
+    p2sql = Pheno2SQL(**pheno2sql_parameters)
+
+    p2sql.load_sql('/opt/utils/sql/functions.sql')
+
+
 if __name__ == '__main__':
     parser = config.get_argparse_arguments(parser)
     args, unknown_args = parser.parse_known_args()
@@ -77,6 +92,9 @@ if __name__ == '__main__':
 
     elif args.load_samples_data:
         load_samples_data(args)
+
+    elif args.load_sql:
+        load_sql()
 
     else:
         load_data(args)

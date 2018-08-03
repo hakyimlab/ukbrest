@@ -379,15 +379,7 @@ class Pheno2SQL(DBAccess):
                 "\copy {table_name} from '{file_path}' (format csv, header, null ('nan'))"
             ).format(**locals())
 
-            current_env = os.environ.copy()
-            current_env['PGPASSWORD'] = self.db_pass
-            p = Popen(['psql', '-w', '-h', self.db_host, '-p', str(self.db_port),
-                       '-U', self.db_user, '-d', self.db_name, '-c', statement],
-                      stdout=PIPE, stderr=PIPE, env=current_env)
-            stdout_data, stderr_data = p.communicate()
-
-            if p.returncode != 0:
-                raise Exception(stdout_data + b'\n' + stderr_data)
+            self._run_psql(statement)
 
             logger.debug(f'Removing CSV already loaded: {file_path}')
             os.remove(file_path)
@@ -462,16 +454,23 @@ class Pheno2SQL(DBAccess):
 
         samples_data.to_sql(BGEN_SAMPLES_TABLE, self._get_db_engine(), if_exists='append')
 
-    def _run_psql(self, sql_statement):
+    def _run_psql(self, sql_statement, is_file=False):
         current_env = os.environ.copy()
         current_env['PGPASSWORD'] = self.db_pass
+
         p = Popen(['psql', '-w', '-h', self.db_host, '-p', str(self.db_port),
-                   '-U', self.db_user, '-d', self.db_name, '-c', sql_statement],
+                   '-U', self.db_user, '-d', self.db_name,
+                   '-f' if is_file else '-c', sql_statement],
                   stdout=PIPE, stderr=PIPE, env=current_env)
+
         stdout_data, stderr_data = p.communicate()
+        stdout_data = stdout_data.decode('utf-8')
+        stderr_data = stderr_data.decode('utf-8')
 
         if p.returncode != 0:
-            raise Exception(stdout_data + b'\n' + stderr_data)
+            raise UkbRestSQLExecutionError(stdout_data + '\n' + stderr_data)
+        elif stderr_data is not None and 'ERROR:' in stderr_data:
+            raise UkbRestSQLExecutionError(stderr_data)
 
     def _load_events(self):
         if self.db_type == 'sqlite':
@@ -584,6 +583,10 @@ class Pheno2SQL(DBAccess):
         del(self._loading_tmp)
 
         logger.info('Loading finished!')
+
+    def load_sql(self, sql_file):
+        self._run_psql(sql_file, is_file=True)
+        logger.info(f'SQL file loaded successfully: {sql_file}')
 
     def initialize(self):
         logger.info('Initializing')

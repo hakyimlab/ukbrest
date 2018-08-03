@@ -36,6 +36,7 @@ ENV UKBREST_PHENOTYPE_PATH="/var/lib/phenotype"
 
 COPY ukbrest /opt/ukbrest
 ENV PYTHONPATH="/opt"
+COPY utils /opt/utils
 
 WORKDIR /opt
 

@@ -9,8 +9,8 @@ from ukbrest.config import logger, GENOTYPE_PATH_ENV, PHENOTYPE_PATH, PHENOTYPE_
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--start', action='store_true', help='Specifies whether the HTTP server should be started.', default=True)
 parser.add_argument('--load', action='store_true', help='Specifies whether data should be loaded into the DB.')
+parser.add_argument('--load-sql', action='store_true', help='Loads some useful SQL functions into the database.')
 parser.add_argument('--load-codings',action='store_true', help='Loads a set of codings files (coding_NUM.tsv).')
 parser.add_argument('--load-samples-data',action='store_true', help='Loads a set of files containing information about samples.')
 
@@ -93,6 +93,11 @@ if __name__ == '__main__':
 
         commands = ('python', ['python', '/opt/ukbrest/load_data.py'])
 
+    elif args.load_sql:
+        _setup_db_uri()
+
+        commands = ('python', ['python', '/opt/ukbrest/load_data.py', '--load-sql'])
+
     elif args.load_codings:
         _setup_codings()
         _setup_db_uri()
@@ -105,7 +110,7 @@ if __name__ == '__main__':
 
         commands = ('python', ['python', '/opt/ukbrest/load_data.py', '--load-samples-data'] + unknown_args)
 
-    elif args.start:
+    else:
         _setup_genotype_path()
         _setup_db_uri()
         # TODO: check if data was loaded into PostgreSQL
