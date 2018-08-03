@@ -181,10 +181,10 @@ $ curl -G \
   "http://127.0.0.1:5000/ukbrest/api/v1.0/phenotype" \
   --data-urlencode "columns=c50_0_0 as height" \
   --data-urlencode "columns=c21002_1_0 as weight" \
-  > mydata.csv
+  > my_data.csv
 ```
 
-Your data will be saved in file `mydata.csv`.
+Your data will be saved in file `my_data.csv`.
 
 #### Using a YAML file
 
@@ -194,7 +194,7 @@ show results, of course, but you can try it with your UK Biobank data):
 ```
 $ cat my_query.yaml
 samples_filters:
-  - c22006_0_0 = 1
+  - c22006_0_0 = '1'
   - eid > 0
 
 data:
