@@ -132,6 +132,30 @@ to know how to fix it.
 The documentation also explain the [SQL schema](https://github.com/hakyimlab/ukbrest/wiki/SQL-schema),
 so you can take full advantage of it.
 
+Once your main datasets are loaded, you only need to run two more steps: 1) load the data-field codings and
+2) some useful SQL functions. You do this by just running two commands.
+
+To load the data-field codings, run this:
+```
+$ docker run --rm --net ukb \
+  -e UKBREST_DB_URI="postgresql://test:test@pg:5432/ukb" \
+  hakyimlab/ukbrest --load-codings
+```
+This will load most of the data-field codings from the UK Biobank Data Showcase (they are in `.tsv` format in
+the [codings folder](https://github.com/hakyimlab/ukbrest/tree/master/misc/codings)). This includes, for instance,
+[data coding 19](http://biobank.ctsu.ox.ac.uk/showcase/coding.cgi?id=19), which is used for
+[data-field 41202](http://biobank.ctsu.ox.ac.uk/showcase/field.cgi?id=41202)
+(Diagnoses - main ICD10).
+For you application, however, you could need to download a few more if you have specific data-fields.
+This is covered in [the documentation](https://github.com/hakyimlab/ukbrest/wiki/Load-real-UK-Biobank-data).
+
+Finally, run this command to create some useful SQL functions you will likely use in your queries:
+```
+$ docker run --rm --net ukb \
+  -e UKBREST_DB_URI="postgresql://test:test@pg:5432/ukb" \
+  hakyimlab/ukbrest --load-sql
+```
+
 ## Step 3: Start
 Now you only need to start the ukbREST server:
 
