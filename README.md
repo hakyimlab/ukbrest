@@ -204,6 +204,7 @@ $ cat my_query.yaml
 samples_filters:
   - cin_white_british_ancestry_subset_0_0 = 1
   - eid not in (select eid from withdrawls)
+  - eid > 0
 
 data:
   sex: c31_0_0
@@ -217,13 +218,33 @@ data:
         coding: 1111
       41202:
         coding: [J45, J450, J451, J458, J459]
+  hypertension:
+    sql:
+      1: >
+        eid in (
+          select eid from events
+          where field_id in (values(20002)) and event in (
+            select * from get_children_codings('20002', array[1081])
+          )
+        )
+      0: >
+        eid not in (
+          select eid from events
+          where field_id in (values(20002)) and event in (
+            select * from get_children_codings('20002', array[1081, 1085])
+          )
+        )
 
 $ curl -X POST \
   -H "Accept: text/csv" \
-  -F file=my_query.yaml \
+  -F file=@my_query.yaml
   -F section=data \
-  http://127.0.0.1:5000/ukbrest/api/v1.0/query
+  http://127.0.0.1:5100/ukbrest/api/v1.0/query \
+  > my_data.csv
 ```
+
+**TODO:** describe what my_data.csv has, each column:
+* hypertension looks for all children of data field 20002 (FOR ALL INSTANCES) of hypertension, including the two DESCRIBE
 
 **TODO:** example with YAML file requesting hierarchical diseases.
 
