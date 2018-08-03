@@ -249,14 +249,12 @@ this criteria are controls (with value `0` for this column).
 * `hypertension`: here we use a more advanced feature called `sql`, more better suited for real scenarios, and also employ another feature to select children of a hierarchically organized data-field (like self-reported diseases or ICD10 codes). First, with `sql`, you can specify a column with several categorical values: `1` and `0` in this case; for each of them you can write the SQL code with the conditions. The SQL code for category `1` will contain all samples that have self-reported (data-field [20002](http://biobank.ctsu.ox.ac.uk/showcase/field.cgi?id=20002))
 any disease in the tree of cardiovascular/hypertension: this includes `hypertension`
 itself but also `essential hypertension` and `gestational hypertension/pre-eclampsia`. For this you use the `get_children_codings` SQL function, indicating the data-field (20002) and the node id of the disease of interest (`1081` for hypertension; take a look at
-[the codings for data-field 20002](http://biobank.ctsu.ox.ac.uk/showcase/coding.cgi?id=6)).
+[the codings for data-field 20002](http://biobank.ctsu.ox.ac.uk/showcase/coding.cgi?id=6)). In this case we are including all instances of data-field 20002. Something similar is done for category `0`, but in this case we are excluding (`eid not in...`) all individual with any disease under parents `hypertension` (node id `1081`) and `venous thromboembolic disease` (node id `1085`). Keep in mind that function `get_children_codings` works recursively, so *all* children down in the tree will be selected. If you would like to choose *all* individuals with *any* self-reported cardiovascular disease you would use `get_children_codings('20002', array[1071])`.
 
-**TODO:** describe what my_data.csv has, each column:
-* hypertension looks for all children of data field 20002 (FOR ALL INSTANCES) of hypertension, including the two DESCRIBE
-
-**TODO:** example with YAML file requesting hierarchical diseases.
 
 ### Genotype queries
+**TODO:** needs test.
+
 Query chromosome 1, positions from 0 to 1000:
 ```bash
 $ curl -HAccept:application/octel-stream \
