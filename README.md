@@ -229,7 +229,7 @@ data:
 
 $ curl -X POST \
   -H "Accept: text/csv" \
-  -F file=@my_query.yaml
+  -F file=@my_query.yaml \
   -F section=data \
   http://127.0.0.1:5100/ukbrest/api/v1.0/query \
   > my_data.csv
