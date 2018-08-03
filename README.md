@@ -30,7 +30,9 @@ These characteristics make ukbREST an important tool to make biobank’s valuabl
 You only need to install ukbREST in a server/computer; clients can connect to it and
 make queries just using standard tools like `curl`. The quickest way to get ukbREST is to use
 [our Docker image](https://hub.docker.com/r/hakyimlab/ukbrest/). So install
-[Docker](https://docs.docker.com/) and follow the steps below.
+[Docker](https://docs.docker.com/) and follow the steps below. Just make sure, once
+you installed Docker, that you have **enough disk space** (in macOS go to Preferences/Disk and increase the
+value).
 
 If you just want to give ukbREST a try, and you are not a UK Biobank user, you
 can follow the [guide in the wiki](https://github.com/hakyimlab/ukbrest/wiki)
@@ -156,11 +158,6 @@ and **SSL encryption**.
 Once the ukbREST is up and running, you can request any data-field using
 [different query methods](https://github.com/hakyimlab/ukbrest/wiki/Phenotype-queries).
 Column names for data-fields have this format: `c{DATA_FIELD_ID}_{INSTANCE}_{ARRAY}`.
-So if you would like to query the [Standing height](http://biobank.ctsu.ox.ac.uk/showcase/field.cgi?id=50)
-data field (which has ID 50), instance 1 (First repeat assessment visit 2012-13), you have to use: `c50_1_0`.
-
-Below we show some examples using **simulated data** (not from UK Biobank, of course),
-so you can see how the output looks like.
 
 ### Phenotype queries
 ukbREST lets you make queries in different ways. If you only need to access some data-fields,
@@ -171,27 +168,19 @@ improving reproducibility of results for others working on UK Biobank.
 #### Using the command line
 You can request a single or multiple data-fields using standard tools like `curl`:
 
-Here we request two simulated data-fields: 
-* Data field ID 101, instance 0, array 0, which has a column name `c101_0_0`. We rename this data-field to `variable_name`.
-* Data field ID 21, instance 2, array 0, which has a column name `c21_2_0`.
+Here we request two data-fields: 
+* Data field ID 50 ([Standing height](http://biobank.ctsu.ox.ac.uk/showcase/field.cgi?id=50)),
+instance 0 (Initial assessment visit 2006-2010), array 0 (this field is single-valued),
+which has a column name `c50_0_0`. We rename this data-field to `height`.
+* Data field ID 21002 ([Weight](http://biobank.ctsu.ox.ac.uk/showcase/field.cgi?id=21002)),
+instance 2 (First repeat assessment visit 2012-13), array 0 (single-valued), which has a column
+name `c21002_2_0`. We rename it to `weight`.
 ```
 $ curl -G \
   -HAccept:text/csv \
   "http://127.0.0.1:5000/ukbrest/api/v1.0/phenotype" \
-  --data-urlencode "columns=c101_0_0 as variable_name" \
-  --data-urlencode "columns=c21_2_0"
-
-eid,variable_name,c21_2_0
-9999910,NA,Yes
-9999920,NA,No
-9999930,NA,Maybe
-9999940,NA,NA
-9999950,0.4852,Probably
-9999960,NA,Yes
-9999970,NA,NA
-9999961,0.1192,NA
-9999921,0.0401,NA
-9999941,0.5632,NA
+  --data-urlencode "columns=c50_0_0 as height" \
+  --data-urlencode "columns=c21002_1_0 as weight"
 ```
 
 #### Using a YAML file
@@ -242,6 +231,25 @@ $ curl -X POST \
   http://127.0.0.1:5100/ukbrest/api/v1.0/query \
   > my_data.csv
 ```
+
+The YAML file above has two sections: `sample_filters` which is a set of filters applied to all samples, and `data` which defines a data specification that will be translated to a CSV file later. You can have as many data specifications as you want. The `data` section has four columns:
+
+* `sex`: it just select data field [31](http://biobank.ctsu.ox.ac.uk/showcase/field.cgi?id=31), instance 0, array 0.
+* `smoking_status`: picks the first non empty value from all instances of
+[data-field 20116](http://biobank.ctsu.ox.ac.uk/showcase/field.cgi?id=20116), giving priority to the
+latest data from instance 2 to instance 0. Since this data-field has
+[a coding](http://biobank.ctsu.ox.ac.uk/showcase/coding.cgi?id=90) that says that negative values are
+those that `Prefer not to answer`, we consider these values as empty using the function `nullifneg` (null if negative).
+* `asthma`: this one uses a feature for binary columns called `case_control`. Cases
+(with value `1` for this column) will include all samples that have
+self-reported asthma (data-field [20002](http://biobank.ctsu.ox.ac.uk/showcase/field.cgi?id=20002)
+with value `1111`, which means asthma) *or* that have an ICD10 code (hospital
+level data) that indicates asthma (`J45`, `J450`, `J451`, `J458`, `J459`). All the rest that don't meet
+this criteria are controls (with value `0` for this column).
+* `hypertension`: here we use a more advanced feature called `sql`, more better suited for real scenarios, and also employ another feature to select children of a hierarchically organized data-field (like self-reported diseases or ICD10 codes). First, with `sql`, you can specify a column with several categorical values: `1` and `0` in this case; for each of them you can write the SQL code with the conditions. The SQL code for category `1` will contain all samples that have self-reported (data-field [20002](http://biobank.ctsu.ox.ac.uk/showcase/field.cgi?id=20002))
+any disease in the tree of cardiovascular/hypertension: this includes `hypertension`
+itself but also `essential hypertension` and `gestational hypertension/pre-eclampsia`. For this you use the `get_children_codings` SQL function, indicating the data-field (20002) and the node id of the disease of interest (`1081` for hypertension; take a look at
+[the codings for data-field 20002](http://biobank.ctsu.ox.ac.uk/showcase/coding.cgi?id=6)).
 
 **TODO:** describe what my_data.csv has, each column:
 * hypertension looks for all children of data field 20002 (FOR ALL INSTANCES) of hypertension, including the two DESCRIBE
