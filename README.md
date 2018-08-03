@@ -129,7 +129,8 @@ the file. If ukbREST found this, you'll see an error message about **Unicode dec
 Check out [the documentation](https://github.com/hakyimlab/ukbrest/wiki/Load-real-UK-Biobank-data)
 to know how to fix it.
 
-COMPLETE: The documentation also explain the SQL scheme used, so you can take full advantage of it.
+The documentation also explain the [SQL schema](https://github.com/hakyimlab/ukbrest/wiki/SQL-schema),
+so you can take full advantage of it.
 
 ## Step 3: Start
 Now you only need to start the ukbREST server:
