@@ -36,7 +36,7 @@ class Pheno2SQL(DBAccess):
 
     def __init__(self, ukb_csvs, db_uri, bgen_sample_file=None, table_prefix='ukb_pheno_',
                  n_columns_per_table=sys.maxsize, loading_n_jobs=-1, tmpdir=tempfile.mkdtemp(prefix='ukbrest'),
-                 loading_chunksize=5000, sql_chunksize=None):
+                 loading_chunksize=5000, sql_chunksize=None, delete_temp_csv=True):
         """
         :param ukb_csvs:
         :param db_uri:
@@ -91,6 +91,8 @@ class Pheno2SQL(DBAccess):
 
         self.csv_files_encoding_file = 'encodings.txt'
         self.csv_files_encoding = 'utf-8'
+
+        self.delete_temp_csv = delete_temp_csv
 
     def __enter__(self):
         return self
@@ -381,8 +383,9 @@ class Pheno2SQL(DBAccess):
 
             self._run_psql(statement)
 
-            logger.debug(f'Removing CSV already loaded: {file_path}')
-            os.remove(file_path)
+            if self.delete_temp_csv:
+                logger.debug(f'Removing CSV already loaded: {file_path}')
+                os.remove(file_path)
 
     def _load_csv(self):
         logger.info('Loading CSV files into database')

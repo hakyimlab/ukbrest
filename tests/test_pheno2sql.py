@@ -272,7 +272,7 @@ class Pheno2SQLTest(DBTest):
         csv_file = get_repository_path('pheno2sql/example01.csv')
         db_engine = POSTGRESQL_ENGINE
 
-        with Pheno2SQL(csv_file, db_engine, tmpdir='/tmp/custom/directory/here') as p2sql:
+        with Pheno2SQL(csv_file, db_engine, tmpdir='/tmp/custom/directory/here', delete_temp_csv=False) as p2sql:
             # Run
             p2sql.load_data()
 
