@@ -50,8 +50,6 @@ if phenotype_csv is not None:
     phenotype_csv = phenotype_csv.split(';')
 
 codings_path = environ.get(CODINGS_PATH, None)
-if codings_path is not None:
-    codings_path = path.join(phenotype_path, codings_path)
 
 samples_data_path = environ.get(SAMPLES_DATA_PATH, None)
 if samples_data_path is not None:

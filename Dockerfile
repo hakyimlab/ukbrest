@@ -30,13 +30,18 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-# Copy ukbrest code
+# Genotype and phenotype default directories
 ENV UKBREST_GENOTYPE_PATH="/var/lib/genotype"
 ENV UKBREST_PHENOTYPE_PATH="/var/lib/phenotype"
 
+# Copy ukbrest code
 COPY ukbrest /opt/ukbrest
 ENV PYTHONPATH="/opt"
 COPY utils /opt/utils
+
+# Copy data codings
+ENV UKBREST_CODINGS_PATH="/var/lib/codings"
+COPY misc/codings /var/lib/codings
 
 WORKDIR /opt
 
