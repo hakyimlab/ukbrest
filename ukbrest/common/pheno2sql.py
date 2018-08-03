@@ -389,6 +389,9 @@ class Pheno2SQL(DBAccess):
             if p.returncode != 0:
                 raise Exception(stdout_data + b'\n' + stderr_data)
 
+            logger.debug(f'Removing CSV already loaded: {file_path}')
+            os.remove(file_path)
+
     def _load_csv(self):
         logger.info('Loading CSV files into database')
 
