@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/hakyimlab/ukbrest.svg?branch=master)](https://travis-ci.org/hakyimlab/ukbrest)
 [![Coverage Status](https://coveralls.io/repos/github/hakyimlab/ukbrest/badge.svg?branch=master)](https://coveralls.io/github/hakyimlab/ukbrest?branch=master)
-[![Docker Automated build](https://img.shields.io/docker/automated/jrottenberg/ffmpeg.svg)](https://hub.docker.com/r/hakyimlab/ukbrest/)
+[![Docker Automated build](https://img.shields.io/badge/Docker%20build-automated-blue.svg)](https://hub.docker.com/r/hakyimlab/ukbrest/)
 
 
 # ukbREST
