@@ -104,6 +104,10 @@ $ docker run -d --name pg --net ukb -p 127.0.0.1:5432:5432 \
   postgres:9.6
 ```
 
+Keep in mind that the above command runs PostgreSQL with the default settings. That could make it work **slow** when
+you send a query to ukbREST. See the installation instructions in the
+[wiki](https://github.com/hakyimlab/ukbrest/wiki) for more details.
+
 Then use the ukbREST Docker image to load your phenotype data into the PostgreSQL database.
 Here we are only loading your CSV/HTML main datasets, but keep in mind that you can also load **Sample-QC**
 or **relatedness data**, which is provided separately in UK Biobank. This is covered in
