@@ -165,14 +165,10 @@ Now you only need to start the ukbREST server:
 
 <pre>
 $ docker run --rm --net ukb -p 127.0.0.1:5000:5000 \
-  -v /full/path/to/<b>genotype</b>/folder/:/var/lib/genotype \
   -e UKBREST_SQL_CHUNKSIZE="10000" \
   -e UKBREST_DB_URI="postgresql://test:test@pg:5432/ukb" \
   hakyimlab/ukbrest
 </pre>
-
-You don't need to specify the genotype folder (`-v /full/path/to/[...]:/var/lib/genotype`)
-if you are not going to use genotype queries.
 
 For **security reasons**, note that with these commands both the ukbREST server
 and the PostgreSQL are only reachable from your own computer/server. No one from the
@@ -290,15 +286,32 @@ itself but also `essential hypertension` and `gestational hypertension/pre-eclam
 
 ### Genotype queries
 
-This is a query of chromosome 1, positions from 0 to 1000:
+When you started ukbREST before, you didn't specified the genotype directory. This is fine if you are planning
+to just query data-fields. If you do want to get BGEN subsets, you need to add two parameters
+when staring ukbREST:
+
+<pre>
+$ docker run --rm --net ukb -p 127.0.0.1:5000:5000 \
+  -v <b>/full/path/to/genotype/folder/</b>:/var/lib/genotype \
+  -e <b>UKBREST_GENOTYPE_BGEN_FILE_NAMING="ukb_imp_chr{:d}_v3.bgen"</b> \
+  -e UKBREST_SQL_CHUNKSIZE="10000" \
+  -e UKBREST_DB_URI="postgresql://test:test@pg:5432/ukb" \
+  hakyimlab/ukbrest
+</pre>
+
+Look at the bold text above. You need to put your full path to the genotype folder (where both the `bgen` and
+`bgi` index files reside), and also specify the `bgen` file name template with the environmental variable
+`UKBREST_GENOTYPE_BGEN_FILE_NAMING`. The substring `{:d}` will be replaced by the chromosome number.
+
+So if you want to get a subset of the chromosome 22, let's say position from 0 to 1000, you run
+something like this:
 
 ```bash
-$ curl -HAccept:application/octel-stream \
-  "http://localhost:5000/ukbrest/api/v1.0/genotype/1/positions/0/1000" \
-  > test.bgen
+$ curl http://localhost:5000/ukbrest/api/v1.0/genotype/22/positions/0/1000 \
+  > chr22_subset.bgen
 ```
 
-With this one you can query by chromosome and a file specifying rsids:
+With the query below, you can get a subset of the BGEN using a file specifying rsids:
 
 ```bash
 $ cat rsids.txt
@@ -312,10 +325,10 @@ rs537182016
 rs376342519
 rs558604819
 
-$ curl -HAccept:application/octel-stream \
--X POST -F file=@rsids.txt \
-"http://localhost:5000/ukbrest/api/v1.0/genotype/1/rsids" \
-> test2.bgen
+$ curl -X POST \
+  -F file=@rsids.txt \
+  http://localhost:5000/ukbrest/api/v1.0/genotype/1/rsids \
+  > chr1_subset.bgen
 ```
 
 
