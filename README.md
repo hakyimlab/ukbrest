@@ -289,16 +289,17 @@ itself but also `essential hypertension` and `gestational hypertension/pre-eclam
 
 
 ### Genotype queries
-**TODO:** needs test.
 
-Query chromosome 1, positions from 0 to 1000:
+This is a query of chromosome 1, positions from 0 to 1000:
+
 ```bash
 $ curl -HAccept:application/octel-stream \
   "http://localhost:5000/ukbrest/api/v1.0/genotype/1/positions/0/1000" \
   > test.bgen
 ```
 
-Query by chromosome and a file specifying rsids:
+With this one you can query by chromosome and a file specifying rsids:
+
 ```bash
 $ cat rsids.txt
 rs367896724
