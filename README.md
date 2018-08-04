@@ -104,7 +104,7 @@ $ docker run -d --name pg --net ukb -p 127.0.0.1:5432:5432 \
   postgres:9.6
 ```
 
-Keep in mind that the above command runs PostgreSQL with the default settings. That could make it work **slow** when
+Keep in mind that the above command runs PostgreSQL with the default settings. That could make it work **really slow** when
 you send a query to ukbREST. See the installation instructions in the
 [wiki](https://github.com/hakyimlab/ukbrest/wiki) for more details.
 
