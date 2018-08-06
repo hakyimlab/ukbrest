@@ -1,6 +1,5 @@
 import os
 import argparse
-from subprocess import Popen, PIPE
 
 from ukbrest.common.pheno2sql import Pheno2SQL
 from ukbrest.common.postloader import Postloader
@@ -11,11 +10,18 @@ from ukbrest.resources.error_handling import handle_errors
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--load-sql', action='store_true')
+parser.add_argument('--load-withdrawals', action='store_true')
 parser.add_argument('--load-codings', action='store_true')
 parser.add_argument('--load-samples-data', action='store_true')
 parser.add_argument('--identifier-columns', type=str, nargs='+', help='Format file1.txt:column1 file2.txt:column2 ...')
 parser.add_argument('--skip-columns', type=str, nargs='+', help='Format file1.txt:column1 file2.txt:column2 ...')
 parser.add_argument('--separators', type=str, nargs='+', help='Format file1.txt:column1 file2.txt:column2 ...')
+
+
+@handle_errors
+def load_withdrawals(args):
+    pl = Postloader(**config.get_postloader_parameters())
+    pl.load_withdrawals(**config.get_postloader_withdrawals_parameters())
 
 
 @handle_errors
@@ -89,6 +95,9 @@ if __name__ == '__main__':
 
     if args.load_codings:
         load_codings(args)
+
+    elif args.load_withdrawals:
+        load_withdrawals(args)
 
     elif args.load_samples_data:
         load_samples_data(args)

@@ -4,6 +4,7 @@ import re
 
 import pandas as pd
 
+from ukbrest.common.utils.constants import WITHDRAWALS_TABLE
 from ukbrest.common.utils.db import create_table, create_indexes, DBAccess
 from ukbrest.config import logger
 
@@ -15,6 +16,36 @@ class Postloader(DBAccess):
         self.patterns = {
             'points': re.compile('[\.]{1,}')
         }
+
+    def load_withdrawals(self, withdrawals_dir):
+        db_engine = self._get_db_engine()
+
+        # create table (if not exists)
+        with db_engine.connect() as conn:
+            logger.info('Creating withdrawals table')
+            conn.execute(f"""
+                CREATE TABLE IF NOT EXISTS {WITHDRAWALS_TABLE} (
+                    eid bigint primary key
+                )
+            """)
+
+            for input_file in glob(join(withdrawals_dir, '*.csv')):
+                logger.info(f'Reading input file {input_file}')
+
+                data = pd.read_csv(input_file, header=None)
+                data = data.rename(columns={0: 'eid'})
+
+                n_data_before = data.shape[0]
+                data = data.drop_duplicates()
+                if n_data_before != data.shape[0]:
+                    logger.warning(f'Duplicate IDs in file were removed ({n_data_before} vs {data.shape[0]})')
+
+                # remove duplicates already in DB
+                current_eids = pd.read_sql(f'select eid from {WITHDRAWALS_TABLE}', conn)['eid']
+                data = data.loc[~data['eid'].isin(current_eids)]
+
+                logger.info(f'Writing to SQL table: {data.shape[0]} new sample IDs')
+                data.to_sql(WITHDRAWALS_TABLE, db_engine, index=False, if_exists='append')
 
     def load_codings(self, codings_dir):
         logger.info('Loading codings from {}'.format(codings_dir))

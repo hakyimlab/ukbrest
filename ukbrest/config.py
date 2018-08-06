@@ -14,6 +14,7 @@ GENOTYPE_BGEN_SAMPLE='UKBREST_GENOTYPE_BGEN_SAMPLE_FILE'
 PHENOTYPE_PATH='UKBREST_PHENOTYPE_PATH'
 PHENOTYPE_CSV_ENV='UKBREST_PHENOTYPE_CSV'
 CODINGS_PATH='UKBREST_CODINGS_PATH'
+WITHDRAWALS_PATH='UKBREST_WITHDRAWALS_PATH'
 SAMPLES_DATA_PATH='UKBREST_SAMPLES_DATA_PATH'
 
 TABLE_PREFIX_ENV='UKBREST_TABLE_PREFIX'
@@ -50,6 +51,7 @@ if phenotype_csv is not None:
     phenotype_csv = phenotype_csv.split(';')
 
 codings_path = environ.get(CODINGS_PATH, None)
+withdrawals_path = environ.get(WITHDRAWALS_PATH, None)
 
 samples_data_path = environ.get(SAMPLES_DATA_PATH, None)
 if samples_data_path is not None:
@@ -93,6 +95,12 @@ def get_postloader_parameters():
 def get_postloader_codings_parameters():
     return {
         'codings_dir': codings_path,
+    }
+
+
+def get_postloader_withdrawals_parameters():
+    return {
+        'withdrawals_dir': withdrawals_path,
     }
 
 

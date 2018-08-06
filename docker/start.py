@@ -5,14 +5,15 @@ from os import environ
 from os.path import isdir, join
 import argparse
 
-from ukbrest.config import logger, GENOTYPE_PATH_ENV, PHENOTYPE_PATH, PHENOTYPE_CSV_ENV, DB_URI_ENV, CODINGS_PATH, SAMPLES_DATA_PATH
-
+from ukbrest.config import logger, GENOTYPE_PATH_ENV, PHENOTYPE_PATH, PHENOTYPE_CSV_ENV, DB_URI_ENV, CODINGS_PATH, \
+    SAMPLES_DATA_PATH, WITHDRAWALS_PATH
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--load', action='store_true', help='Specifies whether data should be loaded into the DB.')
 parser.add_argument('--load-sql', action='store_true', help='Loads some useful SQL functions into the database.')
-parser.add_argument('--load-codings',action='store_true', help='Loads a set of codings files (coding_NUM.tsv).')
-parser.add_argument('--load-samples-data',action='store_true', help='Loads a set of files containing information about samples.')
+parser.add_argument('--load-codings', action='store_true', help='Loads a set of codings files (coding_NUM.tsv).')
+parser.add_argument('--load-withdrawals', action='store_true', help='Loads a list of participants who has withdrawn consent (*.csv files).')
+parser.add_argument('--load-samples-data', action='store_true', help='Loads a set of files containing information about samples.')
 
 args, unknown_args = parser.parse_known_args()
 
@@ -64,6 +65,16 @@ def _setup_codings():
         parser.error('The codings directory does not exist: {}'.format(coding_path))
 
 
+def _setup_withdrawals():
+    withdrawals_path = environ.get(WITHDRAWALS_PATH, None)
+
+    if withdrawals_path is None:
+        parser.error('The withdrawals directory was not specified')
+
+    if not isdir(withdrawals_path):
+        parser.error('The withdrawals directory does not exist: {}'.format(withdrawals_path))
+
+
 def _setup_samples_data():
     phenotype_path = environ.get(PHENOTYPE_PATH, None)
     samples_data_path = environ.get(SAMPLES_DATA_PATH, None)
@@ -103,6 +114,13 @@ if __name__ == '__main__':
         _setup_db_uri()
 
         commands = ('python', ['python', '/opt/ukbrest/load_data.py', '--load-codings'])
+
+    elif args.load_withdrawals:
+        print('whaaaat')
+        _setup_withdrawals()
+        _setup_db_uri()
+
+        commands = ('python', ['python', '/opt/ukbrest/load_data.py', '--load-withdrawals'])
 
     elif args.load_samples_data:
         _setup_samples_data()
