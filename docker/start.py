@@ -116,7 +116,6 @@ if __name__ == '__main__':
         commands = ('python', ['python', '/opt/ukbrest/load_data.py', '--load-codings'])
 
     elif args.load_withdrawals:
-        print('whaaaat')
         _setup_withdrawals()
         _setup_db_uri()
 
