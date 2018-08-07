@@ -44,7 +44,7 @@ ENV UKBREST_CODINGS_PATH="/var/lib/codings"
 COPY misc/codings /var/lib/codings
 
 # Other environmental variables
-ENV UKBREST_CODINGS_PATH="/var/lib/withdrawals"
+ENV UKBREST_WITHDRAWALS_PATH="/var/lib/withdrawals"
 
 WORKDIR /opt
 
