@@ -332,6 +332,9 @@ $ curl -X POST \
   > chr1_subset.bgen
 ```
 
+Note that in these two examples you get a `bgen` (binary) file. If you want to read it from your scripts in Python,
+for instance, you can use a package like this one: https://github.com/limix/bgen-reader-py
+
 
 # Documentation
 
