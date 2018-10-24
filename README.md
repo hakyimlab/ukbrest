@@ -263,7 +263,7 @@ $ curl -X POST \
 The YAML file above has two sections: `samples_filters` which is a set of filters applied to all samples
 (in the example above we are considering Caucasian specified in data-field 22006), and `data` which defines
 a data specification that will be translated to a CSV file later. You can have as many data
-specifications in one file as you want. The `samples_filters` will be applied on all of them.
+specifications in one file as you want (you choose the one you want when calling `curl`). The `samples_filters` will be applied on all of them.
 
 The `data` section has four columns:
 
