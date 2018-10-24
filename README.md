@@ -189,7 +189,7 @@ Column names for data-fields have this format: `c{DATA_FIELD_ID}_{INSTANCE}_{ARR
 ukbREST lets you make queries in different ways. If you only need to access some data-fields,
 you can use standard tools like `curl` to make your query. You can also use a **YAML file** to write
 your data specification in one place and easily share it (for instance, when submitting your manuscript),
-improving reproducibility of results for others working on UK Biobank.
+improving reproducibility of results for others working on UK Biobank. You can also specify the output file format (for example, CSV or the format used by plink or BGENIE).
 
 #### Using the command line
 You can request a single or multiple data-fields using standard tools like `curl`:
