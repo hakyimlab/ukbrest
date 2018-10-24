@@ -33,7 +33,7 @@ make queries just using standard tools like `curl`. The quickest way to get ukbR
 [our Docker image](https://hub.docker.com/r/hakyimlab/ukbrest/). So install
 [Docker](https://docs.docker.com/) and follow the steps below. Just make sure, once
 you installed Docker, that you have **enough disk space** (in macOS go to Preferences/Disk and increase the
-value).
+value). Take a look a the wiki to know the general specifications expected for a computer/server.
 
 If you just want to give ukbREST a try, and you are not a UK Biobank user, you
 can follow the [guide in the wiki](https://github.com/hakyimlab/ukbrest/wiki)
