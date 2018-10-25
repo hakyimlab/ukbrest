@@ -12,7 +12,9 @@
 
 **DOI:** https://doi.org/10.5281/zenodo.1336814
 
-*Im-Lab (http://hakyimlab.org/), Section of Genetic Medicine, Department of Medicine, The University of Chicago*
+*Im-Lab (http://hakyimlab.org/), Section of Genetic Medicine, Department of Medicine, The University of Chicago.*
+
+*Center for Translational Data Science (https://ctds.uchicago.edu/), The University of Chicago.*
 
 # Abstract
 Large biobanks, such as UK Biobank with half a million participants, are changing the scale and availability of genotypic and phenotypic data for researchers to ask fundamental questions about the biology of health and disease. The breadth of the UK Biobank data is enabling discoveries at an unprecedented pace.
