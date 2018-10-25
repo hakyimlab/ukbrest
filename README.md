@@ -16,6 +16,8 @@
 
 *Center for Translational Data Science (https://ctds.uchicago.edu/), The University of Chicago.*
 
+**Join our mailing list here:** https://groups.google.com/d/forum/ukbrest
+
 # Abstract
 Large biobanks, such as UK Biobank with half a million participants, are changing the scale and availability of genotypic and phenotypic data for researchers to ask fundamental questions about the biology of health and disease. The breadth of the UK Biobank data is enabling discoveries at an unprecedented pace.
 However, this size and complexity pose new challenges to investigators who need to keep the accruing data up to date, comply with potential consent changes, and efficiently and reproducibly extract subsets of the data to answer specific scientific questions.
