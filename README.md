@@ -285,7 +285,7 @@ itself but also `essential hypertension` and `gestational hypertension/pre-eclam
 [the codings for data-field 20002](http://biobank.ctsu.ox.ac.uk/showcase/coding.cgi?id=6)). In this case we are including all instances of data-field 20002. Something similar is done for category `0`, but in this case we are excluding (`eid not in...`) all individuals with any disease under parents `hypertension` (node id `1081`) and `venous thromboembolic disease` (node id `1085`). Keep in mind that function `get_children_codings` works recursively, so *all* children down in the tree will be selected. If you would like, for example, to choose *all* individuals with *any* self-reported cardiovascular disease you would use `get_children_codings('20002', array[1071])`.
 
 
-The [wiki](https://github.com/hakyimlab/ukbrest/wiki) contains a page with real examples of YAML files.
+The [wiki](https://github.com/hakyimlab/ukbrest/wiki) contains a page with real examples of YAML files. We encourage you to share yours!
 
 ### Genotype queries
 
