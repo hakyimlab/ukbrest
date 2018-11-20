@@ -10,7 +10,7 @@
 
 **Authors:** Milton Pividori and Hae Kyung Im
 
-**DOI:** https://doi.org/10.5281/zenodo.1336814
+**DOI:** https://doi.org/10.1093/bioinformatics/bty925
 
 *Im-Lab (http://hakyimlab.org/), Section of Genetic Medicine, Department of Medicine, The University of Chicago.*
 
