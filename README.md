@@ -1,7 +1,6 @@
 [![Build Status](https://travis-ci.org/hakyimlab/ukbrest.svg?branch=master)](https://travis-ci.org/hakyimlab/ukbrest)
 [![Coverage Status](https://coveralls.io/repos/github/hakyimlab/ukbrest/badge.svg?branch=master)](https://coveralls.io/github/hakyimlab/ukbrest?branch=master)
 [![Docker Automated build](https://img.shields.io/badge/Docker%20build-automated-blue.svg)](https://hub.docker.com/r/hakyimlab/ukbrest/)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1420489.svg)](https://doi.org/10.1093/bioinformatics/bty925)
 
 
 # ukbREST
