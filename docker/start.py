@@ -2,11 +2,13 @@
 
 from os import listdir, execvp
 from os import environ
-from os.path import isdir, join
+from os.path import isdir, join, basename
 import argparse
+import re
 
 from ukbrest.config import logger, GENOTYPE_PATH_ENV, PHENOTYPE_PATH, PHENOTYPE_CSV_ENV, DB_URI_ENV, CODINGS_PATH, \
     SAMPLES_DATA_PATH, WITHDRAWALS_PATH
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--load', action='store_true', help='Specifies whether data should be loaded into the DB.')
@@ -42,9 +44,29 @@ def _setup_phenotype_path():
         parser.error('The phenotype directory does not exist. You have to mount it using '
                      'the option "-v hostDir:{}" of "docker run"'.format(phenotype_path))
 
-    # check whether there is at least one and only one csv file
-    phenotype_csv_file = sorted([f for f in listdir(phenotype_path) if f.lower().endswith('.csv')])
+    filename_number_pattern = re.compile('(?P<dataset_id>\d+)')
 
+    def sort_datasets(f):
+        """Returns the first number found in the filename as a float. If none is found, then return a minimum number."""
+        filename = basename(f)
+
+        m = re.search(filename_number_pattern, filename)
+        if m is not None:
+            return float(m.group('dataset_id'))
+
+        return float('-inf')
+
+    # by default, sort .csv files in reverse order taking the first number found in their names.
+    # So for instance, these files: ukb00.csv, ukb01.csv and ukb50.csv would be loaded in
+    # this order: ukb50.csv, ukb01.csv and ukb00.csv
+    # the number in the file is interpreted as the dataset id, and greater means newer.
+    phenotype_csv_file = sorted(
+        [f for f in listdir(phenotype_path) if f.lower().endswith('.csv')],
+        key=sort_datasets,
+        reverse=True
+    )
+
+    # check whether there is at least one and only one csv file
     if len(phenotype_csv_file) == 0:
         parser.error('No .csv files were found in the phenotype directory')
 

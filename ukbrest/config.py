@@ -119,6 +119,7 @@ def get_genoquery_parameters():
         'debug': debug,
     }
 
+
 def get_pheno2sql_parameters():
     return {
         'ukb_csvs': phenotype_csv,
