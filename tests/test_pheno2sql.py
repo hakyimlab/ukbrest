@@ -2162,3 +2162,69 @@ class Pheno2SQLTest(DBTest):
 
         assert query_result.loc[1000050, 'c221_0_0'] == 'Option number 25'
         assert query_result.loc[1000050, 'c221_1_0'] == 'Maybe ñó'
+
+    def test_postgresql_load_data_with_duplicated_data_field(self):
+        # Prepare
+        directory = get_repository_path('pheno2sql/example16')
+
+        csv_file1 = get_repository_path(os.path.join(directory, 'example1600.csv'))
+        csv_file2 = get_repository_path(os.path.join(directory, 'example1601.csv'))
+        db_engine = POSTGRESQL_ENGINE
+
+        # intentionally, load first "latest" dataset (since 1601 > 1600)
+        p2sql = Pheno2SQL((csv_file2, csv_file1), db_engine, bgen_sample_file=os.path.join(directory, 'impv2.sample'),
+                          n_columns_per_table=2, loading_n_jobs=1)
+
+        # Run
+        p2sql.load_data()
+
+        columns = ['c103_0_0', 'c47_0_0', 'c50_0_0']
+
+        query_result = next(p2sql.query(columns))
+
+        # Validate
+        assert query_result.index.name == 'eid'
+        assert len(query_result.index) == 7 + 3, len(query_result.index)
+
+        assert not query_result.empty
+        assert query_result.shape[0] == 7 + 3, query_result.shape[0]
+
+        assert len(query_result.columns) == len(columns)
+        assert all(x in columns for x in query_result.columns)
+
+        # this individuals should not have data for data-field 50, since we overwrote the old dataset (1600)
+        assert pd.isnull(query_result.loc[1000021, 'c50_0_0'])
+        assert pd.isnull(query_result.loc[1000041, 'c50_0_0'])
+        assert pd.isnull(query_result.loc[1000061, 'c50_0_0'])
+
+        # should keep "newest" data (in 1601, csv_file2)
+        assert query_result.loc[1000010, 'c50_0_0'] == 1.01
+        assert query_result.loc[1000020, 'c50_0_0'] == 1.05
+        assert query_result.loc[1000030, 'c50_0_0'] == 1.21
+        assert query_result.loc[1000040, 'c50_0_0'] == 1.25
+        assert query_result.loc[1000050, 'c50_0_0'] == 1.41
+        assert query_result.loc[1000060, 'c50_0_0'] == 1.45
+        assert query_result.loc[1000070, 'c50_0_0'] == 1.50
+
+        # check other data-fields
+        assert pd.isnull(query_result.loc[1000020, 'c103_0_0'])
+        assert pd.isnull(query_result.loc[1000040, 'c103_0_0'])
+        assert pd.isnull(query_result.loc[1000060, 'c103_0_0'])
+        assert pd.isnull(query_result.loc[1000070, 'c103_0_0'])
+        assert query_result.loc[1000010, 'c103_0_0'] == 'Option 1'
+        assert query_result.loc[1000021, 'c103_0_0'] == 'Option 2'
+        assert query_result.loc[1000030, 'c103_0_0'] == 'Option 3'
+        assert query_result.loc[1000041, 'c103_0_0'] == 'Option 4'
+        assert query_result.loc[1000050, 'c103_0_0'] == 'Option 5'
+        assert query_result.loc[1000061, 'c103_0_0'] == 'Option 6'
+
+        assert pd.isnull(query_result.loc[1000021, 'c47_0_0'])
+        assert pd.isnull(query_result.loc[1000041, 'c47_0_0'])
+        assert pd.isnull(query_result.loc[1000061, 'c47_0_0'])
+        assert query_result.loc[1000010, 'c47_0_0'] == 41.55312
+        assert query_result.loc[1000020, 'c47_0_0'] == -10.51461
+        assert query_result.loc[1000030, 'c47_0_0'] == -35.31471
+        assert query_result.loc[1000040, 'c47_0_0'] == 5.20832
+        assert pd.isnull(query_result.loc[1000050, 'c47_0_0'])
+        assert query_result.loc[1000060, 'c47_0_0'] == 0.55478
+        assert pd.isnull(query_result.loc[1000070, 'c47_0_0'])

@@ -38,7 +38,7 @@ class Pheno2SQL(DBAccess):
                  n_columns_per_table=sys.maxsize, loading_n_jobs=-1, tmpdir=tempfile.mkdtemp(prefix='ukbrest'),
                  loading_chunksize=5000, sql_chunksize=None, delete_temp_csv=True):
         """
-        :param ukb_csvs:
+        :param ukb_csvs: files are loaded in the order they are specified
         :param db_uri:
         :param table_prefix:
         :param n_columns_per_table:
@@ -190,7 +190,34 @@ class Pheno2SQL(DBAccess):
         del tmp
         new_columns = [self._rename_columns(x) for x in old_columns]
 
+        # Remove columns that were previously loaded in other datasets
+        if 'existing_col_names' not in self._loading_tmp:
+            # dictionary with data-field as key and csv file as value
+            columns_and_csv_files = {}
+        else:
+            columns_and_csv_files = self._loading_tmp['existing_col_names']
+
+        old_columns_clean = []
+        new_columns_clean = []
+
+        for old_col_name, new_col_name in tuple(zip(old_columns, new_columns)):
+            if new_col_name in columns_and_csv_files:
+                corresponding_csv_file = columns_and_csv_files[new_col_name]
+                logger.warning(f'Column {new_col_name} already loaded from {corresponding_csv_file}. Skipping.')
+                continue
+
+            columns_and_csv_files[new_col_name] = csv_file
+
+            old_columns_clean.append(old_col_name)
+            new_columns_clean.append(new_col_name)
+
+        self._loading_tmp['existing_col_names'] = columns_and_csv_files
+
+        # keep only unique columns (not loaded in previous files)
+        old_columns = old_columns_clean
+        new_columns = new_columns_clean
         all_columns = tuple(zip(old_columns, new_columns))
+
         # FIXME: check if self.n_columns_per_table is greater than the real number of columns
         self._loading_tmp['chunked_column_names'] = tuple(enumerate(self._chunker(all_columns, self.n_columns_per_table)))
         self._loading_tmp['chunked_table_column_names'] = \
@@ -555,7 +582,7 @@ class Pheno2SQL(DBAccess):
 
     def load_data(self, vacuum=False):
         """
-        Load self.ukb_csv into the database configured.
+        Load all CSV files specified into the database configured.
         :return:
         """
         logger.info('Loading phenotype data into database')
