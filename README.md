@@ -30,6 +30,10 @@ These characteristics make ukbREST an important tool to make biobank’s valuabl
 <img src="/misc/ukbrest_arch.png" alt="Setup and architecture image" width="75%"/>
 </p>
 
+# News
+ * 2018-11-25: fix when a dataset has a data-field already loaded. Docker image is now updated.
+ Check out the [documentation](https://github.com/hakyimlab/ukbrest/wiki/Load-real-UK-Biobank-data) (Section `Duplicated data-fields`).
+
 # Installation
 You only need to install ukbREST in a server/computer; clients can connect to it and
 make queries just using standard tools like `curl`. The quickest way to get ukbREST is to use
