@@ -10,7 +10,7 @@ python:
 install:
   # Start PostgreSQL
   - sudo service postgresql stop
-  - docker run -d --name pg -e POSTGRES_USER=test -e POSTGRES_PASSWORD=test -e POSTGRES_DB=ukb -p 5432:5432 postgres:9.6
+  - docker run -d --name pg -e POSTGRES_USER=test -e POSTGRES_PASSWORD=test -e POSTGRES_DB=ukb -p 5432:5432 postgres:11
   # We do this conditionally because it saves us some downloading if the
   # version is the same.
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then

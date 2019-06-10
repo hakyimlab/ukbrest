@@ -7,9 +7,13 @@ RUN conda env update -n root -f /opt/environment.yml \
   && conda clean --all
 
 # Docker repository for PostgreSQL, install client programs
+# IMPORTANT: although it is automated with lsb_release, debian version should match with continuumio/miniconda3
 RUN DEBIAN_FRONTEND=noninteractive \
-    apt-get update && apt-get install -y --no-install-recommends \
-      postgresql-client-9.6 \
+  apt-get update && apt-get install -y --no-install-recommends gnupg lsb-release \
+  && wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
+  && echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -c -s)-pgdg main" >> /etc/apt/sources.list.d/pgdg.list \
+  && apt-get update && apt-get install -y --no-install-recommends \
+      postgresql-client-11 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
