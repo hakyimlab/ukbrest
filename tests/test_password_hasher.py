@@ -34,7 +34,7 @@ class WSGIFunctions(unittest.TestCase):
         for user, password in users.items():
             assert user in orig_users.keys(), user
             assert password != orig_users[user], password + ' / ' + orig_users[user]
-            assert len(password) == 93, (len(password), password)
+            assert 90 < len(password) < 96, (len(password), password)
 
         os.remove(users_file)
 
@@ -70,7 +70,7 @@ class WSGIFunctions(unittest.TestCase):
         for user, password in new_users.items():
             assert user in orig_users.keys(), user
             assert password == users[user], password + ' / ' + users[user]
-            assert len(password) == 93, (len(password), password)
+            assert 90 < len(password) < 96, (len(password), password)
 
         os.remove(users_file)
 
@@ -100,7 +100,7 @@ class WSGIFunctions(unittest.TestCase):
             else:
                 assert password == users[user], user +  password + ' / ' + users[user]
 
-            assert len(password) == 93, (len(password), password)
+            assert 90 < len(password) < 96, (len(password), password)
 
         os.remove(users_file)
 
