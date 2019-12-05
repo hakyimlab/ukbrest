@@ -130,6 +130,7 @@ $ docker run --rm --net ukb \
   -v <b>/full/path/to/phenotype/folder/</b>:/var/lib/phenotype \
   -e UKBREST_GENOTYPE_BGEN_SAMPLE_FILE="<b>ukb12345_imp_chr1_v3_s487395.sample</b>" \
   -e UKBREST_DB_URI="postgresql://test:test@pg:5432/ukb" \
+  -e UKBREST_LOADING_N_JOBS=2 \
   hakyimlab/ukbrest --load
 
 [...]
@@ -140,6 +141,9 @@ Sometimes we found that the CSV file have a wrong encoding, making Python fail w
 the file. If ukbREST found this, you'll see an error message about **Unicode decoding error**.
 Check out [the documentation](https://github.com/hakyimlab/ukbrest/wiki/Load-real-UK-Biobank-data)
 to know how to fix it.
+
+You can also adjust the number of cores used when loading the data with the
+variable `UKBREST_LOADING_N_JOBS` (set to 2 cores in the example above).
 
 The documentation also explain the [SQL schema](https://github.com/hakyimlab/ukbrest/wiki/SQL-schema),
 so you can take full advantage of it.
