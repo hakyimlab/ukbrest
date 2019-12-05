@@ -89,7 +89,7 @@ Here we are going to start PostgreSQL and load the phenotype data into it.
 Start Docker in your server/computer and pull the PostgreSQL and ukbREST images:
 
 ```
-$ docker pull postgres:9.6
+$ docker pull postgres:11
 ```
 
 ```
@@ -109,7 +109,7 @@ choose a stronger one):
 $ docker run -d --name pg --net ukb -p 127.0.0.1:5432:5432 \
   -e POSTGRES_USER=test -e POSTGRES_PASSWORD=test \
   -e POSTGRES_DB=ukb \
-  postgres:9.6
+  postgres:11
 ```
 
 Keep in mind that the above command runs PostgreSQL with the default settings. That could make it work **really slow** when
