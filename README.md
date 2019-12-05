@@ -27,7 +27,7 @@ These characteristics make ukbREST an important tool to make biobank’s valuabl
 
 # Architecture and setup overview
 <p align="center">
-<img src="/misc/ukbrest_arch.png" alt="Setup and architecture image" width="75%"/>
+ <img src="https://github.com/hakyimlab/ukbrest/blob/master/misc/ukbrest_arch.png" alt="Setup and architecture image" width="75%"/>
 </p>
 
 # News
