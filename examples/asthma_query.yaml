@@ -1,0 +1,254 @@
+samples_filters:
+  - cin_white_british_ancestry_subset_0_0 = 1
+  - eid not in (select eid from bad_related_samples_2nd_higher_and_high_missrate)
+  - chet_missing_outliers_0_0 = 0
+  - cputative_sex_chromosome_aneuploidy_0_0 = 0
+  - cexcess_relatives_0_0 = 0
+  - eid not in (select eid from withdrawals)
+  - eid > 0
+
+
+extras:
+  sex: c31_0_0
+  age_recruitment: c21022_0_0
+  asthma_medication: c22167_0_0
+  smoking_status: coalesce(nullifneg(c20116_2_0::int), nullifneg(c20116_1_0::int), nullifneg(c20116_0_0::int))
+  fev1: array_avg(array[c3063_0_0, c3063_0_1, c3063_0_2])
+  fev1_pred: c20153_0_0
+  fev1_pred_perc: c20154_0_0
+  fvc: array_avg(array[c3062_0_0, c3062_0_1, c3062_0_2])
+  fev1_fvc_ratio: array_avg(array[c3063_0_0, c3063_0_1, c3063_0_2]) / array_avg(array[c3062_0_0, c3062_0_1, c3062_0_2])
+  fev1pred_fvc_ratio: c20153_0_0 / array_avg(array[c3062_0_0, c3062_0_1, c3062_0_2])
+  has_eczema:
+    sql:
+      1: |
+        (
+          eid in (
+            select eid from events where field_id = 20002 and event in (values('1452'))
+            union
+            select eid from events where field_id in (values(41202), (41204)) and event in (values('L208'), ('L209'))
+          )
+        )
+  has_hayfever:
+    sql:
+      1: |
+        (
+          eid in (
+            select eid from events where field_id = 20002 and event in (values('1387'))
+            union
+            select eid from events where field_id in (values(41202), (41204)) and event in (values('J301'), ('J302'), ('J303'), ('J304'))
+          )
+          or
+          (c22126_0_0 = '1')
+          or
+          (c22146_0_0 is not null)
+        )
+  has_food_allergy:
+    sql:
+      1: |
+        eid in (select eid from events where field_id = 20002 and event in (values('1385')))
+
+
+simple_covariates:
+  sex: c31_0_0
+  pc1: cpc1_0_0
+  pc2: cpc2_0_0
+  pc3: cpc3_0_0
+  pc4: cpc4_0_0
+  pc5: cpc5_0_0
+  pc6: cpc6_0_0
+  pc7: cpc7_0_0
+  pc8: cpc8_0_0
+  pc9: cpc9_0_0
+  pc10: cpc10_0_0
+
+
+data_aliases:
+  - &asthma_age_onset |
+      case when
+        -- children
+        (
+          coalesce(nullifneg(c22147_0_0), nullifneg(c3786_2_0), nullifneg(c3786_1_0), nullifneg(c3786_0_0)) < 12
+        )
+        or
+        (
+          coalesce(nullifneg(c22147_0_0), nullifneg(c3786_2_0), nullifneg(c3786_1_0), nullifneg(c3786_0_0)) BETWEEN 12 and 25
+        )
+        or
+        (
+          coalesce(nullifneg(c22147_0_0), nullifneg(c3786_2_0), nullifneg(c3786_1_0), nullifneg(c3786_0_0)) BETWEEN 26 and 65
+
+          and
+
+          -- exclude copd
+          eid not in (select eid from events where field_id = 20002 and event in (values('1112')))
+          and
+          (c22130_0_0 is null or c22130_0_0::int = 0)
+          and
+          nullifneg(c22150_0_0) is null
+          and
+          eid not in (select eid from events where field_id in (values(41202), (41204)) and event in (values('J44'), ('J440'), ('J441'), ('J448'), ('J449')))
+
+          and
+          
+          -- emphysema/chronic bronchitis
+          eid not in (select eid from events where field_id = 20002 and event in (values('1113'), ('1412'), ('1472')))
+          and
+          (c22128_0_0 is null or c22128_0_0::int = 0) and (c22129_0_0 is null or c22129_0_0::int = 0)
+          and
+          nullifneg(c22148_0_0) is null and nullifneg(c22149_0_0) is null
+            and
+            coalesce(nullifneg(c3992_0_0), nullifneg(c3992_1_0), nullifneg(c3992_2_0)) is null
+          and
+          eid not in (select eid from events where field_id in (values(41202), (41204)) and event in (values('J43'), ('J430'), ('J431'), ('J432'), ('J438'), ('J439')))
+        )
+      then
+        coalesce(nullifneg(c22147_0_0), nullifneg(c3786_2_0), nullifneg(c3786_1_0), nullifneg(c3786_0_0))
+      else
+        NULL
+      end
+
+  - &asthma_children |
+      coalesce(nullifneg(c22147_0_0), nullifneg(c3786_2_0), nullifneg(c3786_1_0), nullifneg(c3786_0_0)) < 12
+
+  - &asthma_children_no_allergic |
+      (
+        coalesce(nullifneg(c22147_0_0), nullifneg(c3786_2_0), nullifneg(c3786_1_0), nullifneg(c3786_0_0)) < 12
+      )
+      and
+      (
+        eid not in (select eid from events where field_id = 20002 and event in (values('1452'), ('1387'), ('1385')))
+        and
+        eid not in (select eid from events where field_id in (values(41202), (41204)) and event in (
+          values('L208'), ('L209'),
+          ('J301'), ('J302'), ('J303'), ('J304')
+        ))
+        and
+        (c22126_0_0 = '0' or c22126_0_0 is null)
+        and
+        c22146_0_0 is null
+      )
+
+  - &asthma_adults |
+      (
+        coalesce(nullifneg(c22147_0_0), nullifneg(c3786_2_0), nullifneg(c3786_1_0), nullifneg(c3786_0_0)) BETWEEN 26 and 65
+      )
+      and
+      (
+        -- exclude copd
+        eid not in (select eid from events where field_id = 20002 and event in (values('1112')))
+        and
+        (c22130_0_0 is null or c22130_0_0::int = 0)
+        and
+        nullifneg(c22150_0_0) is null
+        and
+        eid not in (select eid from events where field_id in (values(41202), (41204)) and event in (values('J44'), ('J440'), ('J441'), ('J448'), ('J449')))
+
+        and
+        
+        -- emphysema/chronic bronchitis
+        eid not in (select eid from events where field_id = 20002 and event in (values('1113'), ('1412'), ('1472')))
+        and
+        (c22128_0_0 is null or c22128_0_0::int = 0) and (c22129_0_0 is null or c22129_0_0::int = 0)
+        and
+        nullifneg(c22148_0_0) is null and nullifneg(c22149_0_0) is null
+          and
+          coalesce(nullifneg(c3992_0_0), nullifneg(c3992_1_0), nullifneg(c3992_2_0)) is null
+        and
+        eid not in (select eid from events where field_id in (values(41202), (41204)) and event in (values('J43'), ('J430'), ('J431'), ('J432'), ('J438'), ('J439')))
+      )
+
+  - &controls |
+      (
+        coalesce(nullifneg(c22147_0_0), nullifneg(c3786_2_0), nullifneg(c3786_1_0), nullifneg(c3786_0_0)) is null
+        and
+        eid not in (select eid from events where field_id in (values(41202), (41204)) and event in (values('J45'), ('J450'), ('J451'), ('J458'), ('J459')))
+      )
+      and
+      (
+        -- copd
+        eid not in (select eid from events where field_id = 20002 and event in (values('1112')))
+        and
+        (c22130_0_0 is null or c22130_0_0::int = 0)
+        and
+        nullifneg(c22150_0_0) is null
+        and
+        eid not in (select eid from events where field_id in (values(41202), (41204)) and event in (values('J44'), ('J440'), ('J441'), ('J448'), ('J449')))
+
+        and
+        
+        -- emphysema/chronic bronchitis
+        eid not in (select eid from events where field_id = 20002 and event in (values('1113'), ('1412'), ('1472')))
+        and
+        (c22128_0_0 is null or c22128_0_0::int = 0) and (c22129_0_0 is null or c22129_0_0::int = 0)
+        and
+        nullifneg(c22148_0_0) is null and nullifneg(c22149_0_0) is null
+          and
+          coalesce(nullifneg(c3992_0_0), nullifneg(c3992_1_0), nullifneg(c3992_2_0)) is null
+        and
+        eid not in (select eid from events where field_id in (values(41202), (41204)) and event in (values('J43'), ('J430'), ('J431'), ('J432'), ('J438'), ('J439')))
+      )
+
+  - &controls_no_allergic |
+      (
+        coalesce(nullifneg(c22147_0_0), nullifneg(c3786_2_0), nullifneg(c3786_1_0), nullifneg(c3786_0_0)) is null
+        and
+        eid not in (select eid from events where field_id in (values(41202), (41204)) and event in (values('J45'), ('J450'), ('J451'), ('J458'), ('J459')))
+      )
+      and
+      (
+        -- copd
+        eid not in (select eid from events where field_id = 20002 and event in (values('1112')))
+        and
+        (c22130_0_0 is null or c22130_0_0::int = 0)
+        and
+        nullifneg(c22150_0_0) is null
+        and
+        eid not in (select eid from events where field_id in (values(41202), (41204)) and event in (values('J44'), ('J440'), ('J441'), ('J448'), ('J449')))
+
+        and
+        
+        -- emphysema/chronic bronchitis
+        eid not in (select eid from events where field_id = 20002 and event in (values('1113'), ('1412'), ('1472')))
+        and
+        (c22128_0_0 is null or c22128_0_0::int = 0) and (c22129_0_0 is null or c22129_0_0::int = 0)
+        and
+        nullifneg(c22148_0_0) is null and nullifneg(c22149_0_0) is null
+          and
+          coalesce(nullifneg(c3992_0_0), nullifneg(c3992_1_0), nullifneg(c3992_2_0)) is null
+        and
+        eid not in (select eid from events where field_id in (values(41202), (41204)) and event in (values('J43'), ('J430'), ('J431'), ('J432'), ('J438'), ('J439')))
+      )
+      and
+      (
+        eid not in (select eid from events where field_id = 20002 and event in (values('1452'), ('1387'), ('1385')))
+        and
+        eid not in (select eid from events where field_id in (values(41202), (41204)) and event in (
+          values('L208'), ('L209'),
+          ('J301'), ('J302'), ('J303'), ('J304')
+        ))
+        and
+        (c22126_0_0 = '0' or c22126_0_0 is null)
+        and
+        c22146_0_0 is null
+      )
+
+
+data:
+  asthma_age_onset: *asthma_age_onset
+
+  asthma_children:
+    sql:
+      1: *asthma_children
+      0: *controls
+
+  asthma_children_no_allergic:
+    sql:
+      1: *asthma_children_no_allergic
+      0: *controls_no_allergic
+
+  asthma_adults:
+    sql:
+      1: *asthma_adults
+      0: *controls
+
