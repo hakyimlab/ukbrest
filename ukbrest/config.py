@@ -149,6 +149,7 @@ def get_argparse_arguments(parser=None):
     parser.add_argument('--genotype-path', type=str, help='Genotypes path, where BGEN files reside')
     parser.add_argument('--bgen-names', type=str, help='BGEN file name format')
     parser.add_argument('--pheno-dir', type=str, help='Phenotypes directory, where csv files reside.')
+    parser.add_argument('--withdrawals-dir', type=str, help='Directory with withdrawals csv files.')
     parser.add_argument('--bgen-sample-file', type=str, help='BGEN sample file')
     parser.add_argument('--db-uri', type=str, help='PostgreSQL connection string in the format: postgresql://USER:PASSWORD@HOST:5432/DB_NAME')
     parser.add_argument('--table-prefix', type=str, help='This is used when creating the database tables and loading data')

@@ -20,8 +20,13 @@ parser.add_argument('--separators', type=str, nargs='+', help='Format file1.txt:
 
 # @handle_errors
 def load_withdrawals(args):
-    pl = Postloader(**config.get_postloader_parameters())
-    pl.load_withdrawals(**config.get_postloader_withdrawals_parameters())
+    pl_params = config.get_postloader_parameters()
+    pl_params = update_parameters_from_args(pl_params, args)
+    pl = Postloader(**pl_params)
+
+    pl_wd_params = config.get_postloader_withdrawals_parameters()
+    pl_wd_params = update_parameters_from_args(pl_wd_params, args)
+    pl.load_withdrawals(**pl_wd_params)
 
 
 # @handle_errors
