@@ -31,8 +31,13 @@ def load_withdrawals(args):
 
 # @handle_errors
 def load_codings(args):
-    pl = Postloader(**config.get_postloader_parameters())
-    pl.load_codings(**config.get_postloader_codings_parameters())
+    pl_params = config.get_postloader_parameters()
+    pl_params = update_parameters_from_args(pl_params, args)
+    pl = Postloader(**pl_params)
+
+    pl_coding_params = config.get_postloader_codings_parameters()
+    pl_coding_params = update_parameters_from_args(pl_coding_params, args)
+    pl.load_codings(**pl_coding_params)
 
 
 # @handle_errors
