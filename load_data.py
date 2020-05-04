@@ -8,10 +8,10 @@ from ukbrest.common.utils.misc import update_parameters_from_args, parameter_emp
 
 from ukbrest.resources.error_handling import handle_errors
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser("Loads data into the SQL database")
 parser.add_argument('--load-sql', action='store_true')
-parser.add_argument('--load-withdrawals', action='store_true')
-parser.add_argument('--load-codings', action='store_true')
+parser.add_argument('--load-withdrawals', action='store_true', help="Loads withdrawals and then exits. Should be used with --withdrawals-dir")
+parser.add_argument('--load-codings', action='store_true', help="Loads codings and then exits. Should be used with --codings-dir.")
 parser.add_argument('--load-samples-data', action='store_true')
 parser.add_argument('--identifier-columns', type=str, nargs='+', help='Format file1.txt:column1 file2.txt:column2 ...')
 parser.add_argument('--skip-columns', type=str, nargs='+', help='Format file1.txt:column1 file2.txt:column2 ...')
