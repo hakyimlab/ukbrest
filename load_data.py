@@ -18,19 +18,19 @@ parser.add_argument('--skip-columns', type=str, nargs='+', help='Format file1.tx
 parser.add_argument('--separators', type=str, nargs='+', help='Format file1.txt:column1 file2.txt:column2 ...')
 
 
-@handle_errors
+# @handle_errors
 def load_withdrawals(args):
     pl = Postloader(**config.get_postloader_parameters())
     pl.load_withdrawals(**config.get_postloader_withdrawals_parameters())
 
 
-@handle_errors
+# @handle_errors
 def load_codings(args):
     pl = Postloader(**config.get_postloader_parameters())
     pl.load_codings(**config.get_postloader_codings_parameters())
 
 
-@handle_errors
+# @handle_errors
 def load_samples_data(args):
     pl = Postloader(**config.get_postloader_parameters())
 
@@ -50,7 +50,7 @@ def load_samples_data(args):
     pl.load_samples_data(**load_samples_parameters)
 
 
-#@handle_errors
+# @handle_errors
 def load_data(args):
     pheno2sql_parameters = config.get_pheno2sql_parameters()
     pheno2sql_parameters = update_parameters_from_args(pheno2sql_parameters, args)
@@ -76,7 +76,7 @@ def load_data(args):
     p2sql.load_data(**load_parameters)
 
 
-#@handle_errors
+# @handle_errors
 def load_sql():
     pheno2sql_parameters = config.get_pheno2sql_parameters()
     pheno2sql_parameters = update_parameters_from_args(pheno2sql_parameters, args)
