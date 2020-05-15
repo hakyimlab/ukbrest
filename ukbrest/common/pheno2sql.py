@@ -1070,17 +1070,21 @@ class EHR2SQL(LoadSQL):
                     raise ValueError(v + " out of place")
 
     def load_data(self, vacuum):
-
+        logger.info("Loading EHR into database")
         self._load_primary_care_data()
-
         self._load_hospital_inpatient_data()
+        self._create_constraints()
+
+        if vacuum:
+            self._vacuum()
+
+
 
     def _load_primary_care_data(self):
-
-        self._load_pg_clinical()
-
-    def _load_pg_clinical(self):
+        
         db_engine = self._get_db_engine()
+
+        # PG CLINICAL
         create_table(EHR2SQL.K_CLINICAL, columns = [
                             'eid bigint NOT NULL',
                             'data_provider int NOT NULL',
@@ -1095,13 +1099,45 @@ class EHR2SQL(LoadSQL):
                          'pk_{} PRIMARY KEY (eid)'.format(EHR2SQL.K_CLINICAL)
                         ],
                         db_engine=db_engine)
-        logger.info("Created table: {}".format(EHR2SQL.K_CLINICAL))
-        logger.info("Loading table: {}".format(self.pg_file_dd[EHR2SQL.K_CLINICAL]))
-        pg_clinical = pd.read_table(self.pg_file_dd[EHR2SQL.K_CLINICAL], encoding='latin1')
-        logger.debug("Loaded table")
-        pg_clinical['event_dt'] = pd.to_datetime(pg_clinical.event_dt,
-                                              dayfirst=True)
-        pg_clinical.to_sql(EHR2SQL.K_CLINICAL, db_engine, if_exists='append')
+        self._load_pg_table(EHR2SQL.K_CLINICAL,
+                            self.pg_file_dd[EHR2SQL.K_CLINICAL],
+                            'latin1',
+                            'event_dt',
+                            db_engine,
+                            dtype_specs={'value1': str,
+                                         'value2': str,
+                                         'value3': str})
+
+        # PG SCRIPTS
+        create_table(EHR2SQL.K_SCRIPTS, columns = [
+                            'eid bigint NOT NULL',
+                            'data_provider int NOT NULL',
+                            'issue_date date NOT NULL',
+                            'read_2 text',
+                            'bnf_code text',
+                            'dmd_code text',
+                            'drug_name text',
+                            'quantity real'
+                        ],
+                     constraints=[
+                         'pk_{} PRIMARY KEY (eid)'.format(EHR2SQL.K_SCRIPTS)
+                        ],
+                        db_engine=db_engine)
+        self._load_pg_table(EHR2SQL.K_SCRIPTS,
+                            self.pg_file_dd[EHR2SQL.K_SCRIPTS],
+                            'latin1',
+                            'issue_date',
+                            db_engine,
+                            dtype_specs={'bnf_code': str})
+
+
+    def _load_pg_table(self, table_name, fp, encoding, date_col, db_engine,
+                       dtype_specs=None):
+        logger.info("Loading table: {}".format(fp))
+        pg_df = pd.read_table(fp, encoding=encoding, dtype=dtype_specs)
+        pg_df[date_col] = pd.to_datetime(pg_df[date_col], dayfirst=True)
+
+        pg_df.to_sql(table_name, db_engine, if_exists='append')
 
 
 
