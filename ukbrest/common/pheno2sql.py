@@ -20,8 +20,63 @@ from ukbrest.config import logger, SQL_CHUNKSIZE_ENV
 from ukbrest.common.utils.misc import get_list
 from ukbrest.resources.exceptions import UkbRestSQLExecutionError, UkbRestProgramExecutionError
 
+class LoadSQL(DBAccess):
+    def __init__(self, db_uri, n_columns_per_table=sys.maxsize,
+                 loading_n_jobs=-1, tmpdir=tempfile.mkdtemp(prefix='ukbrest'),
+                 loading_chunksize=5000, sql_chunksize=None,
+                 delete_temp_csv=True):
+        """
 
-class Pheno2SQL(DBAccess):
+        :param db_uri:
+        :param n_columns_per_table:
+        :param loading_n_jobs:
+        :param tmpdir:
+        :param loading_chunksize:
+        :param sql_chunksize:
+        :param delete_temp_csv:
+        """
+        super(LoadSQL, self).__init__(db_uri)
+        self.n_columns_per_table = n_columns_per_table
+        logger.debug("n_columns_per_table set to {}".format(self.n_columns_per_table))
+        self.loading_n_jobs = loading_n_jobs
+        self.tmpdir = tmpdir
+        self.loading_chunksize = loading_chunksize
+
+        self.sql_chunksize = sql_chunksize
+        if self.sql_chunksize is None:
+            logger.warning('{} was not set, no chunksize for SQL queries, what can lead to '
+                           'memory problems.'.format(SQL_CHUNKSIZE_ENV))
+        self.delete_temp_csv = delete_temp_csv
+
+    def _run_psql(self, sql_statement, is_file=False):
+        current_env = os.environ.copy()
+        current_env['PGPASSWORD'] = self.db_pass
+
+        p = Popen(['psql', '-w', '-h', self.db_host, '-p', str(self.db_port),
+                   '-U', self.db_user, '-d', self.db_name,
+                   '-f' if is_file else '-c', sql_statement],
+                  stdout=PIPE, stderr=PIPE, env=current_env)
+
+        stdout_data, stderr_data = p.communicate()
+        stdout_data = stdout_data.decode('utf-8')
+        stderr_data = stderr_data.decode('utf-8')
+
+        if p.returncode != 0:
+            raise UkbRestSQLExecutionError(stdout_data + '\n' + stderr_data)
+        elif stderr_data is not None and 'ERROR:' in stderr_data:
+            raise UkbRestSQLExecutionError(stderr_data)
+
+    @staticmethod
+    def _vacuum():
+        logger.info('Vacuuming')
+
+        with self._get_db_engine().connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+            conn.execute("""
+                vacuum analyze;
+            """)
+
+
+class Pheno2SQL(LoadSQL):
     _RE_COLUMN_NAME_PATTERN = '(?i)c[0-9a-z_]+_[0-9]+_[0-9]+'
     RE_COLUMN_NAME = re.compile('({})'.format(_RE_COLUMN_NAME_PATTERN))
 
@@ -49,7 +104,10 @@ class Pheno2SQL(DBAccess):
         chunksize (number of rows).
         """
 
-        super(Pheno2SQL, self).__init__(db_uri)
+        super(Pheno2SQL, self).__init__(db_uri, n_columns_per_table,
+                                        loading_n_jobs, tmpdir,
+                                        loading_chunksize, sql_chunksize,
+                                        delete_temp_csv)
 
         if isinstance(ukb_csvs, (tuple, list)):
             self.ukb_csvs = ukb_csvs
@@ -58,30 +116,30 @@ class Pheno2SQL(DBAccess):
 
         self.bgen_sample_file = bgen_sample_file
 
-        parse_result = urlparse(self.db_uri)
-        self.db_type = parse_result.scheme
-
-        if self.db_type == 'sqlite':
-            logger.warning('sqlite does not support parallel loading')
-            self.db_file = self.db_uri.split(':///')[-1]
-        elif self.db_type == 'postgresql':
-            self.db_host = parse_result.hostname
-            self.db_port = parse_result.port
-            self.db_name = parse_result.path.split('/')[-1]
-            self.db_user = parse_result.username
-            self.db_pass = parse_result.password
+        # parse_result = urlparse(self.db_uri)
+        # self.db_type = parse_result.scheme
+        #
+        # if self.db_type == 'sqlite':
+        #     logger.warning('sqlite does not support parallel loading')
+        #     self.db_file = self.db_uri.split(':///')[-1]
+        # elif self.db_type == 'postgresql':
+        #     self.db_host = parse_result.hostname
+        #     self.db_port = parse_result.port
+        #     self.db_name = parse_result.path.split('/')[-1]
+        #     self.db_user = parse_result.username
+        #     self.db_pass = parse_result.password
 
         self.table_prefix = table_prefix
-        self.n_columns_per_table = n_columns_per_table
-        logger.debug("n_columns_per_table set to {}".format(self.n_columns_per_table))
-        self.loading_n_jobs = loading_n_jobs
-        self.tmpdir = tmpdir
-        self.loading_chunksize = loading_chunksize
-
-        self.sql_chunksize = sql_chunksize
-        if self.sql_chunksize is None:
-            logger.warning('{} was not set, no chunksize for SQL queries, what can lead to '
-                           'memory problems.'.format(SQL_CHUNKSIZE_ENV))
+        # self.n_columns_per_table = n_columns_per_table
+        # logger.debug("n_columns_per_table set to {}".format(self.n_columns_per_table))
+        # self.loading_n_jobs = loading_n_jobs
+        # self.tmpdir = tmpdir
+        # self.loading_chunksize = loading_chunksize
+        #
+        # self.sql_chunksize = sql_chunksize
+        # if self.sql_chunksize is None:
+        #     logger.warning('{} was not set, no chunksize for SQL queries, what can lead to '
+        #                    'memory problems.'.format(SQL_CHUNKSIZE_ENV))
 
         self._fields_dtypes = {}
 
@@ -93,7 +151,7 @@ class Pheno2SQL(DBAccess):
         self.csv_files_encoding_file = 'encodings.txt'
         self.csv_files_encoding = 'utf-8'
 
-        self.delete_temp_csv = delete_temp_csv
+        # self.delete_temp_csv = delete_temp_csv
 
     def __enter__(self):
         return self
@@ -485,23 +543,23 @@ class Pheno2SQL(DBAccess):
 
         samples_data.to_sql(BGEN_SAMPLES_TABLE, self._get_db_engine(), if_exists='append')
 
-    def _run_psql(self, sql_statement, is_file=False):
-        current_env = os.environ.copy()
-        current_env['PGPASSWORD'] = self.db_pass
-
-        p = Popen(['psql', '-w', '-h', self.db_host, '-p', str(self.db_port),
-                   '-U', self.db_user, '-d', self.db_name,
-                   '-f' if is_file else '-c', sql_statement],
-                  stdout=PIPE, stderr=PIPE, env=current_env)
-
-        stdout_data, stderr_data = p.communicate()
-        stdout_data = stdout_data.decode('utf-8')
-        stderr_data = stderr_data.decode('utf-8')
-
-        if p.returncode != 0:
-            raise UkbRestSQLExecutionError(stdout_data + '\n' + stderr_data)
-        elif stderr_data is not None and 'ERROR:' in stderr_data:
-            raise UkbRestSQLExecutionError(stderr_data)
+    # def _run_psql(self, sql_statement, is_file=False):
+    #     current_env = os.environ.copy()
+    #     current_env['PGPASSWORD'] = self.db_pass
+    #
+    #     p = Popen(['psql', '-w', '-h', self.db_host, '-p', str(self.db_port),
+    #                '-U', self.db_user, '-d', self.db_name,
+    #                '-f' if is_file else '-c', sql_statement],
+    #               stdout=PIPE, stderr=PIPE, env=current_env)
+    #
+    #     stdout_data, stderr_data = p.communicate()
+    #     stdout_data = stdout_data.decode('utf-8')
+    #     stderr_data = stderr_data.decode('utf-8')
+    #
+    #     if p.returncode != 0:
+    #         raise UkbRestSQLExecutionError(stdout_data + '\n' + stderr_data)
+    #     elif stderr_data is not None and 'ERROR:' in stderr_data:
+    #         raise UkbRestSQLExecutionError(stderr_data)
 
     def _load_events(self):
         if self.db_type == 'sqlite':
@@ -573,13 +631,13 @@ class Pheno2SQL(DBAccess):
         create_indexes('events', ('eid', 'field_id', 'instance', 'event', ('field_id', 'event')),
                        db_engine=self._get_db_engine())
 
-    def _vacuum(self):
-        logger.info('Vacuuming')
-
-        with self._get_db_engine().connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
-            conn.execute("""
-                vacuum analyze;
-            """)
+    # def _vacuum(self):
+    #     logger.info('Vacuuming')
+    #
+    #     with self._get_db_engine().connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+    #         conn.execute("""
+    #             vacuum analyze;
+    #         """)
 
     def load_data(self, vacuum=False):
         """
@@ -959,3 +1017,91 @@ class Pheno2SQL(DBAccess):
             return self.query_yaml_simple_data(yaml_file, section, order_by_table)
         else:
             return self.query_yaml_data(yaml_file, section, order_by_table)
+
+
+class EHR2SQL(LoadSQL):
+    K_CLINICAL = "pg_clinical"
+    K_SCRIPTS = "pg_scripts"
+    K_REGISTRATIONS = "REGISTRATIONS"
+    DD_PG = {K_CLINICAL:"gp_clinical.txt",
+             K_SCRIPTS:"gp_scripts.txt",
+             K_REGISTRATIONS:"gp_registrations.txt"}
+    K_HESIN = "HESIN"
+    K_DIAG = "HESIN_DIAG"
+    DD_HESIN = {K_HESIN:"hesin.txt",
+                K_DIAG:"hesin_diag.txt"}
+
+    def __init__(self, db_uri, primary_care_dir, hospital_inpatient_dir,
+                 n_columns_per_table=sys.maxsize,
+                 loading_n_jobs=-1, tmpdir=tempfile.mkdtemp(prefix='ukbrest'),
+                 loading_chunksize=5000, sql_chunksize=None,
+                 delete_temp_csv=True):
+
+        super(EHR2SQL, self).__init__(db_uri,
+                                      n_columns_per_table=n_columns_per_table,
+                                      loading_n_jobs=loading_n_jobs,
+                                      tmpdir=tmpdir,
+                                      loading_chunksize=loading_chunksize,
+                                      sql_chunksize=sql_chunksize,
+                                      delete_temp_csv=delete_temp_csv)
+        if (self.hospital_inpatient_dir is None and
+            self.primary_care_dir is None):
+            raise ValueError("Neither hospital inpatient nor primary care "
+                             "directories were specified.")
+        self.primary_care_dir = primary_care_dir
+        if self.primary_care_dir is not None:
+            self.pg_file_dd = {}
+            for k,v in EHR2SQL.DD_PG.items():
+                fp = os.path.join(self.primary_care_dir, v)
+                if os.path.isfile(fp):
+                    self.pg_file_dd[k] = fp
+                else:
+                    raise ValueError(v + " out of place")
+        else:
+            self.pg_file_dd = None
+        self.hospital_inpatient_dir = hospital_inpatient_dir
+        if self.hospital_inpatient_dir is not None:
+            self.hesin_file_dd = {}
+            for k,v in EHR2SQL.DD_HESIN.items():
+                fp = os.path.join(self.hospital_inpatient_dir, v)
+                if os.path.isfile(fp):
+                    self.hesin_file_dd[k] = fp
+                else:
+                    raise ValueError(v + " out of place")
+
+    def load_data(self, vacuum):
+
+        self._load_primary_care_data()
+
+        self._load_hospital_inpatient_data()
+
+    def _load_primary_care_data(self):
+
+        self._load_pg_clinical()
+
+    def _load_pg_clinical(self):
+        db_engine = self._get_db_engine()
+        create_table(EHR2SQL.K_CLINICAL, columns = [
+                            'eid bigint NOT NULL',
+                            'data_provider int NOT NULL',
+                            'event_dt date NOT NULL',
+                            'read_2 text',
+                            'read_3 text',
+                            'value1 text',
+                            'value2 text',
+                            'value3 text'
+                        ],
+                     constraints=[
+                         'pk_{} PRIMARY KEY (eid)'.format(EHR2SQL.K_CLINICAL)
+                        ],
+                        db_engine=db_engine)
+        logger.debug("Created table: {}".format(EHR2SQL.K_CLINICAL))
+        pg_clinical = pd.read_table(self.pg_file_dd[EHR2SQL.K_CLINICAL])
+        logger.debug("Loaded table")
+        pg_clinical['event_dt'] = pd.to_datetime(pg_clinical.event_dt,
+                                              dayfirst=True)
+        pg_clinical.to_sql(EHR2SQL.K_CLINICAL, db_engine, if_exists='append')
+
+
+
+

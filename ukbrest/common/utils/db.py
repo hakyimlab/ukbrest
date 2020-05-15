@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-
+from urllib.parse import urlparse
 
 def create_table(table_name, columns, db_engine, constraints=None, drop_if_exists=True):
     with db_engine.connect() as conn:
@@ -48,6 +48,16 @@ class DBAccess():
     def __init__(self, db_uri):
         self.db_uri = db_uri
         self.db_engine = None
+        parse_result = urlparse(self.db_uri)
+        self.db_type = parse_result.scheme
+        if self.db_type == 'sqlite':
+            self.db_file = self.db_uri.split(':///')[-1]
+        elif self.db_type == 'postgresql':
+            self.db_host = parse_result.hostname
+            self.db_port = parse_result.port
+            self.db_name = parse_result.path.split('/')[-1]
+            self.db_user = parse_result.username
+            self.db_pass = parse_result.password
 
     def _close_db_engine(self):
         if self.db_engine is not None:
