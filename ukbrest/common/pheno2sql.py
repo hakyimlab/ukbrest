@@ -1089,27 +1089,21 @@ class EHR2SQL(LoadSQL):
                             'eid bigint NOT NULL',
                             'data_provider int NOT NULL',
                             'event_dt date NOT NULL',
+                            'read_key text NOT NULL'
                             'read_2 text',
                             'read_3 text',
                             'value1 text',
                             'value2 text',
                             'value3 text',
-                            'read_key text NOT NULL'
                         ],
                      constraints=[
                          'pk_{} PRIMARY KEY (eid, event_dt, read_key)'.format(EHR2SQL.K_CLINICAL)
                         ],
                         db_engine=db_engine)
-        self._load_pg_table(EHR2SQL.K_CLINICAL,
-                            self.pg_file_dd[EHR2SQL.K_CLINICAL],
-                            'latin1',
-                            'event_dt',
-                            db_engine,
-                            dtype_specs={'value1': str,
-                                         'value2': str,
-                                         'value3': str},
-                            pk_cols=['eid', 'event_dt', 'read_key'],
-                            create_col = ['read_key', 'read_2', 'read_3'])
+
+        pg_clinical_df = self._load_pg_clinical_table()
+        pg_clinical_df.to_sql(EHR2SQL.K_CLINICAL, db_engine, if_exists='append',
+                              index=False)
 
         # PG SCRIPTS
         create_table(EHR2SQL.K_SCRIPTS, columns = [
@@ -1126,31 +1120,41 @@ class EHR2SQL(LoadSQL):
                          'pk_{} PRIMARY KEY (eid, issue_date, bnf_code)'.format(EHR2SQL.K_SCRIPTS)
                         ],
                         db_engine=db_engine)
-        self._load_pg_table(EHR2SQL.K_SCRIPTS,
-                            self.pg_file_dd[EHR2SQL.K_SCRIPTS],
-                            'latin1',
-                            'issue_date',
-                            db_engine,
-                            dtype_specs={'bnf_code': str},
-                            pk_cols=['eid', 'issue_date', 'bnf_code'])
 
+        pg_scripts_df = self._load_pg_scripts_table()
+        pg_scripts_df.to_sql(EHR2SQL.K_SCRIPTS, db_engine, if_exists='append',
 
-    def _load_pg_table(self, table_name, fp, encoding, date_col, db_engine,
-                       dtype_specs=None, pk_cols=None, create_col=None):
+    def _load_pg_scripts_table(self):
+        fp = self.pg_file_dd[EHR2SQL.K_SCRIPTS]
+        pk_cols = ['eid', 'issue_date', 'bnf_code']
+        date_col = 'issue_date'
         logger.info("Loading table: {}".format(fp))
-        pg_df = pd.read_table(fp, encoding=encoding, dtype=dtype_specs)
-        if create_col is not None:
-            pg_df[create_col[0]] = pg_df[create_col[1]].fillna('') + pg_df[create_col[2]].fillna('')
-        if pk_cols is not None:
-            o_len = pg_df.shape[0]
-            pg_df = pg_df.drop_duplicates(pk_cols)
-            new_len = pg_df.shape[0]
-            logger.warning("Dropped {} entries from table with duplicated cols: {}".format(o_len - new_len, pk_cols))
+        pg_df = pd.read_table(fp, encoding='latin1', dtype={'bnf_code': str})
+        o_len = pg_df.shape[0]
+        pg_df = pg_df.drop_duplicates(pk_cols)
+        new_len = pg_df.shape[0]
+        logger.warning("Dropped {} entries from table with duplicated cols: {}".format(o_len - new_len,
+                                                                                       pk_cols))
         print(pg_df.head())
         pg_df[date_col] = pd.to_datetime(pg_df[date_col], dayfirst=True)
+        return pg_df
 
-        pg_df.to_sql(table_name, db_engine, if_exists='append', index=False)
-
-
-
-
+    def _load_pg_clinical_table(self):
+        fp = self.pg_file_dd[EHR2SQL.K_CLINICAL]
+        date_col = 'event_dt'
+        logger.info("Loading table: {}".format(fp))
+        pg_clinical_df = pd.read_table(fp,
+                              encoding='latin1', dtype={'value1': str,
+                                                        'value2': str,
+                                                        'value3': str})
+        pg_clinical_df['read_key'] = ''
+        pg_clinical_df.loc[pg_clinical_df['data_provider']==3, 'read_key'] = pg_clinical_df['read_3']
+        pg_clinical_df.loc[pg_clinical_df['data_provider']!=3, 'read_key'] = pg_clinical_df['read_2']
+        o_len = pg_clinical_df.shape[0]
+        pg_clinical_df = pg_clinical_df.drop_duplicates(['eid', 'event_dt', 'read_key'])
+        new_len = pg_clinical_df.shape[0]
+        logger.warning("Dropped {} entries from table with duplicated cols: {}".format(o_len - new_len,
+                                                                        ['eid', 'event_dt', 'read_key']))
+        print(pg_clinical_df.head())
+        pg_clinical_df[date_col] = pd.to_datetime(pg_df[date_col], dayfirst=True)
+        return pg_clinical_df
