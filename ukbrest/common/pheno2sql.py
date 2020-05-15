@@ -1044,8 +1044,8 @@ class EHR2SQL(LoadSQL):
                                       loading_chunksize=loading_chunksize,
                                       sql_chunksize=sql_chunksize,
                                       delete_temp_csv=delete_temp_csv)
-        if (self.hospital_inpatient_dir is None and
-            self.primary_care_dir is None):
+        if (hospital_inpatient_dir is None and
+            primary_care_dir is None):
             raise ValueError("Neither hospital inpatient nor primary care "
                              "directories were specified.")
         self.primary_care_dir = primary_care_dir
@@ -1095,8 +1095,9 @@ class EHR2SQL(LoadSQL):
                          'pk_{} PRIMARY KEY (eid)'.format(EHR2SQL.K_CLINICAL)
                         ],
                         db_engine=db_engine)
-        logger.debug("Created table: {}".format(EHR2SQL.K_CLINICAL))
-        pg_clinical = pd.read_table(self.pg_file_dd[EHR2SQL.K_CLINICAL])
+        logger.info("Created table: {}".format(EHR2SQL.K_CLINICAL))
+        logger.info("Loading table: {}".format(self.pg_file_dd[EHR2SQL.K_CLINICAL]))
+        pg_clinical = pd.read_table(self.pg_file_dd[EHR2SQL.K_CLINICAL], encoding='latin1')
         logger.debug("Loaded table")
         pg_clinical['event_dt'] = pd.to_datetime(pg_clinical.event_dt,
                                               dayfirst=True)

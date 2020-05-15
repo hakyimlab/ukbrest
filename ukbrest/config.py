@@ -151,7 +151,7 @@ def get_ehr2sql_parameters():
         'primary_care_dir': primary_care_dir,
         'hospital_inpatient_dir': hospital_inpatient_dir,
         'db_uri': db_uri,
-        'table_prefix': table_prefix,
+#        'table_prefix': table_prefix,
         'n_columns_per_table': int(n_columns_per_table),
         'loading_n_jobs': int(loading_n_jobs),
         'tmpdir': tmpdir,
