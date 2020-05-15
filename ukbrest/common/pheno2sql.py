@@ -1093,11 +1093,12 @@ class EHR2SQL(LoadSQL):
                             'read_3 text',
                             'value1 text',
                             'value2 text',
-                            'value3 text'
+                            'value3 text',
+                            'read_key text NOT NULL'
                         ],
-  #                   constraints=[
-  #                       'pk_{} PRIMARY KEY (eid, event_dt, read_2)'.format(EHR2SQL.K_CLINICAL)
-  #                      ],
+                     constraints=[
+                         'pk_{} PRIMARY KEY (eid, event_dt, read_key)'.format(EHR2SQL.K_CLINICAL)
+                        ],
                         db_engine=db_engine)
         self._load_pg_table(EHR2SQL.K_CLINICAL,
                             self.pg_file_dd[EHR2SQL.K_CLINICAL],
@@ -1106,7 +1107,9 @@ class EHR2SQL(LoadSQL):
                             db_engine,
                             dtype_specs={'value1': str,
                                          'value2': str,
-                                         'value3': str})
+                                         'value3': str},
+                            pk_cols=['eid', 'event_dt', 'read_key'],
+                            create_col = ['read_key', 'read_2', 'read_3'])
 
         # PG SCRIPTS
         create_table(EHR2SQL.K_SCRIPTS, columns = [
@@ -1119,22 +1122,31 @@ class EHR2SQL(LoadSQL):
                             'drug_name text',
                             'quantity text'
                         ],
-  #                   constraints=[
-  #                       'pk_{} PRIMARY KEY (eid, issue_date, bnf_code)'.format(EHR2SQL.K_SCRIPTS)
-  #                      ],
+                     constraints=[
+                         'pk_{} PRIMARY KEY (eid, issue_date, bnf_code)'.format(EHR2SQL.K_SCRIPTS)
+                        ],
                         db_engine=db_engine)
         self._load_pg_table(EHR2SQL.K_SCRIPTS,
                             self.pg_file_dd[EHR2SQL.K_SCRIPTS],
                             'latin1',
                             'issue_date',
                             db_engine,
-                            dtype_specs={'bnf_code': str})
+                            dtype_specs={'bnf_code': str},
+                            pk_cols=['eid', 'issue_date', 'bnf_code'])
 
 
     def _load_pg_table(self, table_name, fp, encoding, date_col, db_engine,
-                       dtype_specs=None):
+                       dtype_specs=None, pk_cols=None, create_col=None):
         logger.info("Loading table: {}".format(fp))
         pg_df = pd.read_table(fp, encoding=encoding, dtype=dtype_specs)
+        if create_col is not None:
+            pg_df[create_col[0]] = pg_df[create_col[1]].fillna('') + pg_df[create_col[2]].fillna('')
+        if pk_cols is not None:
+            o_len = pg_df.shape[0]
+            pg_df = pg_df.drop_duplicates(pk_cols)
+            new_len = pg_df.shape[0]
+            logger.warning("Dropped {} entries from table with duplicated cols: {}".format(o_len - new_len, pk_cols))
+        print(pg_df.head())
         pg_df[date_col] = pd.to_datetime(pg_df[date_col], dayfirst=True)
 
         pg_df.to_sql(table_name, db_engine, if_exists='append', index=False)
