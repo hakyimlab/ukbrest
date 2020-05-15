@@ -1095,9 +1095,9 @@ class EHR2SQL(LoadSQL):
                             'value2 text',
                             'value3 text'
                         ],
-                     constraints=[
-                         'pk_{} PRIMARY KEY (eid)'.format(EHR2SQL.K_CLINICAL)
-                        ],
+  #                   constraints=[
+  #                       'pk_{} PRIMARY KEY (eid, event_dt, read_2)'.format(EHR2SQL.K_CLINICAL)
+  #                      ],
                         db_engine=db_engine)
         self._load_pg_table(EHR2SQL.K_CLINICAL,
                             self.pg_file_dd[EHR2SQL.K_CLINICAL],
@@ -1117,11 +1117,11 @@ class EHR2SQL(LoadSQL):
                             'bnf_code text',
                             'dmd_code text',
                             'drug_name text',
-                            'quantity real'
+                            'quantity text'
                         ],
-                     constraints=[
-                         'pk_{} PRIMARY KEY (eid)'.format(EHR2SQL.K_SCRIPTS)
-                        ],
+  #                   constraints=[
+  #                       'pk_{} PRIMARY KEY (eid, issue_date, bnf_code)'.format(EHR2SQL.K_SCRIPTS)
+  #                      ],
                         db_engine=db_engine)
         self._load_pg_table(EHR2SQL.K_SCRIPTS,
                             self.pg_file_dd[EHR2SQL.K_SCRIPTS],
@@ -1137,7 +1137,7 @@ class EHR2SQL(LoadSQL):
         pg_df = pd.read_table(fp, encoding=encoding, dtype=dtype_specs)
         pg_df[date_col] = pd.to_datetime(pg_df[date_col], dayfirst=True)
 
-        pg_df.to_sql(table_name, db_engine, if_exists='append')
+        pg_df.to_sql(table_name, db_engine, if_exists='append', index=False)
 
 
 
