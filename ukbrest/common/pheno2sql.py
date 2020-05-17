@@ -1092,6 +1092,7 @@ class EHR2SQL(LoadSQL):
         self._create_pg_scripts_table()
         pg_scripts_df = self._load_pg_scripts_df()
         pg_scripts_df.to_sql(EHR2SQL.K_SCRIPTS, db_engine, if_exists='append',
+                             index=False)
 
     def _load_pg_scripts_df(self):
         fp = self.pg_file_dd[EHR2SQL.K_SCRIPTS]
@@ -1129,7 +1130,7 @@ class EHR2SQL(LoadSQL):
             'eid bigint NOT NULL',
             'data_provider int NOT NULL',
             'event_dt date NOT NULL',
-            'read_key text NOT NULL'
+            'read_key text NOT NULL',
             'read_2 text',
             'read_3 text',
             'value1 text',
@@ -1158,7 +1159,7 @@ class EHR2SQL(LoadSQL):
         logger.warning("Dropped {} entries from table with duplicated cols: {}".format(o_len - new_len,
                                                                         ['eid', 'event_dt', 'read_key']))
         print(pg_clinical_df.head())
-        pg_clinical_df[date_col] = pd.to_datetime(pg_df[date_col], dayfirst=True)
+        pg_clinical_df[date_col] = pd.to_datetime(pg_clinical_df[date_col], dayfirst=True)
         return pg_clinical_df
 
     def _load_hospital_inpatient_data(self):
