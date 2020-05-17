@@ -1072,59 +1072,28 @@ class EHR2SQL(LoadSQL):
     def load_data(self, vacuum):
         logger.info("Loading EHR into database")
         self._load_primary_care_data()
-        self._load_hospital_inpatient_data()
-        self._create_constraints()
+        # self._load_hospital_inpatient_data()
+        # self._create_constraints()
 
         if vacuum:
             self._vacuum()
-
-
 
     def _load_primary_care_data(self):
         
         db_engine = self._get_db_engine()
 
         # PG CLINICAL
-        create_table(EHR2SQL.K_CLINICAL, columns = [
-                            'eid bigint NOT NULL',
-                            'data_provider int NOT NULL',
-                            'event_dt date NOT NULL',
-                            'read_key text NOT NULL'
-                            'read_2 text',
-                            'read_3 text',
-                            'value1 text',
-                            'value2 text',
-                            'value3 text',
-                        ],
-                     constraints=[
-                         'pk_{} PRIMARY KEY (eid, event_dt, read_key)'.format(EHR2SQL.K_CLINICAL)
-                        ],
-                        db_engine=db_engine)
-
-        pg_clinical_df = self._load_pg_clinical_table()
+        self._create_pg_clinical_table()
+        pg_clinical_df = self._load_pg_clinical_df()
         pg_clinical_df.to_sql(EHR2SQL.K_CLINICAL, db_engine, if_exists='append',
                               index=False)
 
         # PG SCRIPTS
-        create_table(EHR2SQL.K_SCRIPTS, columns = [
-                            'eid bigint NOT NULL',
-                            'data_provider int NOT NULL',
-                            'issue_date date NOT NULL',
-                            'read_2 text',
-                            'bnf_code text',
-                            'dmd_code text',
-                            'drug_name text',
-                            'quantity text'
-                        ],
-                     constraints=[
-                         'pk_{} PRIMARY KEY (eid, issue_date, bnf_code)'.format(EHR2SQL.K_SCRIPTS)
-                        ],
-                        db_engine=db_engine)
-
-        pg_scripts_df = self._load_pg_scripts_table()
+        self._create_pg_scripts_table()
+        pg_scripts_df = self._load_pg_scripts_df()
         pg_scripts_df.to_sql(EHR2SQL.K_SCRIPTS, db_engine, if_exists='append',
 
-    def _load_pg_scripts_table(self):
+    def _load_pg_scripts_df(self):
         fp = self.pg_file_dd[EHR2SQL.K_SCRIPTS]
         pk_cols = ['eid', 'issue_date', 'bnf_code']
         date_col = 'issue_date'
@@ -1139,7 +1108,40 @@ class EHR2SQL(LoadSQL):
         pg_df[date_col] = pd.to_datetime(pg_df[date_col], dayfirst=True)
         return pg_df
 
-    def _load_pg_clinical_table(self):
+    def _create_pg_scripts_table(self):
+        create_table(EHR2SQL.K_SCRIPTS, columns = [
+                            'eid bigint NOT NULL',
+                            'data_provider int NOT NULL',
+                            'issue_date date NOT NULL',
+                            'read_2 text',
+                            'bnf_code text',
+                            'dmd_code text',
+                            'drug_name text',
+                            'quantity text'
+                        ],
+                     constraints=[
+                         'pk_{} PRIMARY KEY (eid, issue_date, bnf_code)'.format(EHR2SQL.K_SCRIPTS)
+                        ],
+                        db_engine=self._get_db_engine())
+
+    def _create_pg_clinical_table(self):
+        create_table(EHR2SQL.K_CLINICAL, columns=[
+            'eid bigint NOT NULL',
+            'data_provider int NOT NULL',
+            'event_dt date NOT NULL',
+            'read_key text NOT NULL'
+            'read_2 text',
+            'read_3 text',
+            'value1 text',
+            'value2 text',
+            'value3 text',
+        ],
+                     constraints=[
+                         'pk_{} PRIMARY KEY (eid, event_dt, read_key)'.format(EHR2SQL.K_CLINICAL)
+                     ],
+                     db_engine=self._get_db_engine())
+
+    def _load_pg_clinical_df(self):
         fp = self.pg_file_dd[EHR2SQL.K_CLINICAL]
         date_col = 'event_dt'
         logger.info("Loading table: {}".format(fp))
@@ -1158,3 +1160,6 @@ class EHR2SQL(LoadSQL):
         print(pg_clinical_df.head())
         pg_clinical_df[date_col] = pd.to_datetime(pg_df[date_col], dayfirst=True)
         return pg_clinical_df
+
+    def _load_hospital_inpatient_data(self):
+        pass
