@@ -66,8 +66,7 @@ class LoadSQL(DBAccess):
         elif stderr_data is not None and 'ERROR:' in stderr_data:
             raise UkbRestSQLExecutionError(stderr_data)
 
-    @staticmethod
-    def _vacuum():
+    def _vacuum(self):
         logger.info('Vacuuming')
 
         with self._get_db_engine().connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
@@ -1096,7 +1095,7 @@ class EHR2SQL(LoadSQL):
 
     def _load_pg_scripts_df(self):
         fp = self.pg_file_dd[EHR2SQL.K_SCRIPTS]
-        pk_cols = ['eid', 'issue_date', 'read_code']
+        pk_cols = ['eid', 'issue_date', 'read_key']
         date_col = 'issue_date'
         logger.info("Loading table: {}".format(fp))
         pg_df = pd.read_table(fp, encoding='latin1', dtype={'bnf_code': str})
@@ -1109,7 +1108,6 @@ class EHR2SQL(LoadSQL):
         new_len = pg_df.shape[0]
         logger.warning("Dropped {} entries from table with duplicated cols: {}".format(o_len - new_len,
                                                                                        pk_cols))
-        print(pg_df.head())
         pg_df[date_col] = pd.to_datetime(pg_df[date_col], dayfirst=True)
         return pg_df
 
@@ -1118,7 +1116,7 @@ class EHR2SQL(LoadSQL):
                             'eid bigint NOT NULL',
                             'data_provider int NOT NULL',
                             'issue_date date NOT NULL',
-                            'read_code text NOT NULL',
+                            'read_key text NOT NULL',
                             'read_2 text',
                             'bnf_code text',
                             'dmd_code text',
@@ -1126,7 +1124,7 @@ class EHR2SQL(LoadSQL):
                             'quantity text'
                         ],
                      constraints=[
-                         'pk_{} PRIMARY KEY (eid, issue_date, read_code)'.format(EHR2SQL.K_SCRIPTS)
+                         'pk_{} PRIMARY KEY (eid, issue_date, read_key)'.format(EHR2SQL.K_SCRIPTS)
                         ],
                         db_engine=self._get_db_engine())
 
@@ -1158,14 +1156,11 @@ class EHR2SQL(LoadSQL):
         pg_clinical_df['read_key'] = np.nan
         pg_clinical_df['read_key'] = pg_clinical_df['read_key'].fillna(pg_clinical_df['read_2'])
         pg_clinical_df['read_key'] = pg_clinical_df['read_key'].fillna(pg_clinical_df['read_3'])
-        # pg_clinical_df.loc[pg_clinical_df['data_provider']==3, 'read_key'] = pg_clinical_df['read_3']
-        # pg_clinical_df.loc[pg_clinical_df['data_provider']!=3, 'read_key'] = pg_clinical_df['read_2']
         o_len = pg_clinical_df.shape[0]
         pg_clinical_df = pg_clinical_df.drop_duplicates(['eid', 'event_dt', 'read_key'])
         new_len = pg_clinical_df.shape[0]
         logger.warning("Dropped {} entries from table with duplicated cols: {}".format(o_len - new_len,
                                                                         ['eid', 'event_dt', 'read_key']))
-        print(pg_clinical_df.head())
         pg_clinical_df[date_col] = pd.to_datetime(pg_clinical_df[date_col], dayfirst=True)
         return pg_clinical_df
 
