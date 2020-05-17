@@ -1096,10 +1096,14 @@ class EHR2SQL(LoadSQL):
 
     def _load_pg_scripts_df(self):
         fp = self.pg_file_dd[EHR2SQL.K_SCRIPTS]
-        pk_cols = ['eid', 'issue_date', 'bnf_code']
+        pk_cols = ['eid', 'issue_date', 'read_code']
         date_col = 'issue_date'
         logger.info("Loading table: {}".format(fp))
         pg_df = pd.read_table(fp, encoding='latin1', dtype={'bnf_code': str})
+        pg_df['read_key'] = np.nan
+        pg_df['read_key'] = pg_df['read_key'].fillna(pg_df['bnf_code'])
+        pg_df['read_key'] = pg_df['read_key'].fillna(pg_df['dmd_code'])
+        pg_df['read_key'] = pg_df['read_key'].fillna(pg_df['read_2'])
         o_len = pg_df.shape[0]
         pg_df = pg_df.drop_duplicates(pk_cols)
         new_len = pg_df.shape[0]
@@ -1114,6 +1118,7 @@ class EHR2SQL(LoadSQL):
                             'eid bigint NOT NULL',
                             'data_provider int NOT NULL',
                             'issue_date date NOT NULL',
+                            'read_code text NOT NULL',
                             'read_2 text',
                             'bnf_code text',
                             'dmd_code text',
@@ -1121,7 +1126,7 @@ class EHR2SQL(LoadSQL):
                             'quantity text'
                         ],
                      constraints=[
-                         'pk_{} PRIMARY KEY (eid, issue_date, bnf_code)'.format(EHR2SQL.K_SCRIPTS)
+                         'pk_{} PRIMARY KEY (eid, issue_date, read_code)'.format(EHR2SQL.K_SCRIPTS)
                         ],
                         db_engine=self._get_db_engine())
 
@@ -1150,9 +1155,11 @@ class EHR2SQL(LoadSQL):
                               encoding='latin1', dtype={'value1': str,
                                                         'value2': str,
                                                         'value3': str})
-        pg_clinical_df['read_key'] = ''
-        pg_clinical_df.loc[pg_clinical_df['data_provider']==3, 'read_key'] = pg_clinical_df['read_3']
-        pg_clinical_df.loc[pg_clinical_df['data_provider']!=3, 'read_key'] = pg_clinical_df['read_2']
+        pg_clinical_df['read_key'] = np.nan
+        pg_clinical_df['read_key'] = pg_clinical_df['read_key'].fillna(pg_clinical_df['read_2'])
+        pg_clinical_df['read_key'] = pg_clinical_df['read_key'].fillna(pg_clinical_df['read_3'])
+        # pg_clinical_df.loc[pg_clinical_df['data_provider']==3, 'read_key'] = pg_clinical_df['read_3']
+        # pg_clinical_df.loc[pg_clinical_df['data_provider']!=3, 'read_key'] = pg_clinical_df['read_2']
         o_len = pg_clinical_df.shape[0]
         pg_clinical_df = pg_clinical_df.drop_duplicates(['eid', 'event_dt', 'read_key'])
         new_len = pg_clinical_df.shape[0]
