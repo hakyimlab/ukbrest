@@ -80,3 +80,4 @@ class DBAccess():
             conn.execute("""
                 vacuum analyze {table_name}
             """.format(table_name=table_name))
+

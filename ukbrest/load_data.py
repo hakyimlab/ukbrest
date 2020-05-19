@@ -71,9 +71,7 @@ def load_data(args):
 
     p2sql = Pheno2SQL(**pheno2sql_parameters)
 
-    load_parameters = config.get_pheno2sql_load_parameters()
-
-    p2sql.load_data(**load_parameters)
+    p2sql.load_data()
 
 
 @handle_errors
