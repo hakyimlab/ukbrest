@@ -1196,53 +1196,127 @@ class EHR2SQL(LoadSQL):
         db_engine = self._get_db_engine()
 
         # HESIN
-        self._create_hein_table()
-        hesin_df = self._load_hesin_df()
+        self._create_hesin_table()
+        hesin_df = self._load_ehr_df(EHR2SQL.DD_HESIN[EHR2SQL.K_HESIN],
+                                     ['eid', 'ins_index'],
+                                     ymd_date_cols=['epistart', 'epiend',
+                                                    'elecdate', 'admidate'])
+        hesin_df.to_sql(EHR2SQL.K_HESIN, db_engine, if_exists='append',
+                              index=False)
 
         # HESIN_DIAG
+        self._create_hesin_diag_table()
+        diag_df = self._load_ehr_df(EHR2SQL.DD_HESIN[EHR2SQL.K_DIAG],
+                                    ['eid', 'ins_index', 'arr_index'])
+        diag_df.to_sql(EHR2SQL.K_DIAG, db_engine, if_exists='append',
+                       index=False)
 
 
 
     def _create_hesin_table(self):
-        eid
-        ins_index
-        dsource
-        source
-        epistart
-        epiend
-        epidur
-        bedyear
-        epistat
-        epitype
-        epiorder
-        spell_index
-        spell_seq
-        spelbgin
-        spelend
-        speldur
-        pctcode
-        gpprpct
-        category
-        elecdate
-        elecdur
-        admidate
-        admimeth_uni
-        admimeth
-        admisorc_uni
-        admisorc
-        firstreg
-        classpat_uni
-        classpat
-        intmanag_uni
-        intmanag
-        mainspef_uni
-        mainspef
-        tretspef_uni
-        tretspef
-        operstat
-        disdate
-        dismeth_uni
-        dismeth
-        disdest_uni
-        disdest
-        carersi
+        create_table(EHR2SQL.K_HESIN,
+                     ['eid bigint NOT NULL',
+                      'insinex bigint NOT NULL',
+                      'dsource text NOT NULL',
+                      'source text NOT NULL',
+                      'epistart date',
+                      'epiend date',
+                      'epidur bigint',
+                      'bedyear int',
+                      'epistat int',
+                      'epitype int',
+                      'epiorder int',
+                      'spell_index int',
+                      'spell_seq int',
+                      'spelbgin int',
+                      'spelend int',
+                      'speldur bigint',
+                      'pctcode text',
+                      'gpprpct text',
+                      'category int',
+                      'elecdate date',
+                      'admidate date',
+                      'admimeth_uni int',
+                      'admimeth int',
+                      'admisorc_uni int',
+                      'asmisorc int',
+                      'firstreg int',
+                      'classpat_uni int',
+                      'classpat int',
+                      'intmanag_uni int',
+                      'intmanag int',
+                      'mainspef_uni int',
+                      'mainspef text',
+                      'tretspef_uni int',
+                      'operstat int',
+                      'disdate date',
+                      'dismeth_uni int',
+                      'dismeth int',
+                      'didest_uni int',
+                      'didest int'],
+                     constraints=['pk_{} PRIMARY KEY (eid, ins_index)'.format(EHR2SQL.K_HESIN)])
+
+    def _create_hesin_diag_table(self):
+        create_table(EHR2SQL.K_DIAG, columns=[
+                                    'eid bigint NOT NULL',
+                                    'ins_index bigint NOT NULL',
+                                    'arr_index bigint NOT NULL',
+                                    'level int',
+                                    'diag_icd9 text',
+                                    'diag_icd9_nb text',
+                                    'diag_icd10 text',
+                                    'diag_icd10_nb text'],
+                     constraints=['pk_{} PRIMARY KEY (eid, ins_index, arr_index)'.format(EHR2SQL.K_DIAG)])
+
+    @staticmethod
+    def _load_ehr_df(fp, pk_cols, day_date_cols=None, month_date_cols=None,
+                     ymd_date_cols=None, encoding=None,
+                     accumulate_col_dict=None, extra_not_null = None):
+        """
+
+        :param fp: filepath to EHR text file
+        :param pk_cols: columns treated as primary keys. Uniqueness and NonNull
+                      are enforced.
+        :param day_date_cols: Date columns to be treated with day first
+        :param month_date_cols: Date columns to be treated with month first
+        :param encoding: Text file encoding
+        :param accumulate_col_dict: {resulting col name: [ first_option,
+                                                            second_option,
+                                                            ...]}
+        :param extra_not_null: list of other Not Null columns
+        :return: pandas DataFrame
+        """
+        logger.info("Loading table {}".format(fp))
+        df = pd.read_table(fp, encoding=encoding)
+        if day_date_cols is not None:
+            for c in day_date_cols:
+                df[c] = pd.to_datetime(df[c], dayfirst=True)
+        if month_date_cols is not None:
+            for c in month_date_cols:
+                df[c] = pd.to_datetime(df[c], monthfirst=True)
+        if ymd_date_cols is not None:
+            for c in ymd_date_cols:
+                df[c] = pd.to_datetime(df[c], format="%Y%m%d")
+
+        if accumulate_col_dict is not None:
+            for col, fill_cols in accumulate_col_dict.items():
+                df[col] = np.nan
+                for i in fill_cols:
+                    df[col] = df[col].fillna(df[i])
+
+        l_0 = df.shape[0]
+        df = df.drop_duplicates(pk_cols)
+        l_1 = df.shape[0]
+        logger.warning("Dropped {} rows due to uniqueness constraint".format(l_0 - l_1))
+
+        if extra_not_null is not None:
+            pk_cols.extend(extra_not_null)
+        df = df.dropna(subset=pk_cols)
+        l_2 = df.shape[0]
+        logger.warning("Dropped {} rows due to nonnull constraint".format(l_1 - l_2))
+
+        return df
+
+
+
+
