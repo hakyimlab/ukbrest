@@ -1105,9 +1105,7 @@ class EHR2SQL(LoadSQL):
         date_col = 'issue_date'
         logger.info("Loading table: {}".format(fp))
         gp_df = pd.read_table(fp, encoding='latin1', dtype={'bnf_code': str})
-        gp_df['read_key'] = np.nan
-        gp_df['read_key'] = gp_df['read_key'].fillna(gp_df['bnf_code'])
-        gp_df['read_key'] = gp_df['read_key'].fillna(gp_df['dmd_code'])
+        gp_df['read_key'] = gp_df['bnf_code'].fillna(gp_df['dmd_code'])
         gp_df['read_key'] = gp_df['read_key'].fillna(gp_df['read_2'])
         o_len = gp_df.shape[0]
         gp_df = gp_df.drop_duplicates(pk_cols)
@@ -1172,25 +1170,26 @@ class EHR2SQL(LoadSQL):
         create_table(EHR2SQL.K_REGISTRATIONS, columns=[
             'eid bigint NOT NULL',
             'data_provider int NOT NULL',
-            'reg_dt date NOT NULL',
+            'reg_date date NOT NULL',
             'deduct_date date',
         ],
                      constraints=[
-                         'pk_{} PRIMARY KEY (eid, reg_dt)'.format(EHR2SQL.K_REGISTRATIONS)
+                         'pk_{} PRIMARY KEY (eid, reg_date)'.format(EHR2SQL.K_REGISTRATIONS)
                      ],
                      db_engine=self._get_db_engine())
 
-    def _load_gp_registrations_table(self):
+    def _load_gp_registrations_df(self):
         fp = self.gp_file_dd[EHR2SQL.K_REGISTRATIONS]
         logger.info("Loading table: {}".format(fp))
         df = pd.read_table(fp, encoding='latin1')
-        df['reg_dt'] = pd.to_datetime(df['reg_dt'], dayfirst=True)
-        df['deduct_dt'] = pd.to_datetime(df['deduct_dt'], dayfirst=True)
+        df['reg_date'] = pd.to_datetime(df['reg_date'], dayfirst=True)
+        df['deduct_date'] = pd.to_datetime(df['deduct_date'], dayfirst=True)
         o_len = df.shape[0]
-        df = df.drop_duplicates(['eid', 'reg_dt'])
+        df = df.drop_duplicates(['eid', 'reg_date'])
         n_len = df.shape[0]
         logger.warning("Dropped {} entries from table with duplicated cols: {}".format(o_len - n_len,
                                                                                        ['eid', 'reg_dt']))
+        df = df.dropna(axis=0, subset=['eid', 'reg_date'])
         return df
 
     def _load_hospital_inpatient_data(self):
