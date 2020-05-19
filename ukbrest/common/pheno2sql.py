@@ -1194,4 +1194,56 @@ class EHR2SQL(LoadSQL):
         return df
 
     def _load_hospital_inpatient_data(self):
-        pass
+        db_engine = self._get_db_engine()
+
+        # HESIN
+        self._create_hein_table()
+        hesin_df = self._load_hesin_df()
+
+        # HESIN_DIAG
+
+
+
+    def _create_hesin_table(self):
+        eid
+        ins_index
+        dsource
+        source
+        epistart
+        epiend
+        epidur
+        bedyear
+        epistat
+        epitype
+        epiorder
+        spell_index
+        spell_seq
+        spelbgin
+        spelend
+        speldur
+        pctcode
+        gpprpct
+        category
+        elecdate
+        elecdur
+        admidate
+        admimeth_uni
+        admimeth
+        admisorc_uni
+        admisorc
+        firstreg
+        classpat_uni
+        classpat
+        intmanag_uni
+        intmanag
+        mainspef_uni
+        mainspef
+        tretspef_uni
+        tretspef
+        operstat
+        disdate
+        dismeth_uni
+        dismeth
+        disdest_uni
+        disdest
+        carersi
