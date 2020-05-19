@@ -1067,11 +1067,13 @@ class EHR2SQL(LoadSQL):
                     self.hesin_file_dd[k] = fp
                 else:
                     raise ValueError(v + " out of place")
+        else: 
+            self.hesin_file_dd = None
 
     def load_data(self, vacuum):
         logger.info("Loading EHR into database")
         self._load_primary_care_data()
-        # self._load_hospital_inpatient_data()
+        self._load_hospital_inpatient_data()
         # self._create_constraints()
 
         if vacuum:
@@ -1197,7 +1199,7 @@ class EHR2SQL(LoadSQL):
 
         # HESIN
         self._create_hesin_table()
-        hesin_df = self._load_ehr_df(EHR2SQL.DD_HESIN[EHR2SQL.K_HESIN],
+        hesin_df = self._load_ehr_df(self.hesin_file_dd[EHR2SQL.K_HESIN],
                                      ['eid', 'ins_index'],
                                      ymd_date_cols=['epistart', 'epiend',
                                                     'elecdate', 'admidate'])
@@ -1206,7 +1208,7 @@ class EHR2SQL(LoadSQL):
 
         # HESIN_DIAG
         self._create_hesin_diag_table()
-        diag_df = self._load_ehr_df(EHR2SQL.DD_HESIN[EHR2SQL.K_DIAG],
+        diag_df = self._load_ehr_df(self.hesin_file_dd[EHR2SQL.K_DIAG],
                                     ['eid', 'ins_index', 'arr_index'])
         diag_df.to_sql(EHR2SQL.K_DIAG, db_engine, if_exists='append',
                        index=False)
@@ -1216,7 +1218,7 @@ class EHR2SQL(LoadSQL):
     def _create_hesin_table(self):
         create_table(EHR2SQL.K_HESIN,
                      ['eid bigint NOT NULL',
-                      'insinex bigint NOT NULL',
+                      'ins_index bigint NOT NULL',
                       'dsource text NOT NULL',
                       'source text NOT NULL',
                       'epistart date',
@@ -1254,6 +1256,7 @@ class EHR2SQL(LoadSQL):
                       'dismeth int',
                       'didest_uni int',
                       'didest int'],
+                     db_engine=self._get_db_engine(), 
                      constraints=['pk_{} PRIMARY KEY (eid, ins_index)'.format(EHR2SQL.K_HESIN)])
 
     def _create_hesin_diag_table(self):
@@ -1266,6 +1269,7 @@ class EHR2SQL(LoadSQL):
                                     'diag_icd9_nb text',
                                     'diag_icd10 text',
                                     'diag_icd10_nb text'],
+                     db_engine=self._get_db_engine(),
                      constraints=['pk_{} PRIMARY KEY (eid, ins_index, arr_index)'.format(EHR2SQL.K_DIAG)])
 
     @staticmethod
