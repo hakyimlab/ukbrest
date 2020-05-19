@@ -184,6 +184,6 @@ def get_argparse_arguments(parser=None):
     parser.add_argument('--users-file', type=str, help='This users files, if not empty, activates HTTP Basic Authentication. It must be a valid YAML file: one line per user with format USER: PASSWORD')
     parser.add_argument('--ssl-mode', action='store_true', help='Activates SSL in adhoc mode when running with Flask.')
     parser.add_argument('--primary-care-dir', type=str, help="Directory with primary care EHR files: gp_clinical.txt, gp_registrations.txt, gp_scripts.txt")
-    parser.add_argument('--hospital_inpatient_dir', type=str, help= "Directory with hospital inpatient EHR files: hesin.txt, hesin_diag.txt")
+    parser.add_argument('--hospital-inpatient-dir', type=str, help= "Directory with hospital inpatient EHR files: hesin.txt, hesin_diag.txt")
 
     return parser

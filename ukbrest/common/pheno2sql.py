@@ -1085,37 +1085,49 @@ class EHR2SQL(LoadSQL):
 
         # PG REGISTRATIONS
         self._create_gp_registrations_table()
-        gp_registrations_df = self._load_gp_registrations_df()
+        # gp_registrations_df = self._load_gp_registrations_df()
+        gp_registrations_df = self._load_ehr_df(self.gp_file_dd[EHR2SQL.K_REGISTRATIONS],
+                                                ['eid', 'reg_date'],
+                                                day_date_cols=['reg_date', 'deduct_date'])
         gp_registrations_df.to_sql(EHR2SQL.K_REGISTRATIONS, db_engine,
                                    if_exists='append', index=False)
 
         # PG CLINICAL
         self._create_gp_clinical_table()
-        gp_clinical_df = self._load_gp_clinical_df()
+        # gp_clinical_df = self._load_gp_clinical_df()
+        gp_clinical_df = self._load_ehr_df(self.gp_file_dd[EHR2SQL.K_CLINICAL],
+                                           ['eid', 'event_dt', 'read_key'],
+                                           day_date_cols=['event_dt'],
+                                           accumulate_col_dict={'read_key':['read_2', 'read_3']})
         gp_clinical_df.to_sql(EHR2SQL.K_CLINICAL, db_engine, if_exists='append',
                               index=False)
 
         # PG SCRIPTS
         self._create_gp_scripts_table()
-        gp_scripts_df = self._load_gp_scripts_df()
+        # gp_scripts_df = self._load_gp_scripts_df()
+        gp_scripts_df = self._load_ehr_df(self.gp_file_dd[EHR2SQL.K_SCRIPTS],
+                                          ['eid', 'issue_date', 'read_key'],
+                                          day_date_cols=['issue_date'],
+                                          accumulate_col_dict={'read_key':['bnf_code', 'dmd_code', 'read_2']},
+                                          dtype_handling={'bnf_code':str})
         gp_scripts_df.to_sql(EHR2SQL.K_SCRIPTS, db_engine, if_exists='append',
                              index=False)
 
-    def _load_gp_scripts_df(self):
-        fp = self.gp_file_dd[EHR2SQL.K_SCRIPTS]
-        pk_cols = ['eid', 'issue_date', 'read_key']
-        date_col = 'issue_date'
-        logger.info("Loading table: {}".format(fp))
-        gp_df = pd.read_table(fp, encoding='latin1', dtype={'bnf_code': str})
-        gp_df['read_key'] = gp_df['bnf_code'].fillna(gp_df['dmd_code'])
-        gp_df['read_key'] = gp_df['read_key'].fillna(gp_df['read_2'])
-        o_len = gp_df.shape[0]
-        gp_df = gp_df.drop_duplicates(pk_cols)
-        new_len = gp_df.shape[0]
-        logger.warning("Dropped {} entries from table with duplicated cols: {}".format(o_len - new_len,
-                                                                                       pk_cols))
-        gp_df[date_col] = pd.to_datetime(gp_df[date_col], dayfirst=True)
-        return gp_df
+    # def _load_gp_scripts_df(self):
+    #     fp = self.gp_file_dd[EHR2SQL.K_SCRIPTS]
+    #     pk_cols = ['eid', 'issue_date', 'read_key']
+    #     date_col = 'issue_date'
+    #     logger.info("Loading table: {}".format(fp))
+    #     gp_df = pd.read_table(fp, encoding='latin1', dtype={'bnf_code': str})
+    #     gp_df['read_key'] = gp_df['bnf_code'].fillna(gp_df['dmd_code'])
+    #     gp_df['read_key'] = gp_df['read_key'].fillna(gp_df['read_2'])
+    #     o_len = gp_df.shape[0]
+    #     gp_df = gp_df.drop_duplicates(pk_cols)
+    #     new_len = gp_df.shape[0]
+    #     logger.warning("Dropped {} entries from table with duplicated cols: {}".format(o_len - new_len,
+    #                                                                                    pk_cols))
+    #     gp_df[date_col] = pd.to_datetime(gp_df[date_col], dayfirst=True)
+    #     return gp_df
 
     def _create_gp_scripts_table(self):
         create_table(EHR2SQL.K_SCRIPTS, columns = [
@@ -1151,22 +1163,22 @@ class EHR2SQL(LoadSQL):
                      ],
                      db_engine=self._get_db_engine())
 
-    def _load_gp_clinical_df(self):
-        fp = self.gp_file_dd[EHR2SQL.K_CLINICAL]
-        date_col = 'event_dt'
-        logger.info("Loading table: {}".format(fp))
-        gp_clinical_df = pd.read_table(fp,
-                              encoding='latin1', dtype={'value1': str,
-                                                        'value2': str,
-                                                        'value3': str})
-        gp_clinical_df['read_key'] = gp_clinical_df['read_2'].fillna(gp_clinical_df['read_3'])
-        o_len = gp_clinical_df.shape[0]
-        gp_clinical_df = gp_clinical_df.drop_duplicates(['eid', 'event_dt', 'read_key'])
-        new_len = gp_clinical_df.shape[0]
-        logger.warning("Dropped {} entries from table with duplicated cols: {}".format(o_len - new_len,
-                                                                        ['eid', 'event_dt', 'read_key']))
-        gp_clinical_df[date_col] = pd.to_datetime(gp_clinical_df[date_col], dayfirst=True)
-        return gp_clinical_df
+    # def _load_gp_clinical_df(self):
+    #     fp = self.gp_file_dd[EHR2SQL.K_CLINICAL]
+    #     date_col = 'event_dt'
+    #     logger.info("Loading table: {}".format(fp))
+    #     gp_clinical_df = pd.read_table(fp,
+    #                           encoding='latin1', dtype={'value1': str,
+    #                                                     'value2': str,
+    #                                                     'value3': str})
+    #     gp_clinical_df['read_key'] = gp_clinical_df['read_2'].fillna(gp_clinical_df['read_3'])
+    #     o_len = gp_clinical_df.shape[0]
+    #     gp_clinical_df = gp_clinical_df.drop_duplicates(['eid', 'event_dt', 'read_key'])
+    #     new_len = gp_clinical_df.shape[0]
+    #     logger.warning("Dropped {} entries from table with duplicated cols: {}".format(o_len - new_len,
+    #                                                                     ['eid', 'event_dt', 'read_key']))
+    #     gp_clinical_df[date_col] = pd.to_datetime(gp_clinical_df[date_col], dayfirst=True)
+    #     return gp_clinical_df
 
     def _create_gp_registrations_table(self):
         create_table(EHR2SQL.K_REGISTRATIONS, columns=[
@@ -1180,19 +1192,19 @@ class EHR2SQL(LoadSQL):
                      ],
                      db_engine=self._get_db_engine())
 
-    def _load_gp_registrations_df(self):
-        fp = self.gp_file_dd[EHR2SQL.K_REGISTRATIONS]
-        logger.info("Loading table: {}".format(fp))
-        df = pd.read_table(fp, encoding='latin1')
-        df['reg_date'] = pd.to_datetime(df['reg_date'], dayfirst=True)
-        df['deduct_date'] = pd.to_datetime(df['deduct_date'], dayfirst=True)
-        o_len = df.shape[0]
-        df = df.drop_duplicates(['eid', 'reg_date'])
-        n_len = df.shape[0]
-        logger.warning("Dropped {} entries from table with duplicated cols: {}".format(o_len - n_len,
-                                                                                       ['eid', 'reg_dt']))
-        df = df.dropna(axis=0, subset=['eid', 'reg_date'])
-        return df
+    # def _load_gp_registrations_df(self):
+    #     fp = self.gp_file_dd[EHR2SQL.K_REGISTRATIONS]
+    #     logger.info("Loading table: {}".format(fp))
+    #     df = pd.read_table(fp, encoding='latin1')
+    #     df['reg_date'] = pd.to_datetime(df['reg_date'], dayfirst=True)
+    #     df['deduct_date'] = pd.to_datetime(df['deduct_date'], dayfirst=True)
+    #     o_len = df.shape[0]
+    #     df = df.drop_duplicates(['eid', 'reg_date'])
+    #     n_len = df.shape[0]
+    #     logger.warning("Dropped {} entries from table with duplicated cols: {}".format(o_len - n_len,
+    #                                                                                    ['eid', 'reg_dt']))
+    #     df = df.dropna(axis=0, subset=['eid', 'reg_date'])
+    #     return df
 
     def _load_hospital_inpatient_data(self):
         db_engine = self._get_db_engine()
@@ -1275,7 +1287,8 @@ class EHR2SQL(LoadSQL):
     @staticmethod
     def _load_ehr_df(fp, pk_cols, day_date_cols=None, month_date_cols=None,
                      ymd_date_cols=None, encoding=None,
-                     accumulate_col_dict=None, extra_not_null = None):
+                     accumulate_col_dict=None, extra_not_null = None,
+                     dtype_handling=None):
         """
 
         :param fp: filepath to EHR text file
@@ -1291,7 +1304,7 @@ class EHR2SQL(LoadSQL):
         :return: pandas DataFrame
         """
         logger.info("Loading table {}".format(fp))
-        df = pd.read_table(fp, encoding=encoding)
+        df = pd.read_table(fp, encoding=encoding, dtype=dtype_handling)
         if day_date_cols is not None:
             for c in day_date_cols:
                 df[c] = pd.to_datetime(df[c], dayfirst=True)
@@ -1311,13 +1324,14 @@ class EHR2SQL(LoadSQL):
         l_0 = df.shape[0]
         df = df.drop_duplicates(pk_cols)
         l_1 = df.shape[0]
-        logger.warning("Dropped {} rows due to uniqueness constraint".format(l_0 - l_1))
-
+        if l_0 != l_1:
+            logger.warning("Dropped {} rows due to uniqueness constraint".format(l_0 - l_1))
         if extra_not_null is not None:
             pk_cols.extend(extra_not_null)
         df = df.dropna(subset=pk_cols)
         l_2 = df.shape[0]
-        logger.warning("Dropped {} rows due to nonnull constraint".format(l_1 - l_2))
+        if l_1 != l_2:
+            logger.warning("Dropped {} rows due to nonnull constraint".format(l_1 - l_2))
 
         return df
 
