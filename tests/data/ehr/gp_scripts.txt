@@ -1,0 +1,1 @@
+eid	data_provider	issue_date	read_2	bnf_code	dmd_code	drug_name	quantity
