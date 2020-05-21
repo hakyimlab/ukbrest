@@ -1,0 +1,15 @@
+samples_filters:
+  - eid not in (select eid from withdrawals)
+
+query_1:
+  table: gp_scripts
+  start_date: 1980/02/13
+  end_date: 2000/03/40
+  where:
+    dmd_code:
+      - "AAA_Code"
+      - "BBB_Code"
+    bnf_code:
+      - "AAA Code"
+      - "BBB Code"
+  max_records: 20

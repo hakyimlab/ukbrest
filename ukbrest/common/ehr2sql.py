@@ -33,7 +33,7 @@ class EHR2SQL(LoadSQL):
     DD_HESIN = {K_HESIN :"hesin.txt",
                 K_DIAG :"hesin_diag.txt"}
 
-    def __init__(self, db_uri, primary_care_dir, hospital_inpatient_dir,
+    def __init__(self, primary_care_dir, hospital_inpatient_dir, db_uri,
                  n_columns_per_table=sys.maxsize,
                  loading_n_jobs=-1, tmpdir=tempfile.mkdtemp(prefix='ukbrest'),
                  loading_chunksize=5000, sql_chunksize=None,
@@ -57,8 +57,6 @@ class EHR2SQL(LoadSQL):
                 fp = os.path.join(self.primary_care_dir, v)
                 if os.path.isfile(fp):
                     self.gp_file_dd[k] = fp
-                else:
-                    raise ValueError(v + " out of place")
         else:
             self.gp_file_dd = None
         self.hospital_inpatient_dir = hospital_inpatient_dir
@@ -68,8 +66,6 @@ class EHR2SQL(LoadSQL):
                 fp = os.path.join(self.hospital_inpatient_dir, v)
                 if os.path.isfile(fp):
                     self.hesin_file_dd[k] = fp
-                else:
-                    raise ValueError(v + " out of place")
         else:
             self.hesin_file_dd = None
 

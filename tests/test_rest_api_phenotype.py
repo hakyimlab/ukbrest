@@ -10,6 +10,8 @@ import pandas as pd
 from tests.settings import POSTGRESQL_ENGINE
 from tests.utils import get_repository_path, DBTest
 from ukbrest.common.pheno2sql import Pheno2SQL
+from ukbrest.common.ehr2sql import EHR2SQL
+from ukbrest.common.yaml_query import PhenoQuery, EHRQuery
 from ukbrest.common.utils.auth import PasswordHasher
 
 
@@ -35,17 +37,28 @@ class TestRestApiPhenotype(DBTest):
 
         return pheno_file
 
-    def setUp(self, filename=None, load_data=True, wipe_database=True, **kwargs):
+    def setUp(self, filename=None, load_data=True, load_ehr=False,
+              wipe_database=True, dirname=None, **kwargs):
         if wipe_database:
             super(TestRestApiPhenotype, self).setUp()
         
         # Load data
-        p2sql = self._get_p2sql(filename, **kwargs)
 
         if load_data:
+            p2sql = self._get_p2sql(filename, **kwargs)
             p2sql.load_data()
 
-        app.app.config['pheno2sql'] = p2sql
+        if load_ehr:
+            ehr2sql = self._get_ehr2sql(dirname, **kwargs)
+            ehr2sql.load_data()
+
+        # Query configs
+
+        pheno_query = self._get_phenoquery(**kwargs)
+        ehr_query = self._get_ehrquery(**kwargs)
+
+        app.app.config['pheno_query'] = pheno_query
+        app.app.config['ehr_query'] = ehr_query
 
         # Configure
         self.configureApp()
@@ -67,6 +80,25 @@ class TestRestApiPhenotype(DBTest):
             kwargs['n_columns_per_table'] = 2
 
         return Pheno2SQL(csv_file, **kwargs)
+
+    def _get_ehr2sql(self, dirname, **kwargs):
+        if dirname is None:
+            dirname = get_repository_path('ehr/')
+
+        if 'db_uri' not in kwargs:
+            kwargs['db_uri'] = POSTGRESQL_ENGINE
+
+        return EHR2SQL(dirname, dirname, **kwargs)
+
+    def _get_phenoquery(self, **kwargs):
+        db_uri = kwargs.get('db_uri', POSTGRESQL_ENGINE)
+        sql_chunksize = kwargs.get('sql_chunksize')
+        return PhenoQuery(db_uri, sql_chunksize)
+
+    def _get_ehrquery(self, **kwargs):
+        db_uri = kwargs.get('db_uri', POSTGRESQL_ENGINE)
+        sql_chunksize = kwargs.get('sql_chunksize')
+        return EHRQuery(db_uri, sql_chunksize)
 
     def configureApp(self, app_func=None):
         app.app.config['testing'] = True
@@ -271,8 +303,8 @@ class TestRestApiPhenotype(DBTest):
 
         # Validate
         assert response.status_code == 500, response.status_code
-        data = json.load(io.StringIO(response.data.decode('utf-8')))
 
+        data = json.load(io.StringIO(response.data.decode('utf-8')))
         assert 'status_code' in data, data
         assert data['status_code'] == 500, data['status_code']
 
@@ -1298,7 +1330,7 @@ class TestRestApiPhenotype(DBTest):
         assert pheno_file.loc[4, 'c84_0_2'] == 'NA'
         assert pheno_file.loc[5, 'c84_0_2'] == '-445'
 
-    def test_phenotype_query_columns_pheno2sql_instance_not_loaded(self):
+    def test_pheno_query_columns_pheno2sql_instance_not_loaded(self):
         """This test uses a different Pheno2SQL instance without previous loading"""
 
         # Prepare

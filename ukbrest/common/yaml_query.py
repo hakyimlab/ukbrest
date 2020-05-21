@@ -7,9 +7,11 @@ from ukbrest.config import logger
 from ukbrest.common.utils.constants import ALL_EIDS_TABLE
 from ukbrest.common.utils.db import DBAccess
 from ukbrest.common.utils.misc import get_list
+from flask import abort
 
 from ukbrest.resources.exceptions import (UkbRestSQLExecutionError,
-                                          UkbRestProgramExecutionError)
+                                          UkbRestProgramExecutionError,
+                                          UkbRestException)
 
 
 class YAMLQuery(DBAccess):
@@ -50,7 +52,8 @@ class YAMLQuery(DBAccess):
                 chunksize=self.sql_chunksize
             )
         except ProgrammingError as e:
-            raise UkbRestSQLExecutionError(str(e))
+            # return abort(400, str(e))
+            # raise UkbRestException(str(e), None)
 
         if self.sql_chunksize is None:
             results_iterator = iter([results_iterator])
@@ -187,7 +190,6 @@ class YAMLQuery(DBAccess):
     @staticmethod
     def _get_filterings(filter_statements):
         return ' AND '.join('({})'.format(afilter) for afilter in filter_statements)
-
 
 class PhenoQuery(YAMLQuery):
     def __init__(self, db_uri, sql_chunksize):
@@ -336,8 +338,6 @@ class PhenoQuery(YAMLQuery):
         for chunk in self.query(section_field_statements, filterings=include_only_stmts, order_by_table=order_by_table):
             # chunk = chunk.rename(columns={v:k for x in section_data.items()})
             yield chunk
-
-
 
 class EHRQuery(YAMLQuery):
     def __init__(self, db_uri, sql_chunksize):
