@@ -159,6 +159,18 @@ def get_ehr2sql_parameters():
         'sql_chunksize': int(sql_chunksize) if sql_chunksize is not None else None,
     }
 
+def get_pheno_query_parameters():
+    return {
+        'db_uri': db_uri,
+        'sql_chunksize': int(sql_chunksize) if sql_chunksize is not None else None,
+    }
+
+def get_ehr_query_parameters():
+    return {
+        'db_uri': db_uri,
+        'sql_chunksize': int(sql_chunksize) if sql_chunksize is not None else None,
+    }
+
 def get_argparse_arguments(parser=None):
     import argparse
 

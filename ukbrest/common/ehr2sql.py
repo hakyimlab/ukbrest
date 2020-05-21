@@ -28,8 +28,8 @@ class EHR2SQL(LoadSQL):
     DD_GP = {K_CLINICAL :"gp_clinical.txt",
              K_SCRIPTS :"gp_scripts.txt",
              K_REGISTRATIONS :"gp_registrations.txt"}
-    K_HESIN = "HESIN"
-    K_DIAG = "HESIN_DIAG"
+    K_HESIN = "hesin"
+    K_DIAG = "hesin_diag"
     DD_HESIN = {K_HESIN :"hesin.txt",
                 K_DIAG :"hesin_diag.txt"}
 
@@ -75,13 +75,46 @@ class EHR2SQL(LoadSQL):
 
     def load_data(self, vacuum=False):
         logger.info("Loading EHR into database")
-        self._load_primary_care_data()
-        self._load_hospital_inpatient_data()
-        # self._create_constraints()
+        try:
+            self._load_primary_care_data()
+            self._load_hospital_inpatient_data()
+            self._load_all_eids()
+            self._create_constraints()
 
-        if vacuum:
-            self._vacuum()
+            if vacuum:
+                self._vacuum()
+        except OperationalError as e:
+            raise UkbRestSQLExecutionError('There was an error with the database: ' + str(e))
+        except UnicodeDecodeError as e:
+            logger.debug(str(e))
+            raise UkbRestProgramExecutionError('Unicode decoding error when reading CSV file. Activate debug to show more details.')
 
+        logger.info("EHR loading finished")
+
+
+    def _create_constraints(self):
+        if self.db_type == 'sqlite':
+            logger.warning("Indexes are not supported for SQLite")
+            return
+
+        logger.info("Creating table constraints (indexes, primary keys, etc)")
+
+        create_indexes(EHR2SQL.K_CLINICAL,
+                       ("eid", "read_2", "read_3"), #TODO: Add indexes?
+                       db_engine=self._get_db_engine())
+        create_indexes(EHR2SQL.K_SCRIPTS,
+                       ("eid", "bnf_code", "dmd_code"),
+                       db_engine=self._get_db_engine())
+
+        create_indexes(EHR2SQL.K_REGISTRATIONS,
+                       ("eid",),
+                       db_engine=self._get_db_engine())
+        create_indexes(EHR2SQL.K_HESIN,
+                       ("eid",),
+                       db_engine=self._get_db_engine())
+        create_indexes(EHR2SQL.K_DIAG,
+                       ("eid", "diag_icd9", "diag_icd10"),
+                       db_engine=self._get_db_engine())
 
     @staticmethod
     def _load_ehr_df(fp, pk_cols, day_date_cols=None, month_date_cols=None,
@@ -230,8 +263,6 @@ class EHR2SQL(LoadSQL):
         diag_df.to_sql(EHR2SQL.K_DIAG, db_engine, if_exists='append',
                        index=False)
 
-
-
     def _create_hesin_table(self):
         create_table(EHR2SQL.K_HESIN,
                      ['eid bigint NOT NULL',
@@ -254,11 +285,12 @@ class EHR2SQL(LoadSQL):
                       'gpprpct text',
                       'category int',
                       'elecdate date',
+                      'elecdur int',
                       'admidate date',
                       'admimeth_uni int',
                       'admimeth int',
                       'admisorc_uni int',
-                      'asmisorc int',
+                      'admisorc int',
                       'firstreg int',
                       'classpat_uni int',
                       'classpat int',
@@ -267,12 +299,14 @@ class EHR2SQL(LoadSQL):
                       'mainspef_uni int',
                       'mainspef text',
                       'tretspef_uni int',
+                      'tretspef text',
                       'operstat int',
                       'disdate date',
                       'dismeth_uni int',
                       'dismeth int',
-                      'didest_uni int',
-                      'didest int'],
+                      'disdest_uni int',
+                      'disdest int',
+                      'carersi int'],
                      db_engine=self._get_db_engine(),
                      constraints=['pk_{} PRIMARY KEY (eid, ins_index)'.format(EHR2SQL.K_HESIN)])
 

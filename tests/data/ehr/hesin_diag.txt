@@ -1,1 +1,4 @@
 eid	ins_index	arr_index	level	diag_icd9	diag_icd9_nb	diag_icd10	diag_icd10_nb
+1	1	1
+1	2	1
+1	2	2

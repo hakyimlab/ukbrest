@@ -1,8 +1,8 @@
 import logging
 
 from flask import Flask
-from ukbrest.resources.phenotype import PhenotypeFieldsAPI, PhenotypeAPI, QueryAPI, PhenotypeApiObject
-
+from ukbrest.resources.phenotype import PhenotypeFieldsAPI, PhenotypeAPI, PhenotypeApiObject
+from ukbrest.resources.query import PhenoQueryAPI, EHRQueryAPI, QueryApiObject
 from ukbrest.resources.genotype import GenotypeApiObject
 from ukbrest.resources.genotype import GenotypePositionsAPI, GenotypeRsidsAPI
 
@@ -42,10 +42,10 @@ phenotype_info_api.add_resource(
 )
 
 # Query API
-phenotype_api = PhenotypeApiObject(app)
+query_api = QueryApiObject(app)
 
-phenotype_api.add_resource(
-    QueryAPI,
+query_api.add_resource(
+    PhenoQueryAPI,
     '/ukbrest/api/v1.0/query',
 )
 
@@ -60,6 +60,7 @@ def setup_logging():
 if __name__ == '__main__':
     from ukbrest.common.genoquery import GenoQuery
     from ukbrest.common.pheno2sql import Pheno2SQL
+    from ukbrest.common.yaml_query import PhenoQuery, EHRQuery
     from ukbrest.common.utils.auth import PasswordHasher
     from ukbrest import config
     from ukbrest.common.utils.misc import update_parameters_from_args, parameter_empty
@@ -79,16 +80,27 @@ if __name__ == '__main__':
     genoq = GenoQuery(**genoq_parameters)
     app.config.update({'genoquery': genoq})
 
-    # Pheno2SQL
-    pheno2sql_parameters = config.get_pheno2sql_parameters()
-    pheno2sql_parameters = update_parameters_from_args(pheno2sql_parameters, args)
+    # PhenoQuery
+    pheno_query_parameters = config.get_pheno_query_parameters()
+    pheno_query_parameters = update_parameters_from_args(pheno_query_parameters,
+                                                         args)
 
-    if parameter_empty(pheno2sql_parameters, 'db_uri'):
+    if parameter_empty(pheno_query_parameters, 'db_uri'):
         parser.error('--db-uri missing')
 
-    p2sql = Pheno2SQL(**pheno2sql_parameters)
+    pheno_query = PhenoQuery(**pheno_query_parameters)
 
-    app.config.update({'pheno2sql': p2sql})
+    app.config.update({'pheno_query': pheno_query})
+
+    # EHRQuery
+    ehr_query_parameters = config.get_ehr_query_parameters()
+    ehr_query_parameters = update_parameters_from_args(ehr_query_parameters,
+                                                       args)
+    if parameter_empty(ehr_query_parameters, 'db_uri'):
+        parser.error("--db-uri missing")
+
+    ehr_query = EHRQuery(**ehr_query_parameters)
+    app.config.update({'ehr_query': ehr_query})
 
     ph = PasswordHasher(args.users_file, method='pbkdf2:sha256')
     ph.process_users_file()

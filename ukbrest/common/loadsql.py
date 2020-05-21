@@ -4,10 +4,7 @@ import re
 import sys
 import tempfile
 from subprocess import Popen, PIPE
-from urllib.parse import urlparse
 
-import numpy as np
-import pandas as pd
 from joblib import Parallel, delayed
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.types import TEXT, FLOAT, TIMESTAMP, INT
@@ -15,7 +12,7 @@ from sqlalchemy.exc import OperationalError
 
 from ukbrest.common.utils.db import create_table, create_indexes, DBAccess
 from ukbrest.common.utils.datagen import get_tmpdir
-from ukbrest.common.utils.constants import BGEN_SAMPLES_TABLE, ALL_EIDS_TABLE
+from ukbrest.common.utils.constants import BGEN_SAMPLES_TABLE, ALL_EIDS_TABLE, EXCLUDE_FROM_ALL_EIDS
 from ukbrest.config import logger, SQL_CHUNKSIZE_ENV
 from ukbrest.common.utils.misc import get_list
 from ukbrest.resources.exceptions import UkbRestSQLExecutionError, UkbRestProgramExecutionError
@@ -67,6 +64,42 @@ class LoadSQL(DBAccess):
         elif stderr_data is not None and 'ERROR:' in stderr_data:
             raise UkbRestSQLExecutionError(stderr_data)
 
+    def _load_all_eids(self):
+        logger.info('Loading all eids into table {}'.format(ALL_EIDS_TABLE))
+
+        create_table(ALL_EIDS_TABLE,
+            columns=[
+                'eid bigint NOT NULL',
+            ],
+            constraints=[
+                'pk_{} PRIMARY KEY (eid)'.format(ALL_EIDS_TABLE)
+            ],
+            db_engine=self._get_db_engine()
+         )
+
+        names = set(self._get_table_names())
+
+        names = names - EXCLUDE_FROM_ALL_EIDS
+
+        select_eid_sql = ' UNION DISTINCT '.join(
+            'select eid from {}'.format(table_name)
+            for table_name in names
+        )
+
+        insert_eids_sql = """
+            insert into {all_eids_table} (eid)
+            (
+                {sql_eids}
+            )
+        """.format(
+            all_eids_table=ALL_EIDS_TABLE,
+            sql_eids=select_eid_sql
+        )
+
+        with self._get_db_engine().connect() as con:
+            con.execute(insert_eids_sql)
+
+
     def _vacuum(self):
         logger.info('Vacuuming')
 
@@ -74,4 +107,6 @@ class LoadSQL(DBAccess):
             conn.execute("""
                 vacuum analyze;
             """)
+
+
 

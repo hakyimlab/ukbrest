@@ -1,7 +1,8 @@
 import os
 import argparse
 
-from ukbrest.common.pheno2sql import Pheno2SQL, EHR2SQL
+from ukbrest.common.pheno2sql import Pheno2SQL
+from ukbrest.common.ehr2sql import EHR2SQL
 from ukbrest.common.postloader import Postloader
 from ukbrest import config
 from ukbrest.common.utils.misc import update_parameters_from_args, parameter_empty
@@ -19,7 +20,7 @@ parser.add_argument('--skip-columns', type=str, nargs='+', help='Format file1.tx
 parser.add_argument('--separators', type=str, nargs='+', help='Format file1.txt:column1 file2.txt:column2 ...')
 
 
-# @handle_errors
+@handle_errors
 def load_withdrawals(args):
     pl_params = config.get_postloader_parameters()
     pl_params = update_parameters_from_args(pl_params, args)
@@ -30,7 +31,7 @@ def load_withdrawals(args):
     pl.load_withdrawals(**pl_wd_params)
 
 
-# @handle_errors
+@handle_errors
 def load_codings(args):
     pl_params = config.get_postloader_parameters()
     pl_params = update_parameters_from_args(pl_params, args)
@@ -41,7 +42,7 @@ def load_codings(args):
     pl.load_codings(**pl_coding_params)
 
 
-# @handle_errors
+@handle_errors
 def load_samples_data(args):
     pl = Postloader(**config.get_postloader_parameters())
 
@@ -61,7 +62,7 @@ def load_samples_data(args):
     pl.load_samples_data(**load_samples_parameters)
 
 
-# @handle_errors
+@handle_errors
 def load_data(args):
     pheno2sql_parameters = config.get_pheno2sql_parameters()
     pheno2sql_parameters = update_parameters_from_args(pheno2sql_parameters, args)
@@ -87,7 +88,7 @@ def load_data(args):
     p2sql.load_data(**load_parameters)
 
 
-# @handle_errors
+@handle_errors
 def load_sql():
     pheno2sql_parameters = config.get_pheno2sql_parameters()
     pheno2sql_parameters = update_parameters_from_args(pheno2sql_parameters, args)
@@ -99,7 +100,7 @@ def load_sql():
 
     p2sql.load_sql('/opt/utils/sql/functions.sql')
 
-# @handle_errors
+@handle_errors
 def load_ehr(args):
     # pheno2sql_parameters = config.get_pheno2sql_parameters()
     # pheno2sql_parameters = update_parameters_from_args(pheno2sql_parameters, args)

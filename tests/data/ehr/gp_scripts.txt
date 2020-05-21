@@ -1,1 +1,9 @@
 eid	data_provider	issue_date	read_2	bnf_code	dmd_code	drug_name	quantity
+1	2	30/10/2015			02.08.02.00.00	Warfarin 1mg tablets	28 tablet
+1	2	30/10/2015			02.08.02.00.00	Warfarin 500microgram tablets	56 tablet
+1	2	30/10/2015			02.08.02.00.00	Warfarin 1mg tablets	28 tablet
+1	2	30/10/2015			02.08.02.00.00	Warfarin 1mg tablets	28 tablet
+1	2	07/07/2015			02.08.02.00.00	Warfarin 1mg tablets	28 tablet
+1	2	07/07/2015			02.08.02.00.00	Warfarin 500microgram tablets	56 tablet
+1	2	30/10/2015			02.08.02.00.00	Warfarin 1mg tablets	28 tablet
+1	2	07/12/2015			07.04.01.01.00	Tamsulosin 400microgram / Dutasteride 500microgram capsules	30 capsule

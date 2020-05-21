@@ -1,4 +1,5 @@
 from sqlalchemy import create_engine
+import pandas as pd
 from urllib.parse import urlparse
 
 def create_table(table_name, columns, db_engine, constraints=None, drop_if_exists=True):
@@ -59,6 +60,8 @@ class DBAccess():
             self.db_user = parse_result.username
             self.db_pass = parse_result.password
 
+        self._fields_dtypes = {}
+
     def _close_db_engine(self):
         if self.db_engine is not None:
             self.db_engine.dispose()
@@ -81,3 +84,33 @@ class DBAccess():
                 vacuum analyze {table_name}
             """.format(table_name=table_name))
 
+    def _get_table_names(self):
+        return self._get_db_engine().table_names()
+
+    def _create_joins(self, tables, join_type='inner join'):
+        if len(tables) == 0:
+            return ""
+
+        if len(tables) == 1:
+            return tables[0]
+
+        return tables[0] + ' ' + ' '.join([
+            '{join_type} {table} using (eid) '.format(join_type=join_type, table=t) for t in tables[1:]
+        ])
+
+    def get_field_dtype(self, field=None):
+        """Returns the type of the field. If field is None, then it just loads all fields types"""
+
+        if field in self._fields_dtypes:
+            return self._fields_dtypes[field]
+
+        # initialize dbtypes for all fields
+        field_type = pd.read_sql(
+            'select distinct column_name, type '
+            'from fields',
+        self._get_db_engine())
+
+        for row in field_type.itertuples():
+            self._fields_dtypes[row.column_name] = row.type
+
+        return self._fields_dtypes[field] if field in self._fields_dtypes else None
