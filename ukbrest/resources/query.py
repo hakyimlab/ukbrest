@@ -1,6 +1,7 @@
 from flask_restful import current_app as app, Api
 from werkzeug.datastructures import FileStorage
 from ruamel.yaml import YAML
+from ruamel.yaml.scanner import ScannerError
 import pandas as pd
 import re
 from sqlalchemy.exc import ProgrammingError
@@ -70,6 +71,7 @@ class EHRQueryAPI(UkbRestAPI):
         super(EHRQueryAPI, self).__init__()
 
         self.parser.add_argument('file', type=FileStorage, location='files', required=True)
+        self.parser.add_argument('section', type=str, required=True)
         self.parser.add_argument('missing_code', type=str, required=False)
         self.parser.add_argument('Accept', location='headers', choices=PHENOTYPE_FORMATS.keys(),
                                       help='Only {} are supported'.format(' and '.join(PHENOTYPE_FORMATS.keys())))
@@ -81,8 +83,9 @@ class EHRQueryAPI(UkbRestAPI):
 
         yaml = YAML(typ='safe')
         serializer = PHENOTYPE_FORMATS[args.Accept]
-        data_results = self.pheno_query.query_yaml(
-            yaml.load(args.file)
+        data_results = self.ehr_query.query_yaml(
+            yaml.load(args.file),
+            args.section
         )
         final_results = {'data': data_results}
         if args.missing_code is not None:

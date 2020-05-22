@@ -31,6 +31,7 @@ These characteristics make ukbREST an important tool to make biobank’s valuabl
 </p>
 
 # News
+ * 2020-05-22: ukbREST supports [loading](https://github.com/hakyimlab/ukbrest/wiki/Load-real-UK-Biobank-data) and [querying](https://github.com/hakyimlab/ukbrest/wiki/Electronic-health-record-queries) electronic health records from the UK Biobank.
  * 2019-12-06: the installation steps for macOS and PostgreSQL have been updated. [Check it out!](https://github.com/hakyimlab/ukbrest/wiki/Installation-instructions)
  * 2018-11-25: fix when a dataset has a data-field already loaded. Docker image is now updated.
  Check out the [documentation](https://github.com/hakyimlab/ukbrest/wiki/Load-real-UK-Biobank-data) (Section `Duplicated data-fields`).

@@ -63,12 +63,11 @@ def setup_logging():
         app.logger.addHandler(logging.StreamHandler())
         app.logger.setLevel(logging.INFO)
 
-
-@app.errorhandler(UkbRestException)
-def handle_invalid_usage(error):
-    response = jsonify(error.to_dict())
-    response.status_code = error.status_code
-    return response
+# @app.errorhandler(UkbRestException)
+# def handle_invalid_usage(error):
+#     response = jsonify(error.to_dict())
+#     response.status_code = error.status_code
+#     return response
 
 
 if __name__ == '__main__':
@@ -120,5 +119,12 @@ if __name__ == '__main__':
     ph.process_users_file()
     auth = ph.setup_http_basic_auth()
     app.config.update({'auth': auth})
+
+
+    # @app.errorhandler(UkbRestException)
+    # def handle_invalid_usage(error):
+    #     response = jsonify(error.to_dict())
+    #     response.status_code = error.status_code
+    #     return response
 
     app.run(host=str(args.host), port=args.port, debug=args.debug, ssl_context='adhoc' if args.ssl_mode else None)

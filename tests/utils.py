@@ -7,6 +7,7 @@ from sqlalchemy import create_engine
 from tests.settings import POSTGRESQL_ENGINE
 from ukbrest.common.pheno2sql import Pheno2SQL
 from ukbrest.common.ehr2sql import EHR2SQL
+from ukbrest.common.postloader import Postloader
 from ukbrest.common.yaml_query import PhenoQuery, EHRQuery
 
 
@@ -80,6 +81,9 @@ class DBTest(unittest.TestCase):
             kwargs['db_uri'] = POSTGRESQL_ENGINE
 
         return EHR2SQL(gp_dir, hesin_dir, **kwargs)
+
+    def _get_postloader(self, **kwargs):
+        return Postloader(kwargs.get('db_uri', POSTGRESQL_ENGINE))
 
     def _get_phenoquery(self, **kwargs):
         db_uri = kwargs.get('db_uri', POSTGRESQL_ENGINE)

@@ -74,10 +74,8 @@ class EHR2SQL(LoadSQL):
         try:
             if self.gp_file_dd is not None:
                 self._load_primary_care_data()
-                self._create_constraints(gp=True)
             if self.hesin_file_dd is not None:
                 self._load_hospital_inpatient_data()
-                self._create_constraints(hesin=True)
             self._load_all_eids()
 
             if vacuum:
@@ -89,34 +87,6 @@ class EHR2SQL(LoadSQL):
             raise UkbRestProgramExecutionError('Unicode decoding error when reading CSV file. Activate debug to show more details.')
 
         logger.info("EHR loading finished")
-
-
-    def _create_constraints(self, gp=False, hesin=False):
-        if self.db_type == 'sqlite':
-            logger.warning("Indexes are not supported for SQLite")
-            return
-
-        logger.info("Creating table constraints (indexes, primary keys, etc)")
-
-        if gp:
-            create_indexes(EHR2SQL.K_CLINICAL,
-                       ("eid", "read_2", "read_3"), #TODO: Add indexes?
-                       db_engine=self._get_db_engine())
-            create_indexes(EHR2SQL.K_SCRIPTS,
-                       ("eid", "bnf_code", "dmd_code"),
-                       db_engine=self._get_db_engine())
-
-            create_indexes(EHR2SQL.K_REGISTRATIONS,
-                       ("eid",),
-                       db_engine=self._get_db_engine())
-
-        if hesin:
-            create_indexes(EHR2SQL.K_HESIN,
-                       ("eid",),
-                       db_engine=self._get_db_engine())
-            create_indexes(EHR2SQL.K_DIAG,
-                       ("eid", "diag_icd9", "diag_icd10"),
-                       db_engine=self._get_db_engine())
 
     @staticmethod
     def _load_ehr_df(fp, pk_cols, day_date_cols=None, month_date_cols=None,
@@ -144,7 +114,7 @@ class EHR2SQL(LoadSQL):
                 df[c] = pd.to_datetime(df[c], dayfirst=True)
         if month_date_cols is not None:
             for c in month_date_cols:
-                df[c] = pd.to_datetime(df[c], monthfirst=True)
+                df[c] = pd.to_datetime(df[c], dayfirst=False)
         if ymd_date_cols is not None:
             for c in ymd_date_cols:
                 df[c] = pd.to_datetime(df[c], format="%Y%m%d")
@@ -173,32 +143,53 @@ class EHR2SQL(LoadSQL):
 
         db_engine = self._get_db_engine()
 
-        # PG REGISTRATIONS
-        self._create_gp_registrations_table()
-        gp_registrations_df = self._load_ehr_df(self.gp_file_dd[EHR2SQL.K_REGISTRATIONS],
+        # GP REGISTRATIONS
+        gp_registrations_fp = self.gp_file_dd.get(EHR2SQL.K_REGISTRATIONS)
+        if gp_registrations_fp is None:
+            logger.warning("Table {} not found".format(EHR2SQL.K_REGISTRATIONS))
+        else:
+            self._create_gp_registrations_table()
+            gp_registrations_df = self._load_ehr_df(gp_registrations_fp,
                                                 ['eid', 'reg_date'],
                                                 day_date_cols=['reg_date', 'deduct_date'])
-        gp_registrations_df.to_sql(EHR2SQL.K_REGISTRATIONS, db_engine,
+            gp_registrations_df.to_sql(EHR2SQL.K_REGISTRATIONS, db_engine,
                                    if_exists='append', index=False)
+            create_indexes(EHR2SQL.K_REGISTRATIONS,
+                       ("eid",),
+                       db_engine=self._get_db_engine())
 
-        # PG CLINICAL
-        self._create_gp_clinical_table()
-        gp_clinical_df = self._load_ehr_df(self.gp_file_dd[EHR2SQL.K_CLINICAL],
-                                           ['eid', 'event_dt', 'read_key'],
-                                           day_date_cols=['event_dt'],
-                                           accumulate_col_dict={'read_key' :['read_2', 'read_3']})
-        gp_clinical_df.to_sql(EHR2SQL.K_CLINICAL, db_engine, if_exists='append',
-                              index=False)
+        # GP CLINICAL
+        gp_clinical_fp = self.gp_file_dd.get(EHR2SQL.K_CLINICAL)
+        if gp_clinical_fp is None:
+            logger.warning("Table {} not found".format(EHR2SQL.K_CLINICAL))
+        else:
+            self._create_gp_clinical_table()
+            gp_clinical_df = self._load_ehr_df(gp_clinical_fp,
+                                               ['eid', 'event_dt', 'read_key'],
+                                               day_date_cols=['event_dt'],
+                                               accumulate_col_dict={'read_key' :['read_2', 'read_3']})
+            gp_clinical_df.to_sql(EHR2SQL.K_CLINICAL, db_engine, if_exists='append',
+                                  index=False)
+            create_indexes(EHR2SQL.K_CLINICAL,
+                       ("eid", "read_2", "read_3"),
+                       db_engine=self._get_db_engine())
 
-        # PG SCRIPTS
-        self._create_gp_scripts_table()
-        gp_scripts_df = self._load_ehr_df(self.gp_file_dd[EHR2SQL.K_SCRIPTS],
-                                          ['eid', 'issue_date', 'read_key'],
-                                          day_date_cols=['issue_date'],
-                                          accumulate_col_dict={'read_key' :['bnf_code', 'dmd_code', 'read_2']},
-                                          dtype_handling={'bnf_code' :str})
-        gp_scripts_df.to_sql(EHR2SQL.K_SCRIPTS, db_engine, if_exists='append',
-                             index=False)
+        # GP SCRIPTS
+        gp_scripts_fp = self.gp_file_dd.get(EHR2SQL.K_SCRIPTS)
+        if gp_scripts_fp is None:
+            logger.warning("Table {} not found".format(EHR2SQL.K_SCRIPTS))
+        else:
+            self._create_gp_scripts_table()
+            gp_scripts_df = self._load_ehr_df(gp_scripts_fp,
+                                              ['eid', 'issue_date', 'read_key'],
+                                              day_date_cols=['issue_date'],
+                                              accumulate_col_dict={'read_key' :['bnf_code', 'dmd_code', 'read_2']},
+                                              dtype_handling={'bnf_code' :str})
+            gp_scripts_df.to_sql(EHR2SQL.K_SCRIPTS, db_engine, if_exists='append',
+                                 index=False)
+            create_indexes(EHR2SQL.K_SCRIPTS,
+                       ("eid", "bnf_code", "dmd_code"),
+                       db_engine=self._get_db_engine())
 
     def _create_gp_scripts_table(self):
         create_table(EHR2SQL.K_SCRIPTS, columns = [
@@ -250,20 +241,34 @@ class EHR2SQL(LoadSQL):
         db_engine = self._get_db_engine()
 
         # HESIN
-        self._create_hesin_table()
-        hesin_df = self._load_ehr_df(self.hesin_file_dd[EHR2SQL.K_HESIN],
-                                     ['eid', 'ins_index'],
-                                     ymd_date_cols=['epistart', 'epiend',
-                                                    'elecdate', 'admidate'])
-        hesin_df.to_sql(EHR2SQL.K_HESIN, db_engine, if_exists='append',
-                        index=False)
+        hesin_fp = self.hesin_file_dd.get(EHR2SQL.K_HESIN)
+        if hesin_fp is None:
+            logger.warning("Table {} not found".format(EHR2SQL.K_HESIN))
+        else:
+            self._create_hesin_table()
+            hesin_df = self._load_ehr_df(hesin_fp,
+                                         ['eid', 'ins_index'],
+                                         ymd_date_cols=['epistart', 'epiend',
+                                                        'elecdate', 'admidate'])
+            hesin_df.to_sql(EHR2SQL.K_HESIN, db_engine, if_exists='append',
+                            index=False)
+            create_indexes(EHR2SQL.K_HESIN,
+                       ("eid",),
+                       db_engine=self._get_db_engine())
 
         # HESIN_DIAG
-        self._create_hesin_diag_table()
-        diag_df = self._load_ehr_df(self.hesin_file_dd[EHR2SQL.K_DIAG],
-                                    ['eid', 'ins_index', 'arr_index'])
-        diag_df.to_sql(EHR2SQL.K_DIAG, db_engine, if_exists='append',
-                       index=False)
+        hesin_diag_fp = self.hesin_file_dd.get(EHR2SQL.K_DIAG)
+        if hesin_diag_fp is None:
+            logger.warning("Table {} not found".format(EHR2SQL.K_DIAG))
+        else:
+            self._create_hesin_diag_table()
+            diag_df = self._load_ehr_df(hesin_diag_fp,
+                                        ['eid', 'ins_index', 'arr_index'])
+            diag_df.to_sql(EHR2SQL.K_DIAG, db_engine, if_exists='append',
+                           index=False)
+            create_indexes(EHR2SQL.K_DIAG,
+                       ("eid", "diag_icd9", "diag_icd10"),
+                       db_engine=self._get_db_engine())
 
     def _create_hesin_table(self):
         create_table(EHR2SQL.K_HESIN,

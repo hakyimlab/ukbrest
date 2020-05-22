@@ -47,13 +47,13 @@ class YAMLQuery(DBAccess):
 
         logger.debug(final_sql_query)
 
-        # try:
-        results_iterator = pd.read_sql(
+        try:
+            results_iterator = pd.read_sql(
                     final_sql_query, self._get_db_engine(), index_col='eid',
                     chunksize=self.sql_chunksize
                 )
-        # except ProgrammingError as e:
-        #     raise UkbRestException(e, "SQL")
+        except ProgrammingError as e:
+            raise UkbRestSQLExecutionError(str(e), sql_string = final_sql_query)
 
 
         if self.sql_chunksize is None:
@@ -161,7 +161,6 @@ class YAMLQuery(DBAccess):
 
         return int_columns
 
-    # @catch_programming_error
     def query(self, columns=None, ecolumns=None, filterings=None, order_by_table=None):
         reg_exp_columns_fields = self._get_fields_from_reg_exp(ecolumns)
         all_columns = ['eid'] + (columns if columns is not None else []) + reg_exp_columns_fields
@@ -173,10 +172,10 @@ class YAMLQuery(DBAccess):
                 'columns_select': ','.join(all_columns),
             }
 
-        # try:
-        int_columns = self._get_integer_fields(all_columns)
-        # except ProgrammingError as e:
-        #     raise UkbRestException(e, "SQL")
+        try:
+            int_columns = self._get_integer_fields(all_columns)
+        except ProgrammingError as e:
+            raise UkbRestSQLExecutionError(str(e), sql_string=all_columns)
         final_sql_query = self._get_query_sql(columns, ecolumns, filterings)
 
         def format_integer_columns(chunk):
@@ -381,14 +380,17 @@ class EHRQuery(YAMLQuery):
                                    "YAML formatting")
 
         AA = "where (eid in select eid from TABLES where WHERE_STR) "
-        samples_filters_str = None
+        samples_filters_str = ""
         if 'samples_filters' in yaml_file:
             where_st = "eid in "
             where_st = self._get_filterings(yaml_file['samples_filters'])
             where_fields = self._get_fields_from_statements([where_st])
             needed_tables = self._get_needed_tables(where_fields)
-            nt_str = self._create_joins(needed_tables, join_type="outer join")
-            samples_filters_str = "eid in (select eid from {} where {})".format(nt_str, where_st)
+            nt_str = self._create_joins(needed_tables, join_type="full outer join")
+            if nt_str:
+                samples_filters_str = "eid in (select eid from {} where {})".format(nt_str, where_st)
+            else:
+                samples_filters_str = where_st
 
         # fill in columns
         if 'columns' not in query_dd:
@@ -403,10 +405,12 @@ class EHRQuery(YAMLQuery):
         if 'records_filters' in query_dd:
             records_filters_str = self._get_filterings(query_dd['records_filters'])
 
-        if samples_filters_str or records_filters_str:
+        if samples_filters_str and records_filters_str:
             filters_str = "where " + " AND ".join([samples_filters_str, records_filters_str])
+        elif samples_filters_str or records_filters_str:
+            filters_str = "where " + " ".join([samples_filters_str, records_filters_str])
         else:
-            filters_str = None
+            filters_str = ""
 
         # impose max records constraint
         limit_str = ""

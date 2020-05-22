@@ -31,8 +31,18 @@ class UkbRestProgramExecutionError(UkbRestException):
 
 
 class UkbRestSQLExecutionError(UkbRestException):
-    def __init__(self, message):
+    def __init__(self, message, sql_string=None):
         super(UkbRestSQLExecutionError, self).__init__(message, 'SQL_EXECUTION_ERROR')
+        self.sql_string = sql_string
+
+    def to_dict(self):
+        dd = {'message':self.message,
+              'status_code': self.status_code,
+              'subtype': self.subtype,
+              'sql_string': self.sql_string}
+        return dd
+
+
 
 # @app.errorhandler(UkbRestException)
 # def handle_UkbRestException(error):
