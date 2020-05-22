@@ -53,4 +53,4 @@ class LoadDataTest(DBTest):
         ehr2sql = self._get_ehr2sql(None, self.ehr_path,
                                     **self.basic_2sql_config)
         ehr2sql.load_data()
-        
+

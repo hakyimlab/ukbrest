@@ -72,6 +72,10 @@ class DBTest(unittest.TestCase):
 
     def _get_ehr2sql(self, gp_dir, hesin_dir, **kwargs):
 
+        if hesin_dir is None:
+            hesin_dir = get_repository_path('ehr')
+        if gp_dir is None:
+            gp_dir = get_repository_path('ehr')
         if 'db_uri' not in kwargs:
             kwargs['db_uri'] = POSTGRESQL_ENGINE
 

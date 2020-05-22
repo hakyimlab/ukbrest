@@ -14,8 +14,64 @@ from ukbrest.common.ehr2sql import EHR2SQL
 from ukbrest.common.yaml_query import PhenoQuery, EHRQuery
 from ukbrest.common.utils.auth import PasswordHasher
 
+class AppTests(DBTest):
 
-class TestRestApiPhenotype(DBTest):
+    def configureApp(self, app_func=None):
+        app.app.config['testing'] = True
+        app.app.config['auth'] = None
+
+        if app_func is not None:
+            app_func(app.app)
+
+        self.app = app.app.test_client()
+
+    def configureAppWithAuth(self, user_pass_line):
+        f = tempfile.NamedTemporaryFile(delete=False)
+        f.close()
+
+        with open(f.name, 'w') as fi:
+            fi.write(user_pass_line)
+
+        ph = PasswordHasher(f.name, method='pbkdf2:sha256')
+
+        def conf(a):
+            a.config['auth'] = ph.setup_http_basic_auth()
+
+        self.configureApp(conf)
+
+    @staticmethod
+    def _get_http_basic_auth_header(user, password):
+        return {'Authorization': 'Basic %s' % b64encode(f'{user}:{password}'.encode()).decode("ascii")}
+
+
+
+class TestRestApiEHR(AppTests):
+    def setUp(self, load_ehr=True, load_data=False, gp_dir=None, hesin_dir=None,
+              wipe_database=False, filename=None, **kwargs):
+        if wipe_database:
+            super(TestRestApiEHR, self).setUp()
+
+        if load_data:
+            p2sql = self._get_p2sql(filename, **kwargs)
+            p2sql.load_data()
+
+        if load_ehr:
+            ehr2sql = self._get_ehr2sql(gp_dir, hesin_dir, **kwargs)
+            ehr2sql.load_data()
+
+        # Query configs
+
+        pheno_query = self._get_phenoquery(**kwargs)
+        ehr_query = self._get_ehrquery(**kwargs)
+
+        app.app.config['pheno_query'] = pheno_query
+        app.app.config['ehr_query'] = ehr_query
+
+        # Configure
+        self.configureApp()
+        self.query_path = '/ukbrest/api/v1.0/ehr'
+
+class TestRestApiPhenotype(AppTests):
     def _make_yaml_request(self, yaml_def, section, n_expected_rows, expected_columns):
         response = self.app.post('/ukbrest/api/v1.0/query', data=
         {
@@ -62,69 +118,7 @@ class TestRestApiPhenotype(DBTest):
 
         # Configure
         self.configureApp()
-
-    def _get_p2sql(self, filename, **kwargs):
-        if filename is None:
-            csv_file = get_repository_path('pheno2sql/example02.csv')
-        elif isinstance(filename, (tuple, list)):
-            csv_file = tuple([get_repository_path(f) for f in filename])
-        elif isinstance(filename, str):
-            csv_file = get_repository_path(filename)
-        else:
-            raise ValueError('filename unknown type')
-
-        if 'db_uri' not in kwargs:
-            kwargs['db_uri'] = POSTGRESQL_ENGINE
-
-        if 'n_columns_per_table' not in kwargs:
-            kwargs['n_columns_per_table'] = 2
-
-        return Pheno2SQL(csv_file, **kwargs)
-
-    def _get_ehr2sql(self, dirname, **kwargs):
-        if dirname is None:
-            dirname = get_repository_path('ehr/')
-
-        if 'db_uri' not in kwargs:
-            kwargs['db_uri'] = POSTGRESQL_ENGINE
-
-        return EHR2SQL(dirname, dirname, **kwargs)
-
-    def _get_phenoquery(self, **kwargs):
-        db_uri = kwargs.get('db_uri', POSTGRESQL_ENGINE)
-        sql_chunksize = kwargs.get('sql_chunksize')
-        return PhenoQuery(db_uri, sql_chunksize)
-
-    def _get_ehrquery(self, **kwargs):
-        db_uri = kwargs.get('db_uri', POSTGRESQL_ENGINE)
-        sql_chunksize = kwargs.get('sql_chunksize')
-        return EHRQuery(db_uri, sql_chunksize)
-
-    def configureApp(self, app_func=None):
-        app.app.config['testing'] = True
-        app.app.config['auth'] = None
-
-        if app_func is not None:
-            app_func(app.app)
-
-        self.app = app.app.test_client()
-
-    def configureAppWithAuth(self, user_pass_line):
-        f = tempfile.NamedTemporaryFile(delete=False)
-        f.close()
-
-        with open(f.name, 'w') as fi:
-            fi.write(user_pass_line)
-
-        ph = PasswordHasher(f.name, method='pbkdf2:sha256')
-
-        def conf(a):
-            a.config['auth'] = ph.setup_http_basic_auth()
-
-        self.configureApp(conf)
-
-    def _get_http_basic_auth_header(self, user, password):
-        return {'Authorization': 'Basic %s' % b64encode(f'{user}:{password}'.encode()).decode("ascii")}
+        self.query_path = '/ukbrest/api/v1.0/query'
 
     def test_not_found(self):
         response = self.app.get('/ukbrest/api/v1.0/')
@@ -502,7 +496,7 @@ class TestRestApiPhenotype(DBTest):
         pheno_file = pd.read_csv(io.StringIO(response.data.decode('utf-8')), sep='\t', index_col='FID', dtype=str)
         assert pheno_file is not None
         assert not pheno_file.empty
-        assert pheno_file.shape == (4, 3 + 1) # plus IID
+        assert pheno_file.shape == (4, 3 + 1)  # plus IID
 
         assert pheno_file.index.name == 'FID'
         assert len(pheno_file.index) == 4

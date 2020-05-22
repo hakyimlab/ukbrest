@@ -51,6 +51,11 @@ query_api.add_resource(
     '/ukbrest/api/v1.0/query',
 )
 
+query_api.add_resource(
+    EHRQueryAPI,
+    '/ukbrest/api/v1.0/ehr',
+)
+
 @app.before_first_request
 def setup_logging():
     if not app.debug:
