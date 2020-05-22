@@ -1,5 +1,6 @@
 import traceback
 from joblib.my_exceptions import JoblibException
+from sqlalchemy.exc import ProgrammingError
 
 from flask import jsonify
 from werkzeug.exceptions import HTTPException
@@ -14,9 +15,10 @@ def handle_http_errors(func):
             return func(*args, **kwargs)
         except UkbRestException as e:
             return _make_ukbrest_error(e)
+        except ProgrammingError as e:
+            return _make_ukbrest_error(e)
         except Exception as e:
             return _make_ukbrest_error(e)
-
     return func_wrapper
 
 

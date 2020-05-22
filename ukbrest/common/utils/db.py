@@ -1,4 +1,5 @@
 from sqlalchemy import create_engine
+from sqlalchemy import inspect
 import pandas as pd
 from urllib.parse import urlparse
 
@@ -86,6 +87,10 @@ class DBAccess():
 
     def _get_table_names(self):
         return self._get_db_engine().table_names()
+
+    def _get_column_names(self, table):
+        inspector = inspect(self._get_db_engine())
+        return {i['name'] for i in inspector.get_columns(table)}
 
     def _create_joins(self, tables, join_type='inner join'):
         if len(tables) == 0:

@@ -1,5 +1,5 @@
 from ukbrest.config import logger
-
+from flask import jsonify, current_app as app
 
 class UkbRestException(Exception):
     def __init__(self, message, subtype, output=None):
@@ -14,6 +14,11 @@ class UkbRestException(Exception):
 
         logger.error(self.message.strip())
 
+    def to_dict(self):
+        dd = {'message':self.message,
+              'status_code': self.status_code,
+              'subtype': self.subtype}
+        return dd
 
 class UkbRestValidationError(UkbRestException):
     def __init__(self, message):
@@ -28,3 +33,9 @@ class UkbRestProgramExecutionError(UkbRestException):
 class UkbRestSQLExecutionError(UkbRestException):
     def __init__(self, message):
         super(UkbRestSQLExecutionError, self).__init__(message, 'SQL_EXECUTION_ERROR')
+
+# @app.errorhandler(UkbRestException)
+# def handle_UkbRestException(error):
+#     response = jsonify(error.to_dict())
+#     response.status_code = error.status_code
+#     return response

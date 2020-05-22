@@ -49,7 +49,7 @@ class TestRestApiPhenotype(DBTest):
             p2sql.load_data()
 
         if load_ehr:
-            ehr2sql = self._get_ehr2sql(dirname, **kwargs)
+            ehr2sql = self._get_ehr2sql(dirname, dirname, **kwargs)
             ehr2sql.load_data()
 
         # Query configs

@@ -72,10 +72,13 @@ class EHR2SQL(LoadSQL):
     def load_data(self, vacuum=False):
         logger.info("Loading EHR into database")
         try:
-            self._load_primary_care_data()
-            self._load_hospital_inpatient_data()
+            if self.gp_file_dd is not None:
+                self._load_primary_care_data()
+                self._create_constraints(gp=True)
+            if self.hesin_file_dd is not None:
+                self._load_hospital_inpatient_data()
+                self._create_constraints(hesin=True)
             self._load_all_eids()
-            self._create_constraints()
 
             if vacuum:
                 self._vacuum()
@@ -88,27 +91,30 @@ class EHR2SQL(LoadSQL):
         logger.info("EHR loading finished")
 
 
-    def _create_constraints(self):
+    def _create_constraints(self, gp=False, hesin=False):
         if self.db_type == 'sqlite':
             logger.warning("Indexes are not supported for SQLite")
             return
 
         logger.info("Creating table constraints (indexes, primary keys, etc)")
 
-        create_indexes(EHR2SQL.K_CLINICAL,
+        if gp:
+            create_indexes(EHR2SQL.K_CLINICAL,
                        ("eid", "read_2", "read_3"), #TODO: Add indexes?
                        db_engine=self._get_db_engine())
-        create_indexes(EHR2SQL.K_SCRIPTS,
+            create_indexes(EHR2SQL.K_SCRIPTS,
                        ("eid", "bnf_code", "dmd_code"),
                        db_engine=self._get_db_engine())
 
-        create_indexes(EHR2SQL.K_REGISTRATIONS,
+            create_indexes(EHR2SQL.K_REGISTRATIONS,
                        ("eid",),
                        db_engine=self._get_db_engine())
-        create_indexes(EHR2SQL.K_HESIN,
+
+        if hesin:
+            create_indexes(EHR2SQL.K_HESIN,
                        ("eid",),
                        db_engine=self._get_db_engine())
-        create_indexes(EHR2SQL.K_DIAG,
+            create_indexes(EHR2SQL.K_DIAG,
                        ("eid", "diag_icd9", "diag_icd10"),
                        db_engine=self._get_db_engine())
 

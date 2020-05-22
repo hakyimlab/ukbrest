@@ -1,11 +1,13 @@
 import logging
 
 from flask import Flask
+from flask import jsonify
+
 from ukbrest.resources.phenotype import PhenotypeFieldsAPI, PhenotypeAPI, PhenotypeApiObject
 from ukbrest.resources.query import PhenoQueryAPI, EHRQueryAPI, QueryApiObject
 from ukbrest.resources.genotype import GenotypeApiObject
 from ukbrest.resources.genotype import GenotypePositionsAPI, GenotypeRsidsAPI
-
+from ukbrest.resources.exceptions import UkbRestException
 
 app = Flask(__name__)
 
@@ -55,6 +57,13 @@ def setup_logging():
         # In production mode, add log handler to sys.stderr.
         app.logger.addHandler(logging.StreamHandler())
         app.logger.setLevel(logging.INFO)
+
+
+@app.errorhandler(UkbRestException)
+def handle_invalid_usage(error):
+    response = jsonify(error.to_dict())
+    response.status_code = error.status_code
+    return response
 
 
 if __name__ == '__main__':
