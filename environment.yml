@@ -13,7 +13,7 @@ dependencies:
   - cffi=1.14.0=py36hb5b8e2f_0
   - chardet=3.0.4=py36_1003
   - click=7.1.2=py_0
-  - coverage=4.5.1=py36h1de35cc_0
+  - coverage=5.0=py36h1de35cc_0
   - coveralls=1.2.0=py36_0
   - cryptography=2.3.1=py36hdbc3d79_0
   - decorator=4.4.2=py_0
