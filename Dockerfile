@@ -50,6 +50,10 @@ COPY misc/codings /var/lib/codings
 # Other environmental variables
 ENV UKBREST_WITHDRAWALS_PATH="/var/lib/withdrawals"
 
+# EHR directories
+ENV PRIMARY_CARE_DIR="/var/lib/primary_care"
+ENV HOSPITAL_INPATIENT="/var/lib/hospital_inpatient"
+
 WORKDIR /opt
 
 COPY docker/start.py /opt/
