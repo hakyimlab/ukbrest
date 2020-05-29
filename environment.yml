@@ -1,6 +1,7 @@
 name: ukbrest
 channels:
   - defaults
+  - conda-forge
 dependencies:
   - coverage
   - flask-httpauth=3.2

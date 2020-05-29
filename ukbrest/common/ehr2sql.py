@@ -166,6 +166,7 @@ class EHR2SQL(LoadSQL):
             self._create_gp_clinical_table()
             gp_clinical_df = self._load_ehr_df(gp_clinical_fp,
                                                ['eid', 'event_dt', 'read_key'],
+                                               encoding='latin1',
                                                day_date_cols=['event_dt'],
                                                accumulate_col_dict={'read_key' :['read_2', 'read_3']})
             gp_clinical_df.to_sql(EHR2SQL.K_CLINICAL, db_engine, if_exists='append',
