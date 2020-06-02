@@ -254,6 +254,7 @@ class EHR2SQL(LoadSQL):
         :return: pandas DataFrame
         """
         logger.info("Loading table {}".format(fp))
+        dropped_lines = 0
         for df in pd.read_table(fp, encoding=encoding, dtype=dtype_handling,
                                 chunksize=self.loading_chunksize):
             if day_date_cols is not None:
@@ -269,10 +270,10 @@ class EHR2SQL(LoadSQL):
                 ll_0 = df.shape[0]
                 df = df.dropna(subset=nonnull_cols)
                 ll_1 = ll_0 - df.shape[0]
-                if ll_1 > 0:
-                    logger.warning("Dropped {} rows due to nonnull constraint".format(ll_1))
+                dropped_lines += ll_1
             df.to_sql(table_name, self._get_db_engine(), if_exists='append',
                       index=False)
+        logger.warning("Dropped {} records due to nonnull constraints".format(dropped_lines))
 
     def _load_hospital_inpatient_data(self):
         db_engine = self._get_db_engine()
