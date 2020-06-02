@@ -62,8 +62,7 @@ class TestRestApiEHR(AppTests):
                            "tretspef", "operstat", "disdate", "dismeth_uni",
                            "dismeth", "disdest_uni", "disdest", "carersi"]
         self.gp_clinical_cols = ['data_provider', 'event_dt', 'read_2',
-                                 'read_3', 'value1', 'value2', 'value3',
-                                 'read_key']
+                                 'read_3', 'value1', 'value2', 'value3']
         self.gp_registration_cols = ['data_provider', 'reg_date', 'deduct_date']
         self.hesin_diag_cols = ['ins_index', 'arr_index', 'level', 'diag_icd9',
                                 'diag_icd9_nb', 'diag_icd10', 'diag_icd10_nb']
@@ -196,7 +195,7 @@ class TestRestApiEHR(AppTests):
         """
         response_df = self._make_yaml_request(yaml_query_just_table,
                                            'section',
-                                            n_expected_rows=5,
+                                            n_expected_rows=6,
                                             expected_columns=self.gp_clinical_cols)
 
     def test_query_table_columns(self):
@@ -210,7 +209,7 @@ class TestRestApiEHR(AppTests):
                 - read_3
         """
         response_df = self._make_yaml_request(q, 'section',
-                                              n_expected_rows=5,
+                                              n_expected_rows=6,
                                               expected_columns=cols)
 
     def test_query_bad_columns(self):
@@ -286,7 +285,7 @@ class TestRestApiEHR(AppTests):
             table: gp_clinical
         """
         response_df = self._make_yaml_request(q, "section",
-                                              n_expected_rows=5,
+                                              n_expected_rows=6,
                                               expected_columns=self.gp_clinical_cols)
 
     def test_query_records_filter(self):

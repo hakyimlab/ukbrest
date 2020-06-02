@@ -61,3 +61,16 @@ class LoadDataTest(DBTest):
                                     self.ehr_missing_path,
                                     **self.basic_2sql_config)
         ehr2sql.load_data()
+
+    def test_load_ehr_all_files_in_place(self):
+        ehr2sql = self._get_ehr2sql(self.ehr_path,
+                                    self.ehr_path,
+                                    **self.basic_2sql_config)
+        ehr2sql.load_data()
+
+    def test_load_ehr_tiny_loading_chunksize(self):
+        self.basic_2sql_config['loading_chunksize'] = 1
+        ehr2sql = self._get_ehr2sql(self.ehr_path,
+                                    self.ehr_path,
+                                    **self.basic_2sql_config)
+        ehr2sql.load_data()
