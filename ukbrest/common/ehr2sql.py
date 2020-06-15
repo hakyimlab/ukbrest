@@ -193,6 +193,7 @@ class EHR2SQL(LoadSQL):
             self._create_gp_scripts_table()
             self._naive_chunk_load(gp_scripts_fp,
                                    EHR2SQL.K_SCRIPTS,
+                                   encoding='latin1',
                                    day_date_cols=['issue_date'],
                                    dtype_handling={'bnf_code': str},
                                    nonnull_cols=['eid', 'issue_date']
@@ -324,7 +325,7 @@ class EHR2SQL(LoadSQL):
                       'spell_index int',
                       'spell_seq int',
                       'spelbgin int',
-                      'spelend int',
+                      'spelend text',
                       'speldur bigint',
                       'pctcode text',
                       'gpprpct text',
