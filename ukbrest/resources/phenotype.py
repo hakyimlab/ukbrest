@@ -76,7 +76,9 @@ class QueryAPI(UkbRestAPI):
         if args.Accept in PHENOTYPE_FORMATS:
             serializer = PHENOTYPE_FORMATS[args.Accept]
             order_by_table = serializer.get_order_by_table()
-
+        print(args.Accept)
+        print(args.file)
+        print(args.section)
         data_results = self.pheno2sql.query_yaml(
             yaml.load(args.file),
             args.section,

@@ -73,6 +73,7 @@ class Pheno2SQL(DBAccess):
 
         self.table_prefix = table_prefix
         self.n_columns_per_table = n_columns_per_table
+        logger.debug("n_columns_per_table set to {}".format(self.n_columns_per_table))
         self.loading_n_jobs = loading_n_jobs
         self.tmpdir = tmpdir
         self.loading_chunksize = loading_chunksize
