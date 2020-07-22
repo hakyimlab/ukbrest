@@ -5,6 +5,10 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 from tests.settings import POSTGRESQL_ENGINE
+from ukbrest.common.pheno2sql import Pheno2SQL
+from ukbrest.common.ehr2sql import EHR2SQL
+from ukbrest.common.postloader import Postloader
+from ukbrest.common.yaml_query import PhenoQuery, EHRQuery
 
 
 def get_repository_path(data_filename):
@@ -49,3 +53,44 @@ class DBTest(unittest.TestCase):
                 column_query=column_query,
                 relationship_query=relationship_query,
             )
+    def _get_p2sql(self, filename, **kwargs):
+        if filename is None:
+            csv_file = get_repository_path('pheno2sql/example02.csv')
+        elif isinstance(filename, (tuple, list)):
+            csv_file = tuple([get_repository_path(f) for f in filename])
+        elif isinstance(filename, str):
+            csv_file = get_repository_path(filename)
+        else:
+            raise ValueError('filename unknown type')
+
+        if 'db_uri' not in kwargs:
+            kwargs['db_uri'] = POSTGRESQL_ENGINE
+
+        if 'n_columns_per_table' not in kwargs:
+            kwargs['n_columns_per_table'] = 2
+
+        return Pheno2SQL(csv_file, **kwargs)
+
+    def _get_ehr2sql(self, gp_dir, hesin_dir, **kwargs):
+
+        if hesin_dir is None:
+            hesin_dir = get_repository_path('ehr')
+        if gp_dir is None:
+            gp_dir = get_repository_path('ehr')
+        if 'db_uri' not in kwargs:
+            kwargs['db_uri'] = POSTGRESQL_ENGINE
+
+        return EHR2SQL(gp_dir, hesin_dir, **kwargs)
+
+    def _get_postloader(self, **kwargs):
+        return Postloader(kwargs.get('db_uri', POSTGRESQL_ENGINE))
+
+    def _get_phenoquery(self, **kwargs):
+        db_uri = kwargs.get('db_uri', POSTGRESQL_ENGINE)
+        sql_chunksize = kwargs.get('sql_chunksize')
+        return PhenoQuery(db_uri, sql_chunksize)
+
+    def _get_ehrquery(self, **kwargs):
+        db_uri = kwargs.get('db_uri', POSTGRESQL_ENGINE)
+        sql_chunksize = kwargs.get('sql_chunksize')
+        return EHRQuery(db_uri, sql_chunksize)

@@ -1,0 +1,5 @@
+eid	ins_index	dsource	source	epistart	epiend	epidur	bedyear	epistat	epitype	epiorder	spell_index	spell_seq	spelbgin	spelend	speldur	pctcode	gpprpct	category	elecdate	elecdur	admidate	admimeth_uni	admimeth	admisorc_uni	admisorc	firstreg	classpat_uni	classpat	intmanag_uni	intmanag	mainspef_uni	mainspef	tretspef_uni	tretspef	operstat	disdate	dismeth_uni	dismeth	disdest_uni	disdest	carersi
+1	1	HES	18	20120305	20120306	1	1	3
+1	2	HES	18	20120305	20120306	1	2	3
+1	3	GGG	19	20120305	20120306	1	1	3
+2	1	HES	18	20120305	20120306	1	1	3

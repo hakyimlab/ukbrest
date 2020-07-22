@@ -1,10 +1,12 @@
 import traceback
 from joblib.my_exceptions import JoblibException
+from sqlalchemy.exc import ProgrammingError
+from ruamel.yaml.scanner import ScannerError
 
 from flask import jsonify
 from werkzeug.exceptions import HTTPException
 
-from ukbrest.resources.exceptions import UkbRestException
+from ukbrest.resources.exceptions import UkbRestException, UkbRestSQLExecutionError
 from ukbrest.config import logger
 
 
@@ -14,9 +16,14 @@ def handle_http_errors(func):
             return func(*args, **kwargs)
         except UkbRestException as e:
             return _make_ukbrest_error(e)
+        # except UkbRestSQLExecutionError as e:
+        #     return _make_ukbrest_error(e)
+        except ScannerError as e:
+            return _make_ukbrest_error(e)
+        # except ProgrammingError as e:
+        #     return _make_ukbrest_error(e)
         except Exception as e:
             return _make_ukbrest_error(e)
-
     return func_wrapper
 
 
@@ -44,7 +51,8 @@ def _make_ukbrest_error(ukbrest_exception):
 
     status_code = 500
 
-    if isinstance(ukbrest_exception, UkbRestException):
+    if (isinstance(ukbrest_exception, UkbRestException) or
+        isinstance(ukbrest_exception, UkbRestSQLExecutionError)):
         status_code = ukbrest_exception.status_code
 
         response_dict['status_code'] = status_code
@@ -54,6 +62,9 @@ def _make_ukbrest_error(ukbrest_exception):
         if hasattr(ukbrest_exception, 'output'):
             response_dict['output'] = ukbrest_exception.output
 
+        if hasattr(ukbrest_exception, 'sql_string'):
+            response_dict['sql_string'] = ukbrest_exception.sql_string
+
     elif isinstance(ukbrest_exception, HTTPException):
         status_code = ukbrest_exception.code
 
@@ -62,6 +73,12 @@ def _make_ukbrest_error(ukbrest_exception):
 
         if hasattr(ukbrest_exception, 'data') and isinstance(ukbrest_exception.data, dict):
             response_dict.update(ukbrest_exception.data)
+
+    elif isinstance(ukbrest_exception, ScannerError):
+        status_code = 400
+        response_dict['status_code'] = status_code
+        response_dict['error_type'] = "YAML Parsing"
+        response_dict['message'] = str(ukbrest_exception)
 
     else:
         response_dict['status_code'] = status_code

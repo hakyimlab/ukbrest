@@ -1,0 +1,16 @@
+samples_filters:
+  - eid > 0
+  - c34_0_0 = 12
+  - c100_0_0 = 10
+  - c100_1_0 = 10
+
+query1:
+  table: gp_scripts
+  columns:
+    - aaa
+    - bbb
+    - test_col
+  records_filters:
+    - dmd_code = 4
+    - event_dt not null
+  max_records: 20

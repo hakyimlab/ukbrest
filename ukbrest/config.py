@@ -30,6 +30,9 @@ LOAD_DATA_VACUUM = 'UKBREST_VACUUM'
 
 HTTP_AUTH_USERS_FILE = 'UKBREST_HTTP_USERS_FILE_PATH'
 
+PRIMARY_CARE_DIR = 'PRIMARY_CARE_DIR'
+HOSPITAL_INPATIENT_DIR = 'HOSPITAL_INPATIENT_DIR'
+
 
 ########################
 # Configuration defaults
@@ -73,6 +76,10 @@ loading_n_jobs = environ.get(LOADING_N_JOBS_ENV, -1)
 load_data_vacuum = environ.get(LOAD_DATA_VACUUM, True)
 
 http_auth_users_file = environ.get(HTTP_AUTH_USERS_FILE, None)
+
+# EHR loading parameters
+primary_care_dir = environ.get(PRIMARY_CARE_DIR, None)
+hospital_inpatient_dir = environ.get(HOSPITAL_INPATIENT_DIR, None)
 
 
 ########
@@ -139,6 +146,30 @@ def get_pheno2sql_load_parameters():
         'vacuum': load_data_vacuum
     }
 
+def get_ehr2sql_parameters():
+    return {
+        'primary_care_dir': primary_care_dir,
+        'hospital_inpatient_dir': hospital_inpatient_dir,
+        'db_uri': db_uri,
+#        'table_prefix': table_prefix,
+        'n_columns_per_table': int(n_columns_per_table),
+        'loading_n_jobs': int(loading_n_jobs),
+        'tmpdir': tmpdir,
+        'loading_chunksize': int(loading_chunksize),
+        'sql_chunksize': int(sql_chunksize) if sql_chunksize is not None else None,
+    }
+
+def get_pheno_query_parameters():
+    return {
+        'db_uri': db_uri,
+        'sql_chunksize': int(sql_chunksize) if sql_chunksize is not None else None,
+    }
+
+def get_ehr_query_parameters():
+    return {
+        'db_uri': db_uri,
+        'sql_chunksize': int(sql_chunksize) if sql_chunksize is not None else None,
+    }
 
 def get_argparse_arguments(parser=None):
     import argparse
@@ -164,5 +195,7 @@ def get_argparse_arguments(parser=None):
     parser.add_argument('--port', type=int, help='Port where to listen to')
     parser.add_argument('--users-file', type=str, help='This users files, if not empty, activates HTTP Basic Authentication. It must be a valid YAML file: one line per user with format USER: PASSWORD')
     parser.add_argument('--ssl-mode', action='store_true', help='Activates SSL in adhoc mode when running with Flask.')
+    parser.add_argument('--primary-care-dir', type=str, help="Directory with primary care EHR files: gp_clinical.txt, gp_registrations.txt, gp_scripts.txt")
+    parser.add_argument('--hospital-inpatient-dir', type=str, help= "Directory with hospital inpatient EHR files: hesin.txt, hesin_diag.txt")
 
     return parser
