@@ -21,9 +21,9 @@ install:
   - bash miniconda.sh -b -p $HOME/miniconda
   - hash -r
 # Install bgenix
-  - wget http://bitbucket.org/gavinband/bgen/get/master.tar.gz
-  - tar -xf master.tar.gz
-  - cd gavinband-bgen-*
+  - wget http://code.enkre.net/bgen/tarball/release/bgen.tgz
+  - tar -xf bgen.tgz
+  - cd bgen.tgz
   - ./waf configure
   - ./waf
   - ./build/test/unit/test_bgen
