@@ -22,8 +22,9 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get update && apt-get install -y --no-install-recommends \
     build-essential zlib1g-dev libbz2-dev mercurial \
   && cd /tmp \
-  && hg clone https://gavinband@bitbucket.org/gavinband/bgen -u master \
-  && cd /tmp/bgen \
+  && wget http://code.enkre.net/bgen/tarball/release/bgen.tgz \
+  && tar -xf bgen.tgz \
+  && cd bgen.tgz \
   && export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
   && ./waf configure --prefix=/usr/local \
   && ./waf \
