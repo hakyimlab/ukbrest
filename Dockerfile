@@ -23,6 +23,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     build-essential zlib1g-dev libbz2-dev mercurial \
   && cd /tmp \
   && wget http://code.enkre.net/bgen/tarball/release/bgen.tgz \
+  && tar -xf bgen.tgz \
   && cd bgen.tgz \
   && export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
   && ./waf configure --prefix=/usr/local \
