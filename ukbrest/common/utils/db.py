@@ -1,5 +1,7 @@
 from sqlalchemy import create_engine
-
+from sqlalchemy import inspect
+import pandas as pd
+from urllib.parse import urlparse
 
 def create_table(table_name, columns, db_engine, constraints=None, drop_if_exists=True):
     with db_engine.connect() as conn:
@@ -48,6 +50,18 @@ class DBAccess():
     def __init__(self, db_uri):
         self.db_uri = db_uri
         self.db_engine = None
+        parse_result = urlparse(self.db_uri)
+        self.db_type = parse_result.scheme
+        if self.db_type == 'sqlite':
+            self.db_file = self.db_uri.split(':///')[-1]
+        elif self.db_type == 'postgresql':
+            self.db_host = parse_result.hostname
+            self.db_port = parse_result.port
+            self.db_name = parse_result.path.split('/')[-1]
+            self.db_user = parse_result.username
+            self.db_pass = parse_result.password
+
+        self._fields_dtypes = {}
 
     def _close_db_engine(self):
         if self.db_engine is not None:
@@ -70,3 +84,38 @@ class DBAccess():
             conn.execute("""
                 vacuum analyze {table_name}
             """.format(table_name=table_name))
+
+    def _get_table_names(self):
+        return self._get_db_engine().table_names()
+
+    def _get_column_names(self, table):
+        inspector = inspect(self._get_db_engine())
+        return {i['name'] for i in inspector.get_columns(table)}
+
+    def _create_joins(self, tables, join_type='inner join'):
+        if len(tables) == 0:
+            return ""
+
+        if len(tables) == 1:
+            return tables[0]
+
+        return tables[0] + ' ' + ' '.join([
+            '{join_type} {table} using (eid) '.format(join_type=join_type, table=t) for t in tables[1:]
+        ])
+
+    def get_field_dtype(self, field=None):
+        """Returns the type of the field. If field is None, then it just loads all fields types"""
+
+        if field in self._fields_dtypes:
+            return self._fields_dtypes[field]
+
+        # initialize dbtypes for all fields
+        field_type = pd.read_sql(
+            'select distinct column_name, type '
+            'from fields',
+        self._get_db_engine())
+
+        for row in field_type.itertuples():
+            self._fields_dtypes[row.column_name] = row.type
+
+        return self._fields_dtypes[field] if field in self._fields_dtypes else None

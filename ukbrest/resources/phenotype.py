@@ -23,8 +23,7 @@ class PhenotypeAPI(UkbRestAPI):
         self.parser.add_argument('filters', type=str, action='append', required=False, help='Filters to include (AND)')
         self.parser.add_argument('Accept', location='headers', choices=PHENOTYPE_FORMATS.keys(),
                                  help='Only {} are supported'.format(', '.join(PHENOTYPE_FORMATS.keys())))
-
-        self.pheno2sql = app.config['pheno2sql']
+        self.pheno_query = app.config['pheno_query']
 
     def get(self):
         args = self.parser.parse_args()
@@ -32,7 +31,7 @@ class PhenotypeAPI(UkbRestAPI):
         if args.columns is None and args.ecolumns is None:
             raise UkbRestValidationError('You have to specify either columns or ecolumns')
 
-        data_results = self.pheno2sql.query(args.columns, args.ecolumns, args.filters)
+        data_results = self.pheno_query.query(args.columns, args.ecolumns, args.filters)
 
         return {
             'data': data_results,
@@ -43,54 +42,16 @@ class PhenotypeFieldsAPI(UkbRestAPI):
     def __init__(self, **kwargs):
         super(PhenotypeFieldsAPI, self).__init__()
 
-        self.pheno2sql = app.config['pheno2sql']
+        self.pheno_query = app.config['pheno_query']
 
     def get(self):
-        self.pheno2sql.get_field_dtype()
+        self.pheno_query.get_field_dtype()
 
-        data_results = [k for k, v in self.pheno2sql._fields_dtypes.items()]
+        data_results = [k for k, v in self.pheno_query._fields_dtypes.items()]
 
         return {
             'data': data_results,
         }
-
-
-class QueryAPI(UkbRestAPI):
-    def __init__(self, **kwargs):
-        super(QueryAPI, self).__init__()
-
-        self.parser.add_argument('file', type=FileStorage, location='files', required=True)
-        self.parser.add_argument('section', type=str, required=True)
-        self.parser.add_argument('missing_code', type=str, required=False)
-        self.parser.add_argument('Accept', location='headers', choices=PHENOTYPE_FORMATS.keys(),
-                                      help='Only {} are supported'.format(' and '.join(PHENOTYPE_FORMATS.keys())))
-
-        self.pheno2sql = app.config['pheno2sql']
-
-    def post(self):
-        args = self.parser.parse_args()
-
-        yaml = YAML(typ='safe')
-
-        order_by_table = None
-        if args.Accept in PHENOTYPE_FORMATS:
-            serializer = PHENOTYPE_FORMATS[args.Accept]
-            order_by_table = serializer.get_order_by_table()
-
-        data_results = self.pheno2sql.query_yaml(
-            yaml.load(args.file),
-            args.section,
-            order_by_table=order_by_table
-        )
-
-        final_results = {
-            'data': data_results,
-        }
-
-        if args.missing_code is not None:
-            final_results['missing_code'] = args.missing_code
-
-        return final_results
 
 
 class PhenotypeApiObject(Api):

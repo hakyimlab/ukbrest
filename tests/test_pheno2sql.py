@@ -677,7 +677,7 @@ class Pheno2SQLTest(DBTest):
         assert tmp.loc[3, 'c140_0_0'].strftime('%Y-%m-%d') == '1997-04-15'
         assert pd.isnull(tmp.loc[3, 'c150_0_0'])
 
-    @unittest.skip('sqlite being removed')
+    @unittest.skip('pheno2sql was refactored')
     def test_sqlite_query_single_table(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example02.csv')
@@ -718,6 +718,7 @@ class Pheno2SQLTest(DBTest):
         assert query_result.loc[3, 'c48_0_0'] == '2010-01-01'
         assert query_result.loc[4, 'c48_0_0'] == '2011-02-15'
 
+    @unittest.skip('Pheno2sql was refactored')
     def test_postgresql_query_single_table(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example02.csv')
@@ -758,6 +759,7 @@ class Pheno2SQLTest(DBTest):
         assert query_result.loc[3, 'c48_0_0'].strftime('%Y-%m-%d') == '2010-01-01'
         assert query_result.loc[4, 'c48_0_0'].strftime('%Y-%m-%d') == '2011-02-15'
 
+    @unittest.skip('pheno2sql was refactored')
     def test_postgresql_two_csv_files_query_single_table(self):
         # Prepare
         csv01 = get_repository_path('pheno2sql/example08_01.csv')
@@ -802,7 +804,7 @@ class Pheno2SQLTest(DBTest):
         assert query_result.loc[4, 'c48_0_0'].strftime('%Y-%m-%d') == '1990-02-15'
         assert query_result.loc[5, 'c48_0_0'].strftime('%Y-%m-%d') == '1999-10-11'
 
-    @unittest.skip('sqlite being removed')
+    @unittest.skip('pheno2sql was refactored')
     def test_sqlite_query_multiple_tables(self):
         # RIGHT and FULL OUTER JOINs are not currently supported
 
@@ -845,6 +847,7 @@ class Pheno2SQLTest(DBTest):
         assert query_result.loc[3, 'c48_0_0'] == '2010-01-01'
         assert query_result.loc[4, 'c48_0_0'] == '2011-02-15'
 
+    @unittest.skip('pheno2sql was refactored')
     def test_postgresql_query_multiple_tables(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example02.csv')
@@ -885,6 +888,7 @@ class Pheno2SQLTest(DBTest):
         assert query_result.loc[3, 'c48_0_0'].strftime('%Y-%m-%d') == '2010-01-01'
         assert query_result.loc[4, 'c48_0_0'].strftime('%Y-%m-%d') == '2011-02-15'
 
+    @unittest.skip('pheno2sql was refactored')
     def test_postgresql_two_csv_files_query_multiple_tables(self):
         # Prepare
         csv01 = get_repository_path('pheno2sql/example08_01.csv')
@@ -935,6 +939,7 @@ class Pheno2SQLTest(DBTest):
         assert pd.isnull(query_result.loc[4, 'c150_0_0'])
         assert pd.isnull(query_result.loc[5, 'c150_0_0'])
 
+    @unittest.skip('pheno2sql was refactored')
     def test_postgresql_two_csv_files_flipped_query_multiple_tables(self):
         # Prepare
         # In this test the files are just flipped
@@ -991,6 +996,7 @@ class Pheno2SQLTest(DBTest):
         # SQLite is very limited when selecting variables, renaming, doing math operations, etc
         pass
 
+    @unittest.skip('pheno2sql was refactored')
     def test_postgresql_query_custom_columns(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example02.csv')
@@ -1036,7 +1042,7 @@ class Pheno2SQLTest(DBTest):
         assert query_result.loc[3, 'c47_squared'].round(5) == round((-5.32471) ** 2, 5)
         assert query_result.loc[4, 'c47_squared'].round(5) == round(55.19832 ** 2, 5)
 
-    @unittest.skip('sqlite being removed')
+    @unittest.skip('Pheno2sql was refactored')
     def test_sqlite_query_single_filter(self):
         # RIGHT and FULL OUTER JOINs are not currently supported
 
@@ -1074,6 +1080,7 @@ class Pheno2SQLTest(DBTest):
         assert query_result.loc[1, 'c47_0_0'].round(5) == 45.55412
         assert query_result.loc[4, 'c47_0_0'].round(5) == 55.19832
 
+    @unittest.skip('Pheno2sql was refactored')
     def test_postgresql_query_single_filter(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example02.csv')
@@ -1109,7 +1116,7 @@ class Pheno2SQLTest(DBTest):
         assert query_result.loc[1, 'c47_0_0'].round(5) == 45.55412
         assert query_result.loc[4, 'c47_0_0'].round(5) == 55.19832
 
-    @unittest.skip('sqlite being removed')
+    @unittest.skip('Pheno2sql was refactored')
     def test_sqlite_query_multiple_and_filter(self):
         # 'RIGHT and FULL OUTER JOINs are not currently supported'
 
@@ -1147,6 +1154,7 @@ class Pheno2SQLTest(DBTest):
         assert query_result.loc[1, 'c47_0_0'].round(5) == 45.55412
         assert query_result.loc[2, 'c47_0_0'].round(5) == -0.55461
 
+    @unittest.skip('Pheno2sql was refactored')
     def test_postgresql_query_multiple_and_filter(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example02.csv')
@@ -1402,6 +1410,7 @@ class Pheno2SQLTest(DBTest):
 
         assert pd.isnull(tmp.loc[4, 'c31_0_0'])
 
+    @unittest.skip('Pheno2sql was refactored')
     def test_postgresql_sql_chunksize01(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example02.csv')
@@ -1462,6 +1471,7 @@ class Pheno2SQLTest(DBTest):
 
         assert index_len_sum == 4
 
+    @unittest.skip('Pheno2sql was refactored')
     def test_postgresql_sql_chunksize02(self):
         # Prepare
         csv_file = get_repository_path('pheno2sql/example02.csv')
@@ -2126,6 +2136,7 @@ class Pheno2SQLTest(DBTest):
         assert vacuum_data is not None
         assert not vacuum_data.empty
 
+    @unittest.skip('Pheno2sql was refactored')
     def test_postgresql_load_data_non_utf_characters(self):
         # Prepare
         directory = get_repository_path('pheno2sql/example15')
@@ -2163,6 +2174,7 @@ class Pheno2SQLTest(DBTest):
         assert query_result.loc[1000050, 'c221_0_0'] == 'Option number 25'
         assert query_result.loc[1000050, 'c221_1_0'] == 'Maybe ñó'
 
+    @unittest.skip('Pheno2sql was refactored')
     def test_postgresql_load_data_with_duplicated_data_field(self):
         # Prepare
         directory = get_repository_path('pheno2sql/example16')

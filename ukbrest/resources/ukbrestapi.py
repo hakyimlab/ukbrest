@@ -7,7 +7,9 @@ class UkbRestAPI(Resource):
     HTTP_METHODS = ('get', 'post')
 
     def __init__(self):
+        # print("ENTERING REQUEST PARSING")
         self.parser = reqparse.RequestParser()
+        # print("ENDING REQUEST PARSING")
 
         # add error handling
         for met in UkbRestAPI.HTTP_METHODS:

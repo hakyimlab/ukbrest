@@ -7,7 +7,7 @@ import argparse
 import re
 
 from ukbrest.config import logger, GENOTYPE_PATH_ENV, PHENOTYPE_PATH, PHENOTYPE_CSV_ENV, DB_URI_ENV, CODINGS_PATH, \
-    SAMPLES_DATA_PATH, WITHDRAWALS_PATH, PRIMARY_CARE_DIR, HOSPITAL_INPATIENT_DIR
+    SAMPLES_DATA_PATH, WITHDRAWALS_PATH
 
 
 parser = argparse.ArgumentParser()
@@ -16,7 +16,6 @@ parser.add_argument('--load-sql', action='store_true', help='Loads some useful S
 parser.add_argument('--load-codings', action='store_true', help='Loads a set of codings files (coding_NUM.tsv).')
 parser.add_argument('--load-withdrawals', action='store_true', help='Loads a list of participants who has withdrawn consent (*.csv files).')
 parser.add_argument('--load-samples-data', action='store_true', help='Loads a set of files containing information about samples.')
-parser.add_argument('--load-ehr', action='store_true', help='Loads electronic health records.')
 
 args, unknown_args = parser.parse_known_args()
 
@@ -119,19 +118,6 @@ def _setup_db_uri():
         parser.error('No DB URI was specified. You have to set it using the environment variable UKBREST_DB_URI. For '
                      'example, for PostgreSQL, the format is: postgresql://user:pass@host:port/dbname')
 
-def _setup_ehr_paths():
-    primary_care_dir = environ.get(PRIMARY_CARE_DIR, None)
-    if not isdir(primary_care_dir):
-        parser.error("The specified primary care directory does not exist.")
-
-    hospital_inpatient_dir = environ.get(HOSPITAL_INPATIENT_DIR, None)
-    if not isdir(hospital_inpatient_dir):
-        parser.error("The specified hospital inpatient directory does not exist")
-
-    if (primary_care_dir is None) and (hospital_inpatient_dir is None):
-        parser.error("Neither primary care nor hospital inpatient directories were specified.")
-
-
 
 if __name__ == '__main__':
     if args.load:
@@ -163,11 +149,6 @@ if __name__ == '__main__':
 
         commands = ('python', ['python', '/opt/ukbrest/load_data.py', '--load-samples-data'] + unknown_args)
 
-    elif args.load_ehr:
-        _setup_ehr_paths()
-        _setup_db_uri()
-
-        commands = ('python', ['python', '/opt/ukbrest/load_data.py', '--load-ehr'])
     else:
         _setup_genotype_path()
         _setup_db_uri()
